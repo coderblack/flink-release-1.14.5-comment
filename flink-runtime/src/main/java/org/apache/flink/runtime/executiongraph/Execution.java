@@ -505,7 +505,7 @@ public class Execution
      *
      * @throws JobException if the execution cannot be deployed to the assigned resource
      */
-    public void deploy() throws JobException {
+    public void deploy() throws JobException {  // TODO BY dps@51doit.cn : 部署task流程的最底层方法
         assertRunningInJobMasterMainThread();
 
         final LogicalSlot slot = assignedResource;
@@ -585,6 +585,7 @@ public class Execution
             // We run the submission in the future executor so that the serialization of large TDDs
             // does not block
             // the main thread and sync back to the main thread once submission is completed.
+            // TODO BY dps@51doit.cn : 用gateway来submitTask
             CompletableFuture.supplyAsync(
                             () -> taskManagerGateway.submitTask(deployment, rpcTimeout), executor)
                     .thenCompose(Function.identity())

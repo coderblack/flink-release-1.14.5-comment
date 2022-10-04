@@ -316,7 +316,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
                                 "Currently jobs is not supported if parts of the vertices have "
                                         + "resources configured. The limitation will be removed in future versions."));
             } else {
-                return internalSubmitJob(jobGraph);
+                return internalSubmitJob(jobGraph);  //TODO   BY DEEP SEA: 提交job
             }
         } catch (FlinkException e) {
             return FutureUtils.completedExceptionally(e);
@@ -371,12 +371,12 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
         return false;
     }
-
+    //TODO   BY DEEP SEA ： 提交job的内部方法
     private CompletableFuture<Acknowledge> internalSubmitJob(JobGraph jobGraph) {
         log.info("Submitting job '{}' ({}).", jobGraph.getName(), jobGraph.getJobID());
 
         final CompletableFuture<Acknowledge> persistAndRunFuture =
-                waitForTerminatingJob(jobGraph.getJobID(), jobGraph, this::persistAndRunJob)
+                waitForTerminatingJob(jobGraph.getJobID(), jobGraph, this::persistAndRunJob) // TODO BY dps@51doit.cn :持久化和运行job
                         .thenApply(ignored -> Acknowledge.get());
 
         return persistAndRunFuture.handleAsync(
@@ -399,19 +399,19 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
                 },
                 ioExecutor);
     }
-
+    // TODO BY dps@51doit.cn : 持久化和运行job
     private void persistAndRunJob(JobGraph jobGraph) throws Exception {
         jobGraphWriter.putJobGraph(jobGraph);
-        runJob(jobGraph, ExecutionType.SUBMISSION);
+        runJob(jobGraph, ExecutionType.SUBMISSION); // TODO BY dps@51doit.cn : 正式在这里开始运行job
     }
 
     private void runJob(JobGraph jobGraph, ExecutionType executionType) throws Exception {
-        // 确保JobID对应的这个作业目前不在运行状态，避免重复提交
+        // TODO BY dps@51doit.cn : 确保JobID对应的这个作业目前不在运行状态，避免重复提交
         Preconditions.checkState(!runningJobs.containsKey(jobGraph.getJobID()));
         long initializationTimestamp = System.currentTimeMillis();
 
-        // 这里将JobManagerRunner创建出来
-        // JobManagerRunner接下来会构造出JobManager
+        // TODO BY dps@51doit.cn : // 这里将JobManagerRunner创建出来,并开启job的调度执行
+        // TODO BY dps@51doit.cn : // JobManagerRunner接下来会构造出JobManager
         JobManagerRunner jobManagerRunner =
                 createJobManagerRunner(jobGraph, initializationTimestamp);
 

@@ -210,8 +210,7 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
                 "Starting scheduling with scheduling strategy [{}]",
                 schedulingStrategy.getClass().getName());
         transitionToRunning();
-        // 按实际调度策略，开始调度
-        // PipelinedRegionSchedulingStrategy.startScheduling
+        // TODO BY dps@51doit.cn : 按实际调度策略，开始调度 ,PipelinedRegionSchedulingStrategy.startScheduling
         schedulingStrategy.startScheduling();
     }
 
@@ -406,7 +405,7 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
                         requiredVersionByVertex,
                         deploymentOptionsByVertex,
                         slotExecutionVertexAssignments);
-
+        // TODO BY dps@51doit.cn : 从这里，往下很长的流程，包含submitTask的流程
         waitForAllSlotsAndDeploy(deploymentHandles);
     }
 
@@ -460,11 +459,11 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
                         })
                 .collect(Collectors.toList());
     }
-
+    // TODO BY dps@51doit.cn : 本方法，调用deployAll(deploymentHandles)，进而会发起submitTask的流程
     private void waitForAllSlotsAndDeploy(final List<DeploymentHandle> deploymentHandles) {
         FutureUtils.assertNoException(
                 assignAllResourcesAndRegisterProducedPartitions(deploymentHandles)
-                        .handle(deployAll(deploymentHandles)));
+                        .handle(deployAll(deploymentHandles)));  // TODO BY dps@51doit.cn : deployAll=>开始调度
     }
 
     private CompletableFuture<Void> assignAllResourcesAndRegisterProducedPartitions(
@@ -502,9 +501,9 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
                 final CompletableFuture<LogicalSlot> slotAssigned =
                         slotExecutionVertexAssignment.getLogicalSlotFuture();
                 checkState(slotAssigned.isDone());
-
+                // TODO BY dps@51doit.cn : 这里调用的deployOrHandleError(deploymentHandle)，就会发起submitTask的流程
                 FutureUtils.assertNoException(
-                        slotAssigned.handle(deployOrHandleError(deploymentHandle)));
+                        slotAssigned.handle(deployOrHandleError(deploymentHandle))); // TODO BY dps@51doit.cn : 部署或错误处理
             }
             return null;
         };
@@ -637,9 +636,9 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
                         executionVertexId);
                 return null;
             }
-
+            // TODO BY dps@51doit.cn : 这里发起的调用，就会走到submitTask()的流程
             if (throwable == null) {
-                deployTaskSafe(executionVertexId);
+                deployTaskSafe(executionVertexId);  // TODO BY dps@51doit.cn : 部署 task
             } else {
                 handleTaskDeploymentFailure(executionVertexId, throwable);
             }
@@ -650,7 +649,8 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
     private void deployTaskSafe(final ExecutionVertexID executionVertexId) {
         try {
             final ExecutionVertex executionVertex = getExecutionVertex(executionVertexId);
-            executionVertexOperations.deploy(executionVertex);
+            // TODO BY dps@51doit.cn : DefaultExecutionVertexOperations.deploy
+            executionVertexOperations.deploy(executionVertex);  // TODO BY dps@51doit.cn : 部署 task
         } catch (Throwable e) {
             handleTaskDeploymentFailure(executionVertexId, e);
         }

@@ -87,6 +87,8 @@ abstract class AbstractOneInputTransformationTranslator<IN, OUT, OP extends Tran
                 "Expected exactly one input transformation but found "
                         + parentTransformations.size());
 
+        //TODO   BY DEEP SEA
+        // 本类是AbstractOneInputTransformationTranslator，已经限定了上游transform只有一个
         for (Integer inputId : context.getStreamNodeIds(parentTransformations.get(0))) {
             streamGraph.addEdge(inputId, transformationId, 0);
         }

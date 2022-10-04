@@ -315,7 +315,7 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
                     Executors.newFixedThreadPool(
                             ClusterEntrypointUtils.getPoolSize(configuration),
                             new ExecutorThreadFactory("cluster-io"));
-            haServices = createHaServices(configuration, ioExecutor, rpcSystem);
+            haServices = createHaServices(configuration, ioExecutor, rpcSystem); //TODO   BY DEEP SEA : StandaloneHaServices
             blobServer = new BlobServer(configuration, haServices.createBlobStore());
             blobServer.start();
             heartbeatServices = createHeartbeatServices(configuration);

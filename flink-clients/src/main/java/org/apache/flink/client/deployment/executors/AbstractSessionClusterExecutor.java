@@ -66,14 +66,14 @@ public class AbstractSessionClusterExecutor<
             throws Exception {
         final JobGraph jobGraph = PipelineExecutorUtils.getJobGraph(pipeline, configuration);
 
-        try (final ClusterDescriptor<ClusterID> clusterDescriptor =
-                clusterClientFactory.createClusterDescriptor(configuration)) {
+        try (final ClusterDescriptor<ClusterID> clusterDescriptor = // StandaloneClusterDescriptor
+                clusterClientFactory.createClusterDescriptor(configuration)) {  // StandaloneClusterClientFactory
             final ClusterID clusterID = clusterClientFactory.getClusterId(configuration);
             checkState(clusterID != null);
-
+            //TODO   BY DEEP SEA : StandaloneClusterDescriptor$lambda
             final ClusterClientProvider<ClusterID> clusterClientProvider =
                     clusterDescriptor.retrieve(clusterID);
-            ClusterClient<ClusterID> clusterClient = clusterClientProvider.getClusterClient();
+            ClusterClient<ClusterID> clusterClient = clusterClientProvider.getClusterClient(); //TODO   BY DEEP SEA: RestClusterClient
             return clusterClient
                     .submitJob(jobGraph)
                     .thenApplyAsync(

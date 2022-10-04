@@ -319,7 +319,13 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
 
         this.jobManagerJobMetricGroup = jobMetricGroupFactory.create(jobGraph);
         this.jobStatusListener = new JobManagerJobStatusListener();
-        // 创建调度器
+        // TODO BY dps@51doit.cn : 创建调度器
+        // 调用的是： slotPoolServiceSchedulerFactory.createScheduler
+        // 进而调用： schedulerNGFactory.createInstance
+        // 进而调用： DefaultSchedulerFactory.createInstance 其中，会构造：executionGraphFactory = new DefaultExecutionGraphFactory
+        // 并，构造 DefaultScheduler = new DefaultScheduler
+        // 构造函数中,通过父类构造： SchedulerBase() ,在父类构造方法中，会构建executionGraph :=> this.executionGraph =createAndRestoreExecutionGraph
+        // 并获取 schedulingTopology :=>  this.schedulingTopology = executionGraph.getSchedulingTopology()
         this.schedulerNG =
                 createScheduler(
                         slotPoolServiceSchedulerFactory,
@@ -343,7 +349,7 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
             JobManagerJobMetricGroup jobManagerJobMetricGroup,
             JobStatusListener jobStatusListener)
             throws Exception {
-        // 继续，这里面会进行job调度
+        // 创建调度器
         final SchedulerNG scheduler =
                 slotPoolServiceSchedulerFactory.createScheduler(
                         log,
@@ -388,7 +394,7 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
     @Override
     protected void onStart() throws JobMasterException {
         try {
-            startJobExecution();
+            startJobExecution();  //TODO   BY DEEP SEA: 正式开始执行job
         } catch (Exception e) {
             final JobMasterException jobMasterException =
                     new JobMasterException("Could not start the JobMaster.", e);

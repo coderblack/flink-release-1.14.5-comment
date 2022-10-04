@@ -386,7 +386,7 @@ public class RestClient implements AutoCloseableAsync {
                                     messageHeaders.getResponseClass(),
                                     typeParameters.toArray(new Class<?>[typeParameters.size()]));
         }
-
+        //TODO   BY DEEP SEA : 提交请求
         return submitRequest(targetAddress, targetPort, httpRequest, responseType);
     }
 
@@ -490,7 +490,7 @@ public class RestClient implements AutoCloseableAsync {
                                     throw new IOException(
                                             "Netty pipeline was not properly initialized.");
                                 } else {
-                                    httpRequest.writeTo(channel);
+                                    httpRequest.writeTo(channel);  //TODO   BY DEEP SEA : 发送请求
                                     future = handler.getJsonFuture();
                                     success = true;
                                 }

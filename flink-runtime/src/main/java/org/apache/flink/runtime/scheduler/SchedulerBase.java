@@ -187,7 +187,7 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
                 SchedulerUtils.createCheckpointIDCounterIfCheckpointingIsEnabled(
                         jobGraph, checkNotNull(checkpointRecoveryFactory));
 
-        // 这里是生成ExecutionGraph的方法  BY DEEPSEA
+        // TODO BY dps@51doit.cn : 这里是生成 ExecutionGraph 的方法
         this.executionGraph =
                 createAndRestoreExecutionGraph(
                         completedCheckpointStore,

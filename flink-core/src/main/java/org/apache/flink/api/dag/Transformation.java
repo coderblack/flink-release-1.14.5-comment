@@ -351,7 +351,7 @@ public abstract class Transformation<T> {
 
         Preconditions.checkNotNull(uidHash);
         Preconditions.checkArgument(
-                uidHash.matches("^[0-9A-Fa-f]{32}$"),
+                uidHash.matches("^[0-9A-Fa-f]{32}$"),  //TODO   必须是32位16进制字符串 BY DEEP SEA
                 "Node hash must be a 32 character String that describes a hex code. Found: "
                         + uidHash);
 

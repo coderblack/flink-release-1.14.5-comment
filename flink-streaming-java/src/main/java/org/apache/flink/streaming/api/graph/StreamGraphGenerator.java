@@ -89,6 +89,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
+import java.net.DatagramPacket;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -181,6 +182,8 @@ public class StreamGraphGenerator {
                     TransformationTranslator<?, ? extends Transformation>>
             translatorMap;
 
+    //TODO   BY DEEP SEA
+    // 各种transform所对应的translator
     static {
         @SuppressWarnings("rawtypes")
         Map<Class<? extends Transformation>, TransformationTranslator<?, ? extends Transformation>>
@@ -495,6 +498,8 @@ public class StreamGraphGenerator {
      * delegates to one of the transformation specific methods.
      */
     private Collection<Integer> transform(Transformation<?> transform) {
+        //TODO   BY DEEP SEA
+        // 如果已经处理过，则直接取出返回
         if (alreadyTransformed.containsKey(transform)) {
             return alreadyTransformed.get(transform);
         }
@@ -505,12 +510,16 @@ public class StreamGraphGenerator {
 
             // if the max parallelism hasn't been set, then first use the job wide max parallelism
             // from the ExecutionConfig.
+            //TODO   BY DEEP SEA
+            // 如果没有设置最大并行度，则使用job全局的最大并行度
             int globalMaxParallelismFromConfig = executionConfig.getMaxParallelism();
             if (globalMaxParallelismFromConfig > 0) {
                 transform.setMaxParallelism(globalMaxParallelismFromConfig);
             }
         }
 
+        //TODO   BY DEEP SEA
+        // 对slot共享组配置进行处理
         transform
                 .getSlotSharingGroup()
                 .ifPresent(
@@ -541,6 +550,8 @@ public class StreamGraphGenerator {
         // call at least once to trigger exceptions about MissingTypeInfo
         transform.getOutputType();
 
+        //TODO   BY DEEP SEA
+        // 获取translator
         @SuppressWarnings("unchecked")
         final TransformationTranslator<?, Transformation<?>> translator =
                 (TransformationTranslator<?, Transformation<?>>)
@@ -646,6 +657,8 @@ public class StreamGraphGenerator {
         List<Integer> resultIds = new ArrayList<>();
 
         // first transform the input stream(s) and store the result IDs
+        //TODO   BY DEEP SEA
+        // 递归调用transform，对本transform对象的所有输入transform进行处理
         Collection<Integer> inputIds = transform(input);
         resultIds.addAll(inputIds);
 

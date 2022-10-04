@@ -387,7 +387,7 @@ public class RestClusterClient<T> implements ClusterClient<T> {
                                     "Submitting job '{}' ({}).",
                                     jobGraph.getName(),
                                     jobGraph.getJobID());
-                            return sendRetriableRequest(
+                            return sendRetriableRequest(  //TODO   BY DEEP SEA : 发送请求
                                     JobSubmitHeaders.getInstance(),
                                     EmptyMessageParameters.getInstance(),
                                     requestAndFileUploads.f0,
@@ -850,9 +850,9 @@ public class RestClusterClient<T> implements ClusterClient<T> {
                                         webMonitorBaseUrl -> {
                                             try {
                                                 final CompletableFuture<P> future =
-                                                        restClient.sendRequest(
-                                                                webMonitorBaseUrl.getHost(),
-                                                                webMonitorBaseUrl.getPort(),
+                                                        restClient.sendRequest( //TODO   BY DEEP SEA : 用RestClient提交job
+                                                                webMonitorBaseUrl.getHost(),  // 目标web服务主机（jobmanager那边的webmonitor service）
+                                                                webMonitorBaseUrl.getPort(), // 目标web服务端口
                                                                 messageHeaders,
                                                                 messageParameters,
                                                                 request,

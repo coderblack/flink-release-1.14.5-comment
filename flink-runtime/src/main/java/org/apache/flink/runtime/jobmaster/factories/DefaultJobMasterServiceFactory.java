@@ -91,7 +91,7 @@ public class DefaultJobMasterServiceFactory implements JobMasterServiceFactory {
 
         return CompletableFuture.supplyAsync(
                 FunctionUtils.uncheckedSupplier(
-                        // job调度从这里走
+                        // TODO BY dps@51doit.cn : job调度从这里走
                         () -> internalCreateJobMasterService(leaderSessionId, onCompletionActions)),
                 executor);
     }
@@ -99,7 +99,7 @@ public class DefaultJobMasterServiceFactory implements JobMasterServiceFactory {
     private JobMasterService internalCreateJobMasterService(
             UUID leaderSessionId, OnCompletionActions onCompletionActions) throws Exception {
 
-        // 创建job master
+        // TODO BY dps@51doit.cn : 创建job master; job master是一个endpoint
         final JobMaster jobMaster =
                 new JobMaster(
                         rpcService,
@@ -123,9 +123,19 @@ public class DefaultJobMasterServiceFactory implements JobMasterServiceFactory {
                         DefaultExecutionDeploymentReconciler::new,
                         initializationTimestamp);
 
-        // job master也是一个endpoint，这里就是rpc.start()
-        // 然后就会执行onStart()
-        // 而onStart()中，就要开始执行job调度了 : JobMaster: 391
+        // TODO BY dps@51doit.cn : job的正式调度执行，就从这个start()方法中开始了
+        // job master也是一个endpoint，这里就是JobMaster的RpcServer的start()
+        // 而rpcServer.start()，就是调用rpcServer(AkkaInvocationHandler)中的 AkkaRpcActor.start()
+        // AkkaRpcActor.start()就是用tell发送一个Controller Message（START）
+        // AkkaRpcActor中的createReceive中，会根据Message调用handleControllerMessage()方法
+        // 然后就会调用 akkaRpcActor.rpcEndpoint.internalCallOnStart()
+        // 进而调用到 RpcEndpoint(JobMaster子类).onStart()方法
+        // 而onStart()中，就开始正式执行job：JobMaster.startJobExecution(); 位置在：JobMaster: 391
+        // JobMaster.startJobExecution()中，调用startScheduling();开始调度
+        // 进而： schedulerNG.startScheduling(); // 走的实现类：SchedulerBase的startScheduling()
+        // 然后走的DefaultScheduler.startSchedulingInternal()
+        // 进而，PipelinedRegionSchedulingStrategy.startScheduling()
+        // 进而 ,PipelinedRegionSchedulingStrategy.maybeScheduleRegions(sourceRegions);
         jobMaster.start();
 
         return jobMaster;

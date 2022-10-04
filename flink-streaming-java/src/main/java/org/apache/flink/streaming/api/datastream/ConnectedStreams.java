@@ -428,6 +428,8 @@ public class ConnectedStreams<IN1, IN2> {
         inputStream2.getType();
 
         TwoInputTransformation<IN1, IN2, R> transform =
+                //TODO   BY DEEP SEA
+                // 本构造会调用重载构造，传入 SimpleOperatorFactory.of(operator)
                 new TwoInputTransformation<>(
                         inputStream1.getTransformation(),
                         inputStream2.getTransformation(),
@@ -450,6 +452,8 @@ public class ConnectedStreams<IN1, IN2> {
 
             TypeInformation<?> keyType2 = keyedInput2.getKeyType();
 
+            //TODO   BY DEEP SEA
+            // 如果connect的是两个keyed stream，则要求两边key类型相同
             if (keyType != null && !(keyType.canEqual(keyType2) && keyType.equals(keyType2))) {
                 throw new UnsupportedOperationException(
                         "Key types if input KeyedStreams "
@@ -467,10 +471,14 @@ public class ConnectedStreams<IN1, IN2> {
             transform.setStateKeyType(keyType2);
         }
 
+        //TODO   BY DEEP SEA
+        // 构造一个datastream(SingleOutputStreamOperator)返回
         @SuppressWarnings({"unchecked", "rawtypes"})
         SingleOutputStreamOperator<R> returnStream =
                 new SingleOutputStreamOperator(environment, transform);
 
+        //TODO   BY DEEP SEA
+        // 添加transform到env中
         getExecutionEnvironment().addOperator(transform);
 
         return returnStream;

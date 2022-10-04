@@ -707,6 +707,9 @@ public class StreamGraph implements Pipeline {
                         exchangeMode,
                         uniqueId);
 
+        //TODO   BY DEEP SEA
+        // 为上游节点添加出边
+        // 为下游节点添加入边
         getStreamNode(edge.getSourceId()).addOutEdge(edge);
         getStreamNode(edge.getTargetId()).addInEdge(edge);
     }

@@ -100,7 +100,8 @@ under the License.
 		<module>flink-kubernetes</module>
 		<module>flink-external-resources</module>
 		<module>tools/ci/java-ci-tools</module>
-	</modules>
+        <module>mytest</module>
+    </modules>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

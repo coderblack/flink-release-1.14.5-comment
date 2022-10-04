@@ -28,7 +28,7 @@ class DefaultExecutionVertexOperations implements ExecutionVertexOperations {
 
     @Override
     public void deploy(final ExecutionVertex executionVertex) throws JobException {
-        executionVertex.deploy();
+        executionVertex.deploy();  // TODO BY dps@51doit.cn : 部署 task
     }
 
     @Override

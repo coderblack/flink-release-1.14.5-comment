@@ -117,10 +117,10 @@ public final class JobSubmitHandler
 
         CompletableFuture<JobGraph> finalizedJobGraphFuture =
                 uploadJobGraphFiles(gateway, jobGraphFuture, jarFiles, artifacts, configuration);
-
+        //TODO   BY DEEP SEA: 通过rest方式提交job，和通过rpc方式提交job，在这里殊途同归了，都是调用dispatcher gateway的submitJob方法
         CompletableFuture<Acknowledge> jobSubmissionFuture =
                 finalizedJobGraphFuture.thenCompose(
-                        jobGraph -> gateway.submitJob(jobGraph, timeout));
+                        jobGraph -> gateway.submitJob(jobGraph, timeout)); //TODO   BY DEEP SEA: 此处是 StandaloneDispatcherGateway
 
         return jobSubmissionFuture.thenCombine(
                 jobGraphFuture,

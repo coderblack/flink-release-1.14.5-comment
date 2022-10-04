@@ -147,7 +147,7 @@ public class PipelinedRegionSchedulingStrategy implements SchedulingStrategy {
                 IterableUtils.toStream(schedulingTopology.getAllPipelinedRegions())
                         .filter(this::isSourceRegion)
                         .collect(Collectors.toSet());
-        maybeScheduleRegions(sourceRegions);
+        maybeScheduleRegions(sourceRegions);  // TODO BY dps@51doit.cn : 开始进行task调度
     }
 
     private boolean isSourceRegion(SchedulingPipelinedRegion region) {
@@ -167,11 +167,11 @@ public class PipelinedRegionSchedulingStrategy implements SchedulingStrategy {
                 verticesToRestart.stream()
                         .map(schedulingTopology::getPipelinedRegionOfVertex)
                         .collect(Collectors.toSet());
-        maybeScheduleRegions(regionsToRestart);
+        maybeScheduleRegions(regionsToRestart);  // TODO BY dps@51doit.cn : 对需要重启的region进行调度
     }
 
     @Override
-    public void onExecutionStateChange(
+    public void onExecutionStateChange(  // TODO BY dps@51doit.cn : 执行状态变更后的回调，对后续的消费者region进行调度
             final ExecutionVertexID executionVertexId, final ExecutionState executionState) {
         if (executionState == ExecutionState.FINISHED) {
             final Set<ConsumedPartitionGroup> finishedConsumedPartitionGroups =
@@ -199,7 +199,7 @@ public class PipelinedRegionSchedulingStrategy implements SchedulingStrategy {
                                                     .stream())
                             .collect(Collectors.toSet());
 
-            maybeScheduleRegions(consumerRegions);
+            maybeScheduleRegions(consumerRegions); // TODO BY dps@51doit.cn : 对消费者region进行调度
         }
     }
 
@@ -213,6 +213,7 @@ public class PipelinedRegionSchedulingStrategy implements SchedulingStrategy {
 
         final Map<ConsumedPartitionGroup, Boolean> consumableStatusCache = new HashMap<>();
         for (SchedulingPipelinedRegion region : regionsSorted) {
+            // TODO BY dps@51doit.cn : 逐个region进行task调度
             maybeScheduleRegion(region, consumableStatusCache);
         }
     }
@@ -231,6 +232,7 @@ public class PipelinedRegionSchedulingStrategy implements SchedulingStrategy {
         final List<ExecutionVertexDeploymentOption> vertexDeploymentOptions =
                 SchedulingStrategyUtils.createExecutionVertexDeploymentOptions(
                         regionVerticesSorted.get(region), id -> deploymentOption);
+        //TODO BY DEEP SEA : 到这里，为task分配槽位并部署执行，方法底层的流程很长，最终会走到 taskManagerGateway.submitTask()
         schedulerOperations.allocateSlotsAndDeploy(vertexDeploymentOptions);
     }
 

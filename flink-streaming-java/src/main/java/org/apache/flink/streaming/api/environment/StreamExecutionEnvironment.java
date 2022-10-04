@@ -2028,9 +2028,9 @@ public class StreamExecutionEnvironment {
                 configuration.get(DeploymentOptions.TARGET),
                 "No execution.target specified in your configuration file.");
 
+        // standalone 模式下为： RemoteExecutorFactory
         final PipelineExecutorFactory executorFactory =
                 executorServiceLoader.getExecutorFactory(configuration);
-
         checkNotNull(
                 executorFactory,
                 "Cannot find compatible factory for specified execution.target (=%s)",
@@ -2038,7 +2038,7 @@ public class StreamExecutionEnvironment {
 
         CompletableFuture<JobClient> jobClientFuture =
                 executorFactory
-                        .getExecutor(configuration)
+                        .getExecutor(configuration)  // RemoteExecutorFactory 下：return new RemoteExecutor();
                         .execute(streamGraph, configuration, userClassloader);
 
         try {

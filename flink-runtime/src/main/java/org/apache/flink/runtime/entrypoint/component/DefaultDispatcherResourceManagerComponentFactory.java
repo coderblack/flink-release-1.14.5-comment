@@ -117,13 +117,14 @@ public class DefaultDispatcherResourceManagerComponentFactory
         ResourceManagerService resourceManagerService = null;
         DispatcherRunner dispatcherRunner = null;
 
-        try {
+        try { //TODO   BY DEEP SEA : StandaloneLeaderRetrievalService  akka.tcp://flink@localhost:6123/user/rpc/dispatcher_*
             dispatcherLeaderRetrievalService =
                     highAvailabilityServices.getDispatcherLeaderRetriever();
-
+            //TODO   BY DEEP SEA : StandaloneLeaderRetrievalService
             resourceManagerRetrievalService =
                     highAvailabilityServices.getResourceManagerLeaderRetriever();
 
+            // dispatcher gateway 获取器
             final LeaderGatewayRetriever<DispatcherGateway> dispatcherGatewayRetriever =
                     new RpcGatewayRetriever<>(
                             rpcService,
@@ -131,7 +132,7 @@ public class DefaultDispatcherResourceManagerComponentFactory
                             DispatcherId::fromUuid,
                             new ExponentialBackoffRetryStrategy(
                                     12, Duration.ofMillis(10), Duration.ofMillis(50)));
-
+            // resource manager gateway 获取器
             final LeaderGatewayRetriever<ResourceManagerGateway> resourceManagerGatewayRetriever =
                     new RpcGatewayRetriever<>(
                             rpcService,
@@ -139,7 +140,7 @@ public class DefaultDispatcherResourceManagerComponentFactory
                             ResourceManagerId::fromUuid,
                             new ExponentialBackoffRetryStrategy(
                                     12, Duration.ofMillis(10), Duration.ofMillis(50)));
-
+            // 线程池
             final ScheduledExecutorService executor =
                     WebMonitorEndpoint.createExecutorService(
                             configuration.getInteger(RestOptions.SERVER_NUM_THREADS),
@@ -156,7 +157,7 @@ public class DefaultDispatcherResourceManagerComponentFactory
                                     metricQueryServiceRetriever,
                                     dispatcherGatewayRetriever,
                                     executor);
-
+            // web服务 endpoint
             webMonitorEndpoint =
                     restEndpointFactory.createRestEndpoint(
                             configuration,
@@ -167,12 +168,12 @@ public class DefaultDispatcherResourceManagerComponentFactory
                             metricFetcher,
                             highAvailabilityServices.getClusterRestEndpointLeaderElectionService(),
                             fatalErrorHandler);
-
+            // 启动web服务 endpoint
             log.debug("Starting Dispatcher REST endpoint.");
             webMonitorEndpoint.start();
 
             final String hostname = RpcUtils.getHostname(rpcService);
-
+            // resource manager service服务创建
             resourceManagerService =
                     ResourceManagerServiceImpl.create(
                             resourceManagerFactory,
@@ -222,7 +223,7 @@ public class DefaultDispatcherResourceManagerComponentFactory
 
             resourceManagerRetrievalService.start(resourceManagerGatewayRetriever);
             dispatcherLeaderRetrievalService.start(dispatcherGatewayRetriever);
-
+            // 返回dispatcher和resource manager组件的封装对象
             return new DispatcherResourceManagerComponent(
                     dispatcherRunner,
                     resourceManagerService,
