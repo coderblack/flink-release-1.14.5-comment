@@ -165,7 +165,7 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
      *
      * @throws Exception if we cannot start the RestServerEndpoint
      */
-    public final void start() throws Exception {
+    public final void start() throws Exception {  // TODO BY dps@51doit.cn : 启动rest服务器 RestServerEndPoint
         synchronized (lock) {
             Preconditions.checkState(
                     state == State.CREATED, "The RestServerEndpoint cannot be restarted.");
@@ -174,7 +174,7 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
 
             final Router router = new Router();
             final CompletableFuture<String> restAddressFuture = new CompletableFuture<>();
-
+            // TODO BY dps@51doit.cn : 添加各类rest服务处理器(包含WebMonitorEndpoint的处理器和Dispatcher的处理器）
             handlers = initializeHandlers(restAddressFuture);
 
             /* sort the handlers such that they are ordered the following:
@@ -188,7 +188,7 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
 
             checkAllEndpointsAndHandlersAreUnique(handlers);
             handlers.forEach(handler -> registerHandler(router, handler, log));
-
+            // TODO BY dps@51doit.cn : 以下为 netty的典型代码
             ChannelInitializer<SocketChannel> initializer =
                     new ChannelInitializer<SocketChannel>() {
 
@@ -245,14 +245,14 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
 
             Iterator<Integer> portsIterator;
             try {
-                portsIterator = NetUtils.getPortRangeFromString(restBindPortRange);
+                portsIterator = NetUtils.getPortRangeFromString(restBindPortRange);  // TODO BY dps@51doit.cn : 从配置文件中获取可用端口号范围
             } catch (IllegalConfigurationException e) {
                 throw e;
             } catch (Exception e) {
                 throw new IllegalArgumentException(
                         "Invalid port range definition: " + restBindPortRange);
             }
-
+            // TODO BY dps@51doit.cn : 尝试绑定地址和端口号
             int chosenPort = 0;
             while (portsIterator.hasNext()) {
                 try {
@@ -293,13 +293,13 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
             final int port = bindAddress.getPort();
 
             log.info("Rest endpoint listening at {}:{}", advertisedAddress, port);
-
+            // TODO BY dps@51doit.cn :  http://localhost:8081
             restBaseUrl = new URL(determineProtocol(), advertisedAddress, port, "").toString();
 
             restAddressFuture.complete(restBaseUrl);
 
             state = State.RUNNING;
-
+            // TODO BY dps@51doit.cn : 进入leader获取流程
             startInternal();
         }
     }
@@ -505,9 +505,9 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
                     specificationHandler.f1,
                     specificationHandler.f0.getHttpMethod(),
                     versionedHandlerURL);
-            registerHandler(
+            registerHandler( // TODO BY dps@51doit.cn : router结构：里面有routers嵌套map结构： DELETE -> /v1/cluster ： ShutdownHandler@58a84a12
                     router,
-                    versionedHandlerURL,
+                    versionedHandlerURL,  // TODO BY dps@51doit.cn : 添加了版本号的路径： /v1/cluster
                     specificationHandler.f0.getHttpMethod(),
                     specificationHandler.f1);
             if (supportedVersion.isDefaultVersion()) {
@@ -519,7 +519,7 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
                         handlerURL);
                 registerHandler(
                         router,
-                        handlerURL,
+                        handlerURL,   // TODO BY dps@51doit.cn : 不带版本号的路径： /cluster
                         specificationHandler.f0.getHttpMethod(),
                         specificationHandler.f1);
             }

@@ -209,7 +209,7 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
         this.executionGraphHandler =
                 new ExecutionGraphHandler(executionGraph, log, ioExecutor, this.mainThreadExecutor);
 
-        this.operatorCoordinatorHandler =
+        this.operatorCoordinatorHandler = // TODO BY dps@51doit.cn : DefaultOperatorCoordinatorHandler
                 new DefaultOperatorCoordinatorHandler(executionGraph, this::handleGlobalFailure);
         operatorCoordinatorHandler.initializeOperatorCoordinators(this.mainThreadExecutor);
 
@@ -332,7 +332,7 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
             JobStatusListener jobStatusListener)
             throws Exception {
 
-        // 根据jobGraph生成ExecutionGraph  BY DEEPSEA
+        // TODO BY dps@51doit.cn : 根据jobGraph生成ExecutionGraph
         final ExecutionGraph newExecutionGraph =
                 executionGraphFactory.createAndRestoreExecutionGraph(
                         jobGraph,
@@ -349,7 +349,7 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
         newExecutionGraph.setInternalTaskFailuresListener(
                 new UpdateSchedulerNgOnInternalFailuresListener(this));
         newExecutionGraph.registerJobStatusListener(jobStatusListener);
-        newExecutionGraph.start(mainThreadExecutor);
+        newExecutionGraph.start(mainThreadExecutor);  // TODO BY dps@51doit.cn : mainThreadExecutor:RpcEndpoint$MainThreadExecutor
 
         return newExecutionGraph;
     }

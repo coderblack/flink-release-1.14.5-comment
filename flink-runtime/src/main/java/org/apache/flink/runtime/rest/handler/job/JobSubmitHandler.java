@@ -83,7 +83,7 @@ public final class JobSubmitHandler
             @Nonnull HandlerRequest<JobSubmitRequestBody, EmptyMessageParameters> request,
             @Nonnull DispatcherGateway gateway)
             throws RestHandlerException {
-        final Collection<File> uploadedFiles = request.getUploadedFiles();
+        final Collection<File> uploadedFiles = request.getUploadedFiles(); // TODO BY dps@51doit.cn : flink-jobgraph173..bin;demo.jar
         final Map<String, Path> nameToFile =
                 uploadedFiles.stream()
                         .collect(Collectors.toMap(File::getName, Path::fromLocalFile));
@@ -97,7 +97,7 @@ public final class JobSubmitHandler
                             uploadedFiles.size()),
                     HttpResponseStatus.BAD_REQUEST);
         }
-
+        // TODO BY dps@51doit.cn : JobSubmitRequestBody{jobGraphFileName='flink-jobgraph17371039931575138841.bin', jarFileNames=[demo.jar], artifactFileNames=[]}
         final JobSubmitRequestBody requestBody = request.getRequestBody();
 
         if (requestBody.jobGraphFileName == null) {
@@ -107,14 +107,14 @@ public final class JobSubmitHandler
                             JobSubmitRequestBody.FIELD_NAME_JOB_GRAPH),
                     HttpResponseStatus.BAD_REQUEST);
         }
-
+        // TODO BY dps@51doit.cn : 从文件中加载jobgraph.bin文件反序列化成jobGraph对象
         CompletableFuture<JobGraph> jobGraphFuture = loadJobGraph(requestBody, nameToFile);
 
         Collection<Path> jarFiles = getJarFilesToUpload(requestBody.jarFileNames, nameToFile);
 
         Collection<Tuple2<String, Path>> artifacts =
                 getArtifactFilesToUpload(requestBody.artifactFileNames, nameToFile);
-
+        // TODO BY dps@51doit.cn : gateway: address=akka.tcp://flink@localhost:6123/user/rpc/dispatcher_0; rpcEndpoint(LocalActorRef)=Actor[akka://flink/user/rpc/dispatcher_0#440732603] 本地actorRef
         CompletableFuture<JobGraph> finalizedJobGraphFuture =
                 uploadJobGraphFiles(gateway, jobGraphFuture, jarFiles, artifacts, configuration);
         //TODO   BY DEEP SEA: 通过rest方式提交job，和通过rpc方式提交job，在这里殊途同归了，都是调用dispatcher gateway的submitJob方法

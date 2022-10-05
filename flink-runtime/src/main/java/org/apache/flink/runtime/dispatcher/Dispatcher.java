@@ -297,7 +297,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
     // ------------------------------------------------------
 
     @Override
-    public CompletableFuture<Acknowledge> submitJob(JobGraph jobGraph, Time timeout) {
+    public CompletableFuture<Acknowledge> submitJob(JobGraph jobGraph, Time timeout) {   // TODO BY dps@51doit.cn : 提交job的方法
         log.info(
                 "Received JobGraph submission '{}' ({}).", jobGraph.getName(), jobGraph.getJobID());
 
@@ -489,8 +489,8 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
             throws Exception {
         final RpcService rpcService = getRpcService();
 
-        JobManagerRunner runner =
-                jobManagerRunnerFactory.createJobManagerRunner(
+        JobManagerRunner runner =  // TODO BY dps@51doit.cn : JobMasterServiceLeadershipRunner
+                jobManagerRunnerFactory.createJobManagerRunner(  // TODO BY dps@51doit.cn : JobMasterServiceLeaderShipRunnerFactory
                         jobGraph,
                         configuration,
                         rpcService,
@@ -500,7 +500,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
                         new DefaultJobManagerJobMetricGroupFactory(jobManagerMetricGroup),
                         fatalErrorHandler,
                         initializationTimestamp);
-        runner.start();
+        runner.start();   // TODO BY dps@51doit.cn : 开启leader选举,在standalone中是直接给自身授予leader，并在调用grantLeader()时进行job调度执行
         return runner;
     }
 

@@ -192,15 +192,15 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
     // ------ Configuration of the Execution -------
 
     private final TaskDeploymentDescriptorFactory.PartitionLocationConstraint
-            partitionLocationConstraint;
+            partitionLocationConstraint; // TODO BY dps@51doit.cn : MUST_BE_KNOWN
 
     /** The maximum number of prior execution attempts kept in history. */
-    private final int maxPriorAttemptsHistoryLength;
+    private final int maxPriorAttemptsHistoryLength; // TODO BY dps@51doit.cn : 16
 
     // ------ Execution status and progress. These values are volatile, and accessed under the lock
     // -------
 
-    private int numFinishedVertices;
+    private int numFinishedVertices;  // TODO BY dps@51doit.cn : 0
 
     /** Current status of the job execution. */
     private volatile JobStatus state = JobStatus.CREATED;
@@ -295,13 +295,13 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
 
         this.partitionLocationConstraint = checkNotNull(partitionLocationConstraint);
 
-        this.jobInformationOrBlobKey =
+        this.jobInformationOrBlobKey = // TODO BY dps@51doit.cn : Left(SerializedValue)
                 BlobWriter.serializeAndTryOffload(
                         jobInformation, jobInformation.getJobId(), blobWriter);
 
         this.futureExecutor = checkNotNull(futureExecutor);
         this.ioExecutor = checkNotNull(ioExecutor);
-
+        // TODO BY dps@51doit.cn : FlinkUserCodeClassLoaders$SafetynetWrapperClassLoader
         this.userClassLoader = checkNotNull(userClassLoader, "userClassLoader");
 
         this.tasks = new HashMap<>(16);
@@ -314,25 +314,25 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
         this.stateTimestamps = new long[JobStatus.values().length];
         this.stateTimestamps[JobStatus.INITIALIZING.ordinal()] = initializationTimestamp;
         this.stateTimestamps[JobStatus.CREATED.ordinal()] = System.currentTimeMillis();
-
+        // TODO BY dps@51doit.cn : 10000 ms
         this.rpcTimeout = checkNotNull(rpcTimeout);
 
         this.partitionGroupReleaseStrategyFactory =
                 checkNotNull(partitionGroupReleaseStrategyFactory);
-
+        // TODO BY dps@51doit.cn : KvStateLocationRegistry
         this.kvStateLocationRegistry =
                 new KvStateLocationRegistry(jobInformation.getJobId(), getAllVertices());
 
         this.maxPriorAttemptsHistoryLength = maxPriorAttemptsHistoryLength;
 
         this.schedulingFuture = null;
-        this.jobMasterMainThreadExecutor =
+        this.jobMasterMainThreadExecutor = // TODO BY dps@51doit.cn : ComponentMainThreadExecutor$DummyComponentMainThreadExecutor
                 new ComponentMainThreadExecutor.DummyComponentMainThreadExecutor(
                         "ExecutionGraph is not initialized with proper main thread executor. "
                                 + "Call to ExecutionGraph.start(...) required.");
-
+        // TODO BY dps@51doit.cn : NettyShuffleMaster
         this.shuffleMaster = checkNotNull(shuffleMaster);
-
+        // TODO BY dps@51doit.cn : JobMasterPartitionTrackerImpl
         this.partitionTracker = checkNotNull(partitionTracker);
 
         this.resultPartitionAvailabilityChecker =
@@ -781,7 +781,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
 
             // create the execution job vertex and attach it to the graph
             ExecutionJobVertex ejv =
-                    new ExecutionJobVertex(
+                    new ExecutionJobVertex(  // TODO BY dps@51doit.cn : 将每个JobVertex转成 ExecutionJobVertex
                             this,
                             jobVertex,
                             maxPriorAttemptsHistoryLength,

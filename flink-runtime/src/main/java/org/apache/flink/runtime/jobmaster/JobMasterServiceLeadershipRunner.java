@@ -163,7 +163,7 @@ public class JobMasterServiceLeadershipRunner implements JobManagerRunner, Leade
     @Override
     public void start() throws Exception {
         LOG.debug("Start leadership runner for job {}.", getJobID());
-        leaderElectionService.start(this);
+        leaderElectionService.start(this);  // TODO BY dps@51doit.cn : StandaloneLeaderElectionService,开启leader选举（授予自身leader，并调用job调度执行）
     }
 
     @Override
@@ -246,7 +246,7 @@ public class JobMasterServiceLeadershipRunner implements JobManagerRunner, Leade
     @Override
     public void grantLeadership(UUID leaderSessionID) {
         runIfStateRunning(
-                () -> startJobMasterServiceProcessAsync(leaderSessionID),
+                () -> startJobMasterServiceProcessAsync(leaderSessionID),  // TODO BY dps@51doit.cn : 开始job调度执行
                 "starting a new JobMasterServiceProcess");
     }
 
