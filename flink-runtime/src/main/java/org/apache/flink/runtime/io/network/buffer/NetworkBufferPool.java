@@ -391,7 +391,7 @@ public class NetworkBufferPool
             int numSubpartitions,
             int maxBuffersPerChannel)
             throws IOException {
-        return internalCreateBufferPool(
+        return internalCreateBufferPool(  // TODO BY dps@51doit.cn : 创建buffer pool
                 numRequiredBuffers, maxUsedBuffers, numSubpartitions, maxBuffersPerChannel);
     }
 
@@ -411,7 +411,7 @@ public class NetworkBufferPool
 
             // Ensure that the number of required buffers can be satisfied.
             // With dynamic memory management this should become obsolete.
-            if (numTotalRequiredBuffers + numRequiredBuffers > totalNumberOfMemorySegments) {
+            if (numTotalRequiredBuffers + numRequiredBuffers > totalNumberOfMemorySegments) { // TODO BY dps@51doit.cn : numRequiredBuffers=3,totalNumberOfMemorySegments=2048
                 throw new IOException(
                         String.format(
                                 "Insufficient number of network buffers: "
@@ -421,7 +421,7 @@ public class NetworkBufferPool
                                 getConfigDescription()));
             }
 
-            this.numTotalRequiredBuffers += numRequiredBuffers;
+            this.numTotalRequiredBuffers += numRequiredBuffers;  // TODO BY dps@51doit.cn : 更新已申请的buffer数
 
             // We are good to go, create a new buffer pool and redistribute
             // non-fixed size buffers.
@@ -509,7 +509,7 @@ public class NetworkBufferPool
         assert Thread.holdsLock(factoryLock);
 
         // All buffers, which are not among the required ones
-        final int numAvailableMemorySegment = totalNumberOfMemorySegments - numTotalRequiredBuffers;
+        final int numAvailableMemorySegment = totalNumberOfMemorySegments - numTotalRequiredBuffers;  // TODO BY dps@51doit.cn : 总segments-已申请的总segments = 剩余可用segments
 
         if (numAvailableMemorySegment == 0) {
             // in this case, we need to redistribute buffers so that every pool gets its minimum

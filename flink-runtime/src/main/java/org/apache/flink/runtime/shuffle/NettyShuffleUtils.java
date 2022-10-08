@@ -56,18 +56,18 @@ public class NettyShuffleUtils {
      * Calculates and returns local network buffer pool size used by the result partition. The
      * left/right value of the returned pair represent the min/max buffers require by the pool.
      */
-    public static Pair<Integer, Integer> getMinMaxNetworkBuffersPerResultPartition(
-            final int configuredNetworkBuffersPerChannel,
-            final int numFloatingBuffersPerGate,
-            final int sortShuffleMinParallelism,
-            final int sortShuffleMinBuffers,
-            final int numSubpartitions,
-            final ResultPartitionType type) {
-        int min =
-                type.isBlocking() && numSubpartitions >= sortShuffleMinParallelism
-                        ? sortShuffleMinBuffers
+    public static Pair<Integer, Integer> getMinMaxNetworkBuffersPerResultPartition(  // TODO BY dps@51doit.cn : 计算result partition的buffer pool所需的最小、最大buffer
+            final int configuredNetworkBuffersPerChannel,  // 2
+            final int numFloatingBuffersPerGate,  // 8
+            final int sortShuffleMinParallelism, // 2147483647
+            final int sortShuffleMinBuffers, // 64
+            final int numSubpartitions, // 2
+            final ResultPartitionType type) {  //PIPELINED_BOUNDED
+        int min =  // 3
+                type.isBlocking() && numSubpartitions >= sortShuffleMinParallelism  //2147483647
+                        ? sortShuffleMinBuffers  // 64
                         : numSubpartitions + 1;
-        int max =
+        int max =  // 12
                 type.isBounded()
                         ? numSubpartitions * configuredNetworkBuffersPerChannel
                                 + numFloatingBuffersPerGate

@@ -127,6 +127,9 @@ import static org.apache.flink.util.Preconditions.checkState;
  * to consume input data, produce its results (intermediate result partitions) and communicate with
  * the JobManager.
  *
+ * task代表task manager上运行的一个并行subtask；task包装了一个flink的算子（可能是一个用户函数）并运行它，它提供
+ * 的服务如：消费输入数据、生产它的处理结果（中间结果分区）、与jobmanager通信
+ *
  * <p>The Flink operators (implemented as subclasses of {@link TaskInvokable} have only data
  * readers, writers, and certain event callbacks. The task connects those to the network stack and
  * actor messages, and tracks the state of the execution and handles exceptions.
@@ -136,7 +139,11 @@ import static org.apache.flink.util.Preconditions.checkState;
  * All the task knows are its own runnable code, the task's configuration, and the IDs of the
  * intermediate results to consume and produce (if any).
  *
+ * task之间彼此互不感知,也不知道自己是第一次还是第N次执行；这些信息只有JobManager知晓；
+ * 每个task只知道自己的runnable代码、task配置以及要消费或生产的intermediate results的ID
+ *
  * <p>Each Task is run by one dedicated thread.
+ * 每个task都由一个专有线程来运行
  */
 public class Task
         implements Runnable, TaskSlotPayload, TaskActions, PartitionProducerStateProvider {
@@ -405,7 +412,7 @@ public class Task
                         .createResultPartitionWriters(
                                 taskShuffleContext, resultPartitionDeploymentDescriptors)
                         .toArray(new ResultPartitionWriter[] {});
-
+        // TODO BY dps@51doit.cn : ResultpartitionerWriter[1]=PipelinedResultPartition :{bufferPool=null,bufferPoolFactory=ResultPartitionFactory$lambda}
         this.consumableNotifyingPartitionWriters =
                 ConsumableNotifyingResultPartitionWriterDecorator.decorate(
                         resultPartitionDeploymentDescriptors,
@@ -415,8 +422,8 @@ public class Task
                         resultPartitionConsumableNotifier);
 
         // consumed intermediate result partitions
-        final IndexedInputGate[] gates =
-                shuffleEnvironment
+        final IndexedInputGate[] gates = // TODO BY dps@51doit.cn : IndexedInputGate[0]
+                shuffleEnvironment  // TODO BY dps@51doit.cn : NettyShuffleEnvironment
                         .createInputGates(taskShuffleContext, this, inputGateDeploymentDescriptors)
                         .toArray(new IndexedInputGate[0]);
 
@@ -443,7 +450,7 @@ public class Task
         invokableHasBeenCanceled = new AtomicBoolean(false);
 
         // finally, create the executing thread, but do not start it
-        executingThread = new Thread(TASK_THREADS_GROUP, this, taskNameWithSubtask);
+        executingThread = new Thread(TASK_THREADS_GROUP, this, taskNameWithSubtask); // TODO BY dps@51doit.cn : 创建task的执行线程，但此处不启动
     }
 
     // ------------------------------------------------------------------------
@@ -660,7 +667,7 @@ public class Task
             // ----------------------------------------------------------------
 
             LOG.debug("Registering task at network: {}.", this);
-
+            // TODO BY dps@51doit.cn : 建立partition（分配bufferPool）和inputGates，
             setupPartitionsAndGates(consumableNotifyingPartitionWriters, inputGates);
 
             for (ResultPartitionWriter partitionWriter : consumableNotifyingPartitionWriters) {
@@ -736,7 +743,7 @@ public class Task
             FlinkSecurityManager.monitorUserSystemExitForCurrentThread();
             try {
                 // now load and instantiate the task's invokable code
-                invokable =
+                invokable =  // TODO BY dps@51doit.cn : OneInputStreamTask...
                         loadAndInstantiateInvokable(
                                 userCodeClassLoader.asClassLoader(), nameOfInvokableClass, env);
             } finally {
@@ -923,7 +930,7 @@ public class Task
     }
 
     private void restoreAndInvoke(TaskInvokable finalInvokable) throws Exception {
-        try {
+        try { // TODO BY dps@51doit.cn : 执行task恢复
             runWithSystemExitMonitoring(finalInvokable::restore);
 
             if (!transitionState(ExecutionState.INITIALIZING, ExecutionState.RUNNING)) {
@@ -933,7 +940,7 @@ public class Task
             // notify everyone that we switched to running
             taskManagerActions.updateTaskExecutionState(
                     new TaskExecutionState(executionId, ExecutionState.RUNNING));
-
+            // TODO BY dps@51doit.cn : 执行task代码
             runWithSystemExitMonitoring(finalInvokable::invoke);
         } catch (Throwable throwable) {
             try {
@@ -943,7 +950,7 @@ public class Task
             }
             throw throwable;
         }
-        runWithSystemExitMonitoring(() -> finalInvokable.cleanUp(null));
+        runWithSystemExitMonitoring(() -> finalInvokable.cleanUp(null)); // TODO BY dps@51doit.cn : 执行task代码
     }
 
     /**
@@ -972,7 +979,7 @@ public class Task
         // InputGates must be initialized after the partitions, since during InputGate#setup
         // we are requesting partitions
         for (InputGate gate : inputGates) {
-            gate.setup();
+            gate.setup();  // TODO BY dps@51doit.cn : gate:InputGateWithMetrics
         }
     }
 

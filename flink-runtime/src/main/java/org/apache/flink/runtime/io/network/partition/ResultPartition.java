@@ -147,7 +147,7 @@ public abstract class ResultPartition implements ResultPartitionWriter {
         checkState(
                 this.bufferPool == null,
                 "Bug in result partition setup logic: Already registered buffer pool.");
-
+        // TODO BY dps@51doit.cn : bufferPoolFactory : ResultPartitionFactory$lambda
         this.bufferPool = checkNotNull(bufferPoolFactory.get());
         partitionManager.registerResultPartition(this);
     }

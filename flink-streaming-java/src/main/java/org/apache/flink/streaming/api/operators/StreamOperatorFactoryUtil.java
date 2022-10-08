@@ -64,7 +64,7 @@ public class StreamOperatorFactoryUtil {
         final Supplier<ProcessingTimeService> processingTimeServiceFactory =
                 () ->
                         containingTask
-                                .getProcessingTimeServiceFactory()
+                                .getProcessingTimeServiceFactory()  // TODO BY dps@51doit.cn : 获取工厂（定义就在下面）
                                 .createProcessingTimeService(mailboxExecutor);
 
         final ProcessingTimeService processingTimeService;

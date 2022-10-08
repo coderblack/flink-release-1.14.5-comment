@@ -39,13 +39,13 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * An input channel consumes a single {@link ResultSubpartitionView}.
- *
+ * 一个input channel消费一个 ResultSubPartitionView
  * <p>For each channel, the consumption life cycle is as follows:
- *
+ * 每个channel，消费生命周期如下：
  * <ol>
- *   <li>{@link #requestSubpartition(int)}
- *   <li>{@link #getNextBuffer()}
- *   <li>{@link #releaseAllResources()}
+ *   <li>{@link #requestSubpartition(int)}  请求subPartition
+ *   <li>{@link #getNextBuffer()}  获取下一个buffer
+ *   <li>{@link #releaseAllResources()} 释放所有资源
  * </ol>
  */
 public abstract class InputChannel {
@@ -56,24 +56,24 @@ public abstract class InputChannel {
 
     protected final SingleInputGate inputGate;
 
-    // - Asynchronous error notification --------------------------------------
+    // - Asynchronous error notification 异步错误通知-----------------------------------
 
     private final AtomicReference<Throwable> cause = new AtomicReference<Throwable>();
 
-    // - Partition request backoff --------------------------------------------
+    // - Partition request backoff  分区请求补偿 --------------------------------------
 
     /** The initial backoff (in ms). */
-    protected final int initialBackoff;
+    protected final int initialBackoff;  // 初始补偿
 
     /** The maximum backoff (in ms). */
-    protected final int maxBackoff;
+    protected final int maxBackoff; // 最大补偿
 
-    protected final Counter numBytesIn;
+    protected final Counter numBytesIn;  // 输入字节数计数器
 
-    protected final Counter numBuffersIn;
+    protected final Counter numBuffersIn; // 输入buffer数计数器
 
     /** The current backoff (in ms). */
-    private int currentBackoff;
+    private int currentBackoff;  // 当前补偿
 
     protected InputChannel(
             SingleInputGate inputGate,
@@ -129,13 +129,13 @@ public abstract class InputChannel {
      * exactly-once mode, the upstream will be blocked and become unavailable. This method tries to
      * unblock the corresponding upstream and resume data consumption.
      */
-    public abstract void resumeConsumption() throws IOException;
+    public abstract void resumeConsumption() throws IOException;  // TODO BY dps@51doit.cn : 尝试通知上游，已从ck中出来，可以继续消费了
 
     /**
      * When received {@link EndOfData} from one channel, it need to acknowledge after this event get
      * processed.
      */
-    public abstract void acknowledgeAllRecordsProcessed() throws IOException;
+    public abstract void acknowledgeAllRecordsProcessed() throws IOException;    // TODO BY dps@51doit.cn : 收到EndOfData后，确认这个事件被处理完成
 
     /**
      * Notifies the owning {@link SingleInputGate} that this channel became non-empty.

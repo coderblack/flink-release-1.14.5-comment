@@ -85,7 +85,7 @@ public class MailboxProcessor implements Closeable {
     private boolean mailboxLoopRunning;
 
     /**
-     * Control flag to temporary suspend the mailbox loop/processor. After suspending the mailbox
+     * Control flag to temporarily suspend the mailbox loop/processor. After suspending the mailbox
      * processor can be still later resumed. Must only be accessed from mailbox thread.
      */
     private boolean suspended;
@@ -198,9 +198,9 @@ public class MailboxProcessor implements Closeable {
 
         while (isNextLoopPossible()) {
             // The blocking `processMail` call will not return until default action is available.
-            processMail(localMailbox, false);
+            processMail(localMailbox, false);  // TODO BY dps@51doit.cn : 优先处理mail(只要默认动作不可能，mail处理就不会返回)
             if (isNextLoopPossible()) {
-                mailboxDefaultAction.runDefaultAction(
+                mailboxDefaultAction.runDefaultAction(  // TODO BY dps@51doit.cn : 然后再执行默认动作（数据处理）
                         defaultActionContext); // lock is acquired inside default action as needed
             }
         }
@@ -329,7 +329,7 @@ public class MailboxProcessor implements Closeable {
     private boolean processMailsWhenDefaultActionUnavailable() throws Exception {
         boolean processedSomething = false;
         Optional<Mail> maybeMail;
-        while (!isDefaultActionAvailable() && isNextLoopPossible()) {
+        while (!isDefaultActionAvailable() && isNextLoopPossible()) {  // TODO BY dps@51doit.cn : 只要默认动作还不可用，则一直循环处理mail
             maybeMail = mailbox.tryTake(MIN_PRIORITY);
             if (!maybeMail.isPresent()) {
                 maybeMail = Optional.of(mailbox.take(MIN_PRIORITY));
@@ -350,7 +350,7 @@ public class MailboxProcessor implements Closeable {
             if (processedMails++ == 0) {
                 maybePauseIdleTimer();
             }
-            maybeMail.get().run();
+            maybeMail.get().run();  // TODO BY dps@51doit.cn : 执行邮件逻辑动作
             if (singleStep) {
                 break;
             }

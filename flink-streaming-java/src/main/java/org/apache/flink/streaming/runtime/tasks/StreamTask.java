@@ -206,7 +206,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     private final StreamTaskActionExecutor actionExecutor;
 
     /** The input processor. Initialized in {@link #init()} method. */
-    @Nullable protected StreamInputProcessor inputProcessor;
+    @Nullable protected StreamInputProcessor inputProcessor;   // TODO BY dps@51doit.cn : 关键成员，由子类（OneInputStreamTask、TwoInputStreamTask等）在init方法中初始化
 
     /** the main operator that consumes the input streams of this task. */
     protected OP mainOperator;
@@ -230,13 +230,13 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
      * {@code System.currentTimeMillis()}) and register timers for tasks to be executed in the
      * future.
      */
-    protected final TimerService timerService;
+    protected final TimerService timerService; // TODO BY dps@51doit.cn : 可以用来注册用户的定时器
 
     /**
      * In contrast to {@link #timerService} we should not register any user timers here. It should
      * be used only for system level timers.
      */
-    protected final TimerService systemTimerService;
+    protected final TimerService systemTimerService;  // TODO BY dps@51doit.cn : 只用于系统内部的定时器
 
     /** The currently active background materialization threads. */
     private final CloseableRegistry cancelables = new CloseableRegistry();
@@ -268,9 +268,9 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
     private final RecordWriterDelegate<SerializationDelegate<StreamRecord<OUT>>> recordWriter;
 
-    protected final MailboxProcessor mailboxProcessor;
+    protected final MailboxProcessor mailboxProcessor;   // TODO BY dps@51doit.cn : mailBox线程模型处理器（关键字段）
 
-    final MailboxExecutor mainMailboxExecutor;
+    final MailboxExecutor mainMailboxExecutor;  // TODO BY dps@51doit.cn : mailBox线程模型线程runnable执行封装
 
     /** TODO it might be replaced by the global IO executor on TaskManager level future. */
     private final ExecutorService channelIOExecutor;
@@ -375,7 +375,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         this.configuration = new StreamConfig(environment.getTaskConfiguration());
         this.recordWriter = createRecordWriterDelegate(configuration, environment);
         this.actionExecutor = Preconditions.checkNotNull(actionExecutor);
-        this.mailboxProcessor = new MailboxProcessor(this::processInput, mailbox, actionExecutor);
+        this.mailboxProcessor = new MailboxProcessor(this::processInput, mailbox, actionExecutor); // TODO BY dps@51doit.cn : new MailboxProcessor(controller -> { this.processInput(controller);},mailbox,actionExecutor);
         this.mainMailboxExecutor = mailboxProcessor.getMainMailboxExecutor();
         this.asyncExceptionHandler = new StreamTaskAsyncExceptionHandler(environment);
         this.asyncOperationsThreadPool =
@@ -1530,11 +1530,11 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         return actionExecutor;
     }
 
-    public ProcessingTimeServiceFactory getProcessingTimeServiceFactory() {
+    public ProcessingTimeServiceFactory getProcessingTimeServiceFactory() {  // TODO BY dps@51doit.cn : 工厂方法的逻辑定义
         return mailboxExecutor ->
                 new ProcessingTimeServiceImpl(
                         timerService,
-                        callback -> deferCallbackToMailbox(mailboxExecutor, callback));
+                        callback -> deferCallbackToMailbox(mailboxExecutor, callback)); // TODO BY dps@51doit.cn : 将callback的执行推送到mailBox
     }
 
     /**

@@ -62,7 +62,7 @@ public final class StreamOneInputProcessor<IN> implements StreamInputProcessor {
 
     @Override
     public DataInputStatus processInput() throws Exception {
-        DataInputStatus status = input.emitNext(output);
+        DataInputStatus status = input.emitNext(output); // TODO BY dps@51doit.cn : StreamTaskNetWorkInput,OneInputStreamTask$StreamTaskNetworkOutput
 
         if (status == DataInputStatus.END_OF_DATA) {
             endOfInputAware.endInput(input.getInputIndex() + 1);

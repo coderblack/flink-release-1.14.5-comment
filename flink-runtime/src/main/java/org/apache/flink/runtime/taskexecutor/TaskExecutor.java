@@ -559,7 +559,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     // ----------------------------------------------------------------------
 
     @Override
-    public CompletableFuture<Acknowledge> submitTask(
+    public CompletableFuture<Acknowledge> submitTask(  // TODO BY dps@51doit.cn :  提交task
             TaskDeploymentDescriptor tdd, JobMasterId jobMasterId, Time timeout) {
 
         try {

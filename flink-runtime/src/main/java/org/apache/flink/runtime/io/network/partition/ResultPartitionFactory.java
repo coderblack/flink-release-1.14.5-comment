@@ -268,7 +268,7 @@ public class ResultPartitionFactory {
             int numberOfSubpartitions, ResultPartitionType type) {
         return () -> {
             Pair<Integer, Integer> pair =
-                    NettyShuffleUtils.getMinMaxNetworkBuffersPerResultPartition(
+                    NettyShuffleUtils.getMinMaxNetworkBuffersPerResultPartition(  // TODO BY dps@51doit.cn : 为每个ResultPartition计算buffer pool所需的最大最小网络buffer
                             configuredNetworkBuffersPerChannel,
                             floatingNetworkBuffersPerGate,
                             sortShuffleMinParallelism,
@@ -276,7 +276,7 @@ public class ResultPartitionFactory {
                             numberOfSubpartitions,
                             type);
 
-            return bufferPoolFactory.createBufferPool(
+            return bufferPoolFactory.createBufferPool(  // TODO BY dps@51doit.cn : 创建buffer pool，底层创建的是用NetworkBufferPool创建LocalBufferPool，创建过程中会进行pool size自动重分配
                     pair.getLeft(), pair.getRight(), numberOfSubpartitions, maxBuffersPerChannel);
         };
     }

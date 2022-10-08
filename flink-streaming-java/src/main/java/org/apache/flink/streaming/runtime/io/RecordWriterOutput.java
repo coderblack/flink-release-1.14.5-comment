@@ -97,7 +97,7 @@ public class RecordWriterOutput<OUT> implements WatermarkGaugeExposingOutput<Str
     }
 
     private <X> void pushToRecordWriter(StreamRecord<X> record) {
-        serializationDelegate.setInstance(record);
+        serializationDelegate.setInstance(record);  // TODO BY dps@51doit.cn : 将record设置到delegate的成员
 
         try {
             recordWriter.emit(serializationDelegate);

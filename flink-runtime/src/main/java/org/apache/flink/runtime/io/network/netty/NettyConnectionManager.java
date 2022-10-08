@@ -68,7 +68,7 @@ public class NettyConnectionManager implements ConnectionManager {
                 new PartitionRequestClientFactory(client, nettyConfig.getNetworkRetries());
 
         this.nettyProtocol =
-                new NettyProtocol(
+                new NettyProtocol(  // TODO BY dps@51doit.cn : partitionProvider:ResultPartitionManager,TaskEventDispatcher
                         checkNotNull(partitionProvider), checkNotNull(taskEventPublisher));
     }
 

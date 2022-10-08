@@ -258,7 +258,7 @@ public class SingleInputGate extends IndexedInputGate {
                 this.bufferPool == null,
                 "Bug in input gate setup logic: Already registered buffer pool.");
 
-        BufferPool bufferPool = bufferPoolFactory.get();
+        BufferPool bufferPool = bufferPoolFactory.get(); // TODO BY dps@51doit.cn : SingleInputGateFactory
         setBufferPool(bufferPool);
 
         setupChannels();

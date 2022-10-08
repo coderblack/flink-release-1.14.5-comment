@@ -80,7 +80,7 @@ public class BufferBuilder implements AutoCloseable {
     /** Same as {@link #append(ByteBuffer)} but additionally {@link #commit()} the appending. */
     public int appendAndCommit(ByteBuffer source) {
         int writtenBytes = append(source);
-        commit();
+        commit();  // TODO BY dps@51doit.cn : 将cachedPosition更新赋值给BufferBuilder的position
         return writtenBytes;
     }
 
@@ -94,11 +94,11 @@ public class BufferBuilder implements AutoCloseable {
         checkState(!isFinished());
 
         int needed = source.remaining();
-        int available = getMaxCapacity() - positionMarker.getCached();
+        int available = getMaxCapacity() - positionMarker.getCached(); // TODO BY dps@51doit.cn : cached()即在memorySegment中的已占用长度
         int toCopy = Math.min(needed, available);
-
+        // TODO BY dps@51doit.cn : 从已占用位置，放入source数据的toCopy长度（toCopy长度为source数据长度和可用segment长度的最小值）
         memorySegment.put(positionMarker.getCached(), source, toCopy);
-        positionMarker.move(toCopy);
+        positionMarker.move(toCopy); // TODO BY dps@51doit.cn : 更新position标记
         return toCopy;
     }
 

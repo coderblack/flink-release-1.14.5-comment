@@ -248,7 +248,7 @@ public class RemoteInputChannel extends InputChannel {
                 !isReleased.get(),
                 "Tried to send task event to producer after channel has been released.");
         checkPartitionRequestQueueInitialized();
-
+        // TODO BY dps@51doit.cn : NettyPartitionRequestClient
         partitionRequestClient.sendTaskEvent(partitionId, event, this);
     }
 
