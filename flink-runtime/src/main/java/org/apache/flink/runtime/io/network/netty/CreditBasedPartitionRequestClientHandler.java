@@ -332,7 +332,7 @@ class CreditBasedPartitionRequestClientHandler extends ChannelInboundHandlerAdap
         if (bufferOrEvent.isBuffer() && bufferOrEvent.bufferSize == 0) {
             inputChannel.onEmptyBuffer(bufferOrEvent.sequenceNumber, bufferOrEvent.backlog);
         } else if (bufferOrEvent.getBuffer() != null) {
-            inputChannel.onBuffer(
+            inputChannel.onBuffer(   // TODO BY dps@51doit.cn : handler获取到网络buffer时，调用RemoteInputChannel的onBuffer方法
                     bufferOrEvent.getBuffer(), bufferOrEvent.sequenceNumber, bufferOrEvent.backlog);
         } else {
             throw new IllegalStateException(

@@ -532,6 +532,7 @@ public class SingleInputGate extends IndexedInputGate {
                 channels[current.getChannelIndex()] = newChannel;
 
                 if (requestedPartitionsFlag) {
+                    // TODO BY dps@51doit.cn : 请求subPartition
                     newChannel.requestSubpartition(consumedSubpartitionIndex);
                 }
 

@@ -412,7 +412,7 @@ public class Task
                         .createResultPartitionWriters(
                                 taskShuffleContext, resultPartitionDeploymentDescriptors)
                         .toArray(new ResultPartitionWriter[] {});
-        // TODO BY dps@51doit.cn : ResultpartitionerWriter[1]=PipelinedResultPartition :{bufferPool=null,bufferPoolFactory=ResultPartitionFactory$lambda}
+        // TODO BY dps@51doit.cn : ResultPartitionerWriter[1]=PipelinedResultPartition :{bufferPool=null,bufferPoolFactory=ResultPartitionFactory$lambda}
         this.consumableNotifyingPartitionWriters =
                 ConsumableNotifyingResultPartitionWriterDecorator.decorate(
                         resultPartitionDeploymentDescriptors,

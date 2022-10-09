@@ -156,7 +156,7 @@ public class RemoteInputChannel extends InputChannel {
         checkState(
                 bufferManager.unsynchronizedGetAvailableExclusiveBuffers() == 0,
                 "Bug in input channel setup logic: exclusive buffers have already been set for this input channel.");
-
+        // TODO BY dps@51doit.cn : 当RemoteInputChannel在setup时，会从bufferManager中申请专用buffer
         bufferManager.requestExclusiveBuffers(initialCredit);
     }
 
@@ -504,6 +504,7 @@ public class RemoteInputChannel extends InputChannel {
      * Handles the input buffer. This method is taking over the ownership of the buffer and is fully
      * responsible for cleaning it up both on the happy path and in case of an error.
      */
+    // TODO BY dps@51doit.cn : 当handler（CreditBasedPartitionRequestClientHandler）从channel中读取到数据buffer时，会调用本方法
     public void onBuffer(Buffer buffer, int sequenceNumber, int backlog) throws IOException {
         boolean recycleBuffer = true;
 
@@ -512,7 +513,7 @@ public class RemoteInputChannel extends InputChannel {
                 onError(new BufferReorderingException(expectedSequenceNumber, sequenceNumber));
                 return;
             }
-
+            // TODO BY dps@51doit.cn : 会释放掉floating buffer（尚不知何意）
             if (buffer.getDataType().isBlockingUpstream()) {
                 onBlockingUpstream();
                 checkArgument(backlog == 0, "Illegal number of backlog: %s, should be 0.", backlog);
@@ -539,6 +540,7 @@ public class RemoteInputChannel extends InputChannel {
 
                 SequenceBuffer sequenceBuffer = new SequenceBuffer(buffer, sequenceNumber);
                 DataType dataType = buffer.getDataType();
+                // TODO BY dps@51doit.cn : 添加到receivedBuffers（PrioritizedDeque）中
                 if (dataType.hasPriority()) {
                     firstPriorityEvent = addPriorityBuffer(sequenceBuffer);
                     recycleBuffer = false;
@@ -557,7 +559,7 @@ public class RemoteInputChannel extends InputChannel {
                                     // checkpoint was not yet started by task thread,
                                     // so remember the numbers of buffers to spill for the time when
                                     // it will be started
-                                    lastBarrierId = id;
+                                    lastBarrierId = id;  // TODO BY dps@51doit.cn : 将本次收到的barrierId做记录
                                     lastBarrierSequenceNumber = sequenceBuffer.sequenceNumber;
                                 });
                 channelStatePersister.maybePersist(buffer);
