@@ -39,7 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Channel handler to initiate data transfers and dispatch backwards flowing task events. */
-// TODO BY dps@51doit.cn : channel handler： 负责发起数据传输和回流task事件的分发
+// 多易教育:  channel handler： 负责发起数据传输和回流task事件的分发
 class PartitionRequestServerHandler extends SimpleChannelInboundHandler<NettyMessage> {
 
     private static final Logger LOG = LoggerFactory.getLogger(PartitionRequestServerHandler.class);
@@ -70,7 +70,7 @@ class PartitionRequestServerHandler extends SimpleChannelInboundHandler<NettyMes
         super.channelUnregistered(ctx);
     }
 
-    // TODO BY dps@51doit.cn : 消息（数据或事件）处理逻辑，各种不同类型的消息处理中核心都是对outBoundQueue进行操作
+    // 多易教育:  消息（数据或事件）处理逻辑，各种不同类型的消息处理中核心都是对outBoundQueue进行操作
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, NettyMessage msg) throws Exception {
         try {
@@ -85,16 +85,16 @@ class PartitionRequestServerHandler extends SimpleChannelInboundHandler<NettyMes
                 LOG.debug("Read channel on {}: {}.", ctx.channel().localAddress(), request);
 
                 try {
-                    NetworkSequenceViewReader reader;  // TODO BY dps@51doit.cn : 创建CreditBasedSequenceNumberingViewReader
+                    NetworkSequenceViewReader reader;  // 多易教育:  创建CreditBasedSequenceNumberingViewReader
                     reader =
                             new CreditBasedSequenceNumberingViewReader(
                                     request.receiverId, request.credit, outboundQueue);
-                    //TODO BY dps@51doit.cn : 通过 ResultPartitionProvider（实际上就是 ResultPartitionManager）创建 ResultSubpartitionView，并被reader持有为成员变量
+                    //多易教育:  通过 ResultPartitionProvider（实际上就是 ResultPartitionManager）创建 ResultSubpartitionView，并被reader持有为成员变量
                     // 在有可被消费的数据产生后，PartitionRequestQueue.notifyReaderNonEmpty 会被回调，进而在 netty channelPipeline 上触发一次 fireUserEventTriggered
                     // fireUserEventTriggered触发后，最终会导致reader被放入可用队列：enqueueAvailableReader((NetworkSequenceViewReader) msg);
                     reader.requestSubpartitionView(
                             partitionProvider, request.partitionId, request.queueIndex);
-                    // TODO BY dps@51doit.cn : 通知outBoundQueue，创建了一个 NetworkSequenceViewReader
+                    // 多易教育:  通知outBoundQueue，创建了一个 NetworkSequenceViewReader
                     outboundQueue.notifyReaderCreated(reader);
                 } catch (PartitionNotFoundException notFound) {
                     respondWithError(ctx, notFound, request.receiverId);
@@ -105,34 +105,34 @@ class PartitionRequestServerHandler extends SimpleChannelInboundHandler<NettyMes
             // ----------------------------------------------------------------
             else if (msgClazz == TaskEventRequest.class) {
                 TaskEventRequest request = (TaskEventRequest) msg;
-                // TODO BY dps@51doit.cn : 分派TaskEvent事件
+                // 多易教育:  分派TaskEvent事件
                 if (!taskEventPublisher.publish(request.partitionId, request.event)) {
                     respondWithError(
                             ctx,
                             new IllegalArgumentException("Task event receiver not found."),
                             request.receiverId);
                 }
-            } else if (msgClazz == CancelPartitionRequest.class) {  // TODO BY dps@51doit.cn : 分区请求取消处理
+            } else if (msgClazz == CancelPartitionRequest.class) {  // 多易教育:  分区请求取消处理
                 CancelPartitionRequest request = (CancelPartitionRequest) msg;
 
                 outboundQueue.cancel(request.receiverId);
-            } else if (msgClazz == CloseRequest.class) {  // TODO BY dps@51doit.cn : 关闭请求取消处理
+            } else if (msgClazz == CloseRequest.class) {  // 多易教育:  关闭请求取消处理
                 outboundQueue.close();
-            } else if (msgClazz == AddCredit.class) {  // TODO BY dps@51doit.cn : 增加信用值处理
+            } else if (msgClazz == AddCredit.class) {  // 多易教育:  增加信用值处理
                 AddCredit request = (AddCredit) msg;
 
                 outboundQueue.addCreditOrResumeConsumption(
                         request.receiverId, reader -> reader.addCredit(request.credit));
-            } else if (msgClazz == ResumeConsumption.class) {  // TODO BY dps@51doit.cn : 恢复消费处理
+            } else if (msgClazz == ResumeConsumption.class) {  // 多易教育:  恢复消费处理
                 ResumeConsumption request = (ResumeConsumption) msg;
 
                 outboundQueue.addCreditOrResumeConsumption(
                         request.receiverId, NetworkSequenceViewReader::resumeConsumption);
-            } else if (msgClazz == AckAllUserRecordsProcessed.class) {  // TODO BY dps@51doit.cn : 确认所有用户数据处理完成
+            } else if (msgClazz == AckAllUserRecordsProcessed.class) {  // 多易教育:  确认所有用户数据处理完成
                 AckAllUserRecordsProcessed request = (AckAllUserRecordsProcessed) msg;
 
                 outboundQueue.acknowledgeAllRecordsProcessed(request.receiverId);
-            } else if (msgClazz == NewBufferSize.class) {  // TODO BY dps@51doit.cn : bufferSize更新处理
+            } else if (msgClazz == NewBufferSize.class) {  // 多易教育:  bufferSize更新处理
                 NewBufferSize request = (NewBufferSize) msg;
 
                 outboundQueue.notifyNewBufferSize(request.receiverId, request.bufferSize);

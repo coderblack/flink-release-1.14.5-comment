@@ -129,13 +129,13 @@ public abstract class InputChannel {
      * exactly-once mode, the upstream will be blocked and become unavailable. This method tries to
      * unblock the corresponding upstream and resume data consumption.
      */
-    public abstract void resumeConsumption() throws IOException;  // TODO BY dps@51doit.cn : 尝试通知上游，已从ck中出来，可以继续消费了
+    public abstract void resumeConsumption() throws IOException;  // 多易教育:  尝试通知上游，已从ck中出来，可以继续消费了
 
     /**
      * When received {@link EndOfData} from one channel, it need to acknowledge after this event get
      * processed.
      */
-    public abstract void acknowledgeAllRecordsProcessed() throws IOException;    // TODO BY dps@51doit.cn : 收到EndOfData后，确认这个事件被处理完成
+    public abstract void acknowledgeAllRecordsProcessed() throws IOException;    // 多易教育:  收到EndOfData后，确认这个事件被处理完成
 
     /**
      * Notifies the owning {@link SingleInputGate} that this channel became non-empty.

@@ -91,7 +91,7 @@ public class DefaultJobMasterServiceFactory implements JobMasterServiceFactory {
 
         return CompletableFuture.supplyAsync(
                 FunctionUtils.uncheckedSupplier(
-                        // TODO BY dps@51doit.cn : job调度从这里走
+                        // 多易教育:  job调度从这里走
                         () -> internalCreateJobMasterService(leaderSessionId, onCompletionActions)),
                 executor);
     }
@@ -99,7 +99,7 @@ public class DefaultJobMasterServiceFactory implements JobMasterServiceFactory {
     private JobMasterService internalCreateJobMasterService(
             UUID leaderSessionId, OnCompletionActions onCompletionActions) throws Exception {
 
-        // TODO BY dps@51doit.cn : 创建job master; job master是一个endpoint
+        // 多易教育:  创建job master; job master是一个endpoint
         final JobMaster jobMaster =
                 new JobMaster(
                         rpcService,
@@ -123,7 +123,7 @@ public class DefaultJobMasterServiceFactory implements JobMasterServiceFactory {
                         DefaultExecutionDeploymentReconciler::new,
                         initializationTimestamp);
 
-        // TODO BY dps@51doit.cn : job的正式调度执行，就从这个start()方法中开始了
+        // 多易教育:  job的正式调度执行，就从这个start()方法中开始了
         // job master也是一个endpoint，这里就是JobMaster的RpcServer的start()
         // 而rpcServer.start()，就是调用rpcServer(AkkaInvocationHandler)中的 AkkaRpcActor.start()
         // AkkaRpcActor.start()就是用tell发送一个Controller Message（START）

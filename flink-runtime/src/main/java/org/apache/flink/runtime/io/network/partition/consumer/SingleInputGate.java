@@ -258,7 +258,7 @@ public class SingleInputGate extends IndexedInputGate {
                 this.bufferPool == null,
                 "Bug in input gate setup logic: Already registered buffer pool.");
 
-        BufferPool bufferPool = bufferPoolFactory.get(); // TODO BY dps@51doit.cn : SingleInputGateFactory
+        BufferPool bufferPool = bufferPoolFactory.get(); // 多易教育:  SingleInputGateFactory
         setBufferPool(bufferPool);
 
         setupChannels();
@@ -532,7 +532,7 @@ public class SingleInputGate extends IndexedInputGate {
                 channels[current.getChannelIndex()] = newChannel;
 
                 if (requestedPartitionsFlag) {
-                    // TODO BY dps@51doit.cn : 请求subPartition
+                    // 多易教育:  请求subPartition
                     newChannel.requestSubpartition(consumedSubpartitionIndex);
                 }
 

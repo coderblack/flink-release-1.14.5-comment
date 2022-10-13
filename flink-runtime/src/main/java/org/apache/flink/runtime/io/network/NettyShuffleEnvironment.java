@@ -238,7 +238,7 @@ public class NettyShuffleEnvironment
         }
     }
 
-    // TODO BY dps@51doit.cn : Task构造方法中会调用本方法来创建inputGates
+    // 多易教育:  Task构造方法中会调用本方法来创建inputGates
     @Override
     public List<SingleInputGate> createInputGates(
             ShuffleIOOwnerContext ownerContext,
@@ -310,7 +310,7 @@ public class NettyShuffleEnvironment
                 shuffleDescriptor instanceof NettyShuffleDescriptor,
                 "Tried to update unknown channel with unknown ShuffleDescriptor %s.",
                 shuffleDescriptor.getClass().getName());
-        inputGate.updateInputChannel(  // TODO BY dps@51doit.cn : updateInputChannel中，会调用channel.requestSubPartition()
+        inputGate.updateInputChannel(  // 多易教育:  updateInputChannel中，会调用channel.requestSubPartition()
                 taskExecutorResourceId, (NettyShuffleDescriptor) shuffleDescriptor);
         return true;
     }

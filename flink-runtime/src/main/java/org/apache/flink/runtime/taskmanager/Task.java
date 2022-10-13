@@ -412,7 +412,7 @@ public class Task
                         .createResultPartitionWriters(
                                 taskShuffleContext, resultPartitionDeploymentDescriptors)
                         .toArray(new ResultPartitionWriter[] {});
-        // TODO BY dps@51doit.cn : ResultPartitionerWriter[1]=PipelinedResultPartition :{bufferPool=null,bufferPoolFactory=ResultPartitionFactory$lambda}
+        // 多易教育:  ResultPartitionerWriter[1]=PipelinedResultPartition :{bufferPool=null,bufferPoolFactory=ResultPartitionFactory$lambda}
         this.consumableNotifyingPartitionWriters =
                 ConsumableNotifyingResultPartitionWriterDecorator.decorate(
                         resultPartitionDeploymentDescriptors,
@@ -422,8 +422,8 @@ public class Task
                         resultPartitionConsumableNotifier);
 
         // consumed intermediate result partitions
-        final IndexedInputGate[] gates = // TODO BY dps@51doit.cn : IndexedInputGate[0]
-                shuffleEnvironment  // TODO BY dps@51doit.cn : NettyShuffleEnvironment
+        final IndexedInputGate[] gates = // 多易教育:  IndexedInputGate[0]
+                shuffleEnvironment  // 多易教育:  NettyShuffleEnvironment
                         .createInputGates(taskShuffleContext, this, inputGateDeploymentDescriptors)
                         .toArray(new IndexedInputGate[0]);
 
@@ -450,7 +450,7 @@ public class Task
         invokableHasBeenCanceled = new AtomicBoolean(false);
 
         // finally, create the executing thread, but do not start it
-        executingThread = new Thread(TASK_THREADS_GROUP, this, taskNameWithSubtask); // TODO BY dps@51doit.cn : 创建task的执行线程，但此处不启动
+        executingThread = new Thread(TASK_THREADS_GROUP, this, taskNameWithSubtask); // 多易教育:  创建task的执行线程，但此处不启动
     }
 
     // ------------------------------------------------------------------------
@@ -667,7 +667,7 @@ public class Task
             // ----------------------------------------------------------------
 
             LOG.debug("Registering task at network: {}.", this);
-            // TODO BY dps@51doit.cn : 建立partition（分配bufferPool）和inputGates，
+            // 多易教育:  建立partition（分配bufferPool）和inputGates，
             setupPartitionsAndGates(consumableNotifyingPartitionWriters, inputGates);
 
             for (ResultPartitionWriter partitionWriter : consumableNotifyingPartitionWriters) {
@@ -743,7 +743,7 @@ public class Task
             FlinkSecurityManager.monitorUserSystemExitForCurrentThread();
             try {
                 // now load and instantiate the task's invokable code
-                invokable =  // TODO BY dps@51doit.cn : OneInputStreamTask...
+                invokable =  // 多易教育:  OneInputStreamTask...
                         loadAndInstantiateInvokable(
                                 userCodeClassLoader.asClassLoader(), nameOfInvokableClass, env);
             } finally {
@@ -930,7 +930,7 @@ public class Task
     }
 
     private void restoreAndInvoke(TaskInvokable finalInvokable) throws Exception {
-        try { // TODO BY dps@51doit.cn : 执行task恢复
+        try { // 多易教育:  执行task恢复
             runWithSystemExitMonitoring(finalInvokable::restore);
 
             if (!transitionState(ExecutionState.INITIALIZING, ExecutionState.RUNNING)) {
@@ -940,7 +940,7 @@ public class Task
             // notify everyone that we switched to running
             taskManagerActions.updateTaskExecutionState(
                     new TaskExecutionState(executionId, ExecutionState.RUNNING));
-            // TODO BY dps@51doit.cn : 执行task代码
+            // 多易教育:  执行task代码
             runWithSystemExitMonitoring(finalInvokable::invoke);
         } catch (Throwable throwable) {
             try {
@@ -950,7 +950,7 @@ public class Task
             }
             throw throwable;
         }
-        runWithSystemExitMonitoring(() -> finalInvokable.cleanUp(null)); // TODO BY dps@51doit.cn : 执行task代码
+        runWithSystemExitMonitoring(() -> finalInvokable.cleanUp(null)); // 多易教育:  执行task代码
     }
 
     /**
@@ -979,7 +979,7 @@ public class Task
         // InputGates must be initialized after the partitions, since during InputGate#setup
         // we are requesting partitions
         for (InputGate gate : inputGates) {
-            gate.setup();  // TODO BY dps@51doit.cn : gate:InputGateWithMetrics
+            gate.setup();  // 多易教育:  gate:InputGateWithMetrics
         }
     }
 

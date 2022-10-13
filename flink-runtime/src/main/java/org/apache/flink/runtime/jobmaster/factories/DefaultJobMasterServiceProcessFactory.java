@@ -53,7 +53,7 @@ public class DefaultJobMasterServiceProcessFactory implements JobMasterServicePr
 
     @Override
     public JobMasterServiceProcess create(UUID leaderSessionId) {
-        return new DefaultJobMasterServiceProcess(  // TODO BY dps@51doit.cn : 在构造函数中，就会创建出JobMaster
+        return new DefaultJobMasterServiceProcess(  // 多易教育:  在构造函数中，就会创建出JobMaster
                 jobId,
                 leaderSessionId,
                 jobMasterServiceFactory,

@@ -112,13 +112,13 @@ public class DefaultExecutionGraphBuilder {
 
         final int maxPriorAttemptsHistoryLength =
                 jobManagerConfig.getInteger(JobManagerOptions.MAX_ATTEMPTS_HISTORY_SIZE);
-        // TODO BY dps@51doit.cn : RegionPartitionReleaseStrategy
+        // 多易教育:  RegionPartitionReleaseStrategy
         final PartitionGroupReleaseStrategy.Factory partitionGroupReleaseStrategyFactory =
                 PartitionGroupReleaseStrategyFactoryLoader.loadPartitionGroupReleaseStrategyFactory(
                         jobManagerConfig);
 
         // create a new execution graph, if none exists so far
-        // TODO BY dps@51doit.cn :  终于到了最终的ExecutionGraph构造方法
+        // 多易教育:   终于到了最终的ExecutionGraph构造方法
         final DefaultExecutionGraph executionGraph;
         try {
             executionGraph =
@@ -145,7 +145,7 @@ public class DefaultExecutionGraphBuilder {
 
         // set the basic properties
 
-        try { // TODO BY dps@51doit.cn : {"jid":"ada8863af820a6c104c18c0443eb438e","name":"Flink Streaming Job","type":"STREAMING","nodes":[{"id":"90bea66de1c231edf33913ecd54406c1","parallelism":1,"operator":"","operator_strategy":"","description":"Keyed Aggregation -&gt; Sink: Print to Std. Out","inputs":[{"num":0,"id":"cbc357ccb763df2852fee8c4fc7d55f2","ship_strategy":"HASH","exchange":"pipelined_bounded"}],"optimizer_properties":{}},{"id":"cbc357ccb763df2852fee8c4fc7d55f2","parallelism":1,"operator":"","operator_strategy":"","description":"Source: Socket Stream -&gt; Flat Map","optimizer_properties":{}}]}
+        try { // 多易教育:  {"jid":"ada8863af820a6c104c18c0443eb438e","name":"Flink Streaming Job","type":"STREAMING","nodes":[{"id":"90bea66de1c231edf33913ecd54406c1","parallelism":1,"operator":"","operator_strategy":"","description":"Keyed Aggregation -&gt; Sink: Print to Std. Out","inputs":[{"num":0,"id":"cbc357ccb763df2852fee8c4fc7d55f2","ship_strategy":"HASH","exchange":"pipelined_bounded"}],"optimizer_properties":{}},{"id":"cbc357ccb763df2852fee8c4fc7d55f2","parallelism":1,"operator":"","operator_strategy":"","description":"Source: Socket Stream -&gt; Flat Map","optimizer_properties":{}}]}
             executionGraph.setJsonPlan(JsonPlanGenerator.generatePlan(jobGraph));
         } catch (Throwable t) {
             log.warn("Cannot create JSON plan for job", t);
@@ -195,7 +195,7 @@ public class DefaultExecutionGraphBuilder {
                     jobId);
         }
 
-        /// TODO BY dps@51doit.cn : ExecutionGraph，绑定job图中的各个JobVertex  BY DEEPSEA
+        /// 多易教育:  ExecutionGraph，绑定job图中的各个JobVertex  BY DEEPSEA
         executionGraph.attachJobGraph(sortedTopology);
 
         if (log.isDebugEnabled()) {

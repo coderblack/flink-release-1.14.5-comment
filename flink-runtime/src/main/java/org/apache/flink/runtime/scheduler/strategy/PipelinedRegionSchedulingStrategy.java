@@ -147,7 +147,7 @@ public class PipelinedRegionSchedulingStrategy implements SchedulingStrategy {
                 IterableUtils.toStream(schedulingTopology.getAllPipelinedRegions())
                         .filter(this::isSourceRegion)
                         .collect(Collectors.toSet());
-        maybeScheduleRegions(sourceRegions);  // TODO BY dps@51doit.cn : 开始进行task调度
+        maybeScheduleRegions(sourceRegions);  // 多易教育:  开始进行task调度
     }
 
     private boolean isSourceRegion(SchedulingPipelinedRegion region) {
@@ -167,11 +167,11 @@ public class PipelinedRegionSchedulingStrategy implements SchedulingStrategy {
                 verticesToRestart.stream()
                         .map(schedulingTopology::getPipelinedRegionOfVertex)
                         .collect(Collectors.toSet());
-        maybeScheduleRegions(regionsToRestart);  // TODO BY dps@51doit.cn : 对需要重启的region进行调度
+        maybeScheduleRegions(regionsToRestart);  // 多易教育:  对需要重启的region进行调度
     }
 
     @Override
-    public void onExecutionStateChange(  // TODO BY dps@51doit.cn : 执行状态变更后的回调，对后续的消费者region进行调度
+    public void onExecutionStateChange(  // 多易教育:  执行状态变更后的回调，对后续的消费者region进行调度
             final ExecutionVertexID executionVertexId, final ExecutionState executionState) {
         if (executionState == ExecutionState.FINISHED) {
             final Set<ConsumedPartitionGroup> finishedConsumedPartitionGroups =
@@ -199,7 +199,7 @@ public class PipelinedRegionSchedulingStrategy implements SchedulingStrategy {
                                                     .stream())
                             .collect(Collectors.toSet());
 
-            maybeScheduleRegions(consumerRegions); // TODO BY dps@51doit.cn : 对消费者region进行调度
+            maybeScheduleRegions(consumerRegions); // 多易教育:  对消费者region进行调度
         }
     }
 
@@ -213,7 +213,7 @@ public class PipelinedRegionSchedulingStrategy implements SchedulingStrategy {
 
         final Map<ConsumedPartitionGroup, Boolean> consumableStatusCache = new HashMap<>();
         for (SchedulingPipelinedRegion region : regionsSorted) {
-            // TODO BY dps@51doit.cn : 逐个region进行task调度
+            // 多易教育:  逐个region进行task调度
             maybeScheduleRegion(region, consumableStatusCache);
         }
     }

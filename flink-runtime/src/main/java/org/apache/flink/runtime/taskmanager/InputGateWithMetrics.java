@@ -114,7 +114,7 @@ public class InputGateWithMetrics extends IndexedInputGate {
 
     @Override
     public void setup() throws IOException {
-        inputGate.setup(); // TODO BY dps@51doit.cn : inputGate:SingleInputGate
+        inputGate.setup(); // 多易教育:  inputGate:SingleInputGate
     }
 
     @Override
@@ -139,7 +139,7 @@ public class InputGateWithMetrics extends IndexedInputGate {
 
     @Override
     public Optional<BufferOrEvent> pollNext() throws IOException, InterruptedException {
-        return inputGate.pollNext().map(this::updateMetrics); // TODO BY dps@51doit.cn : SingleInputGate
+        return inputGate.pollNext().map(this::updateMetrics); // 多易教育:  SingleInputGate
     }
 
     @Override

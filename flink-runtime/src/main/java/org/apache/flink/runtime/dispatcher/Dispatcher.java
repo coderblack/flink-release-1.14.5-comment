@@ -297,7 +297,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
     // ------------------------------------------------------
 
     @Override
-    public CompletableFuture<Acknowledge> submitJob(JobGraph jobGraph, Time timeout) {   // TODO BY dps@51doit.cn : 提交job的方法
+    public CompletableFuture<Acknowledge> submitJob(JobGraph jobGraph, Time timeout) {   // 多易教育:  提交job的方法
         log.info(
                 "Received JobGraph submission '{}' ({}).", jobGraph.getName(), jobGraph.getJobID());
 
@@ -376,7 +376,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
         log.info("Submitting job '{}' ({}).", jobGraph.getName(), jobGraph.getJobID());
 
         final CompletableFuture<Acknowledge> persistAndRunFuture =
-                waitForTerminatingJob(jobGraph.getJobID(), jobGraph, this::persistAndRunJob) // TODO BY dps@51doit.cn :持久化和运行job
+                waitForTerminatingJob(jobGraph.getJobID(), jobGraph, this::persistAndRunJob) // 多易教育: 持久化和运行job
                         .thenApply(ignored -> Acknowledge.get());
 
         return persistAndRunFuture.handleAsync(
@@ -399,19 +399,19 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
                 },
                 ioExecutor);
     }
-    // TODO BY dps@51doit.cn : 持久化和运行job
+    // 多易教育:  持久化和运行job
     private void persistAndRunJob(JobGraph jobGraph) throws Exception {
         jobGraphWriter.putJobGraph(jobGraph);
-        runJob(jobGraph, ExecutionType.SUBMISSION); // TODO BY dps@51doit.cn : 正式在这里开始运行job
+        runJob(jobGraph, ExecutionType.SUBMISSION); // 多易教育:  正式在这里开始运行job
     }
 
     private void runJob(JobGraph jobGraph, ExecutionType executionType) throws Exception {
-        // TODO BY dps@51doit.cn : 确保JobID对应的这个作业目前不在运行状态，避免重复提交
+        // 多易教育:  确保JobID对应的这个作业目前不在运行状态，避免重复提交
         Preconditions.checkState(!runningJobs.containsKey(jobGraph.getJobID()));
         long initializationTimestamp = System.currentTimeMillis();
 
-        // TODO BY dps@51doit.cn : // 这里将JobManagerRunner创建出来,并开启job的调度执行
-        // TODO BY dps@51doit.cn : // JobManagerRunner接下来会构造出JobManager
+        // 多易教育:  // 这里将JobManagerRunner创建出来,并开启job的调度执行
+        // 多易教育:  // JobManagerRunner接下来会构造出JobManager
         JobManagerRunner jobManagerRunner =
                 createJobManagerRunner(jobGraph, initializationTimestamp);
 
@@ -489,8 +489,8 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
             throws Exception {
         final RpcService rpcService = getRpcService();
 
-        JobManagerRunner runner =  // TODO BY dps@51doit.cn : JobMasterServiceLeadershipRunner
-                jobManagerRunnerFactory.createJobManagerRunner(  // TODO BY dps@51doit.cn : JobMasterServiceLeaderShipRunnerFactory
+        JobManagerRunner runner =  // 多易教育:  JobMasterServiceLeadershipRunner
+                jobManagerRunnerFactory.createJobManagerRunner(  // 多易教育:  JobMasterServiceLeaderShipRunnerFactory
                         jobGraph,
                         configuration,
                         rpcService,
@@ -500,7 +500,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
                         new DefaultJobManagerJobMetricGroupFactory(jobManagerMetricGroup),
                         fatalErrorHandler,
                         initializationTimestamp);
-        runner.start();   // TODO BY dps@51doit.cn : 开启leader选举,在standalone中是直接给自身授予leader，并在调用grantLeader()时进行job调度执行
+        runner.start();   // 多易教育:  开启leader选举,在standalone中是直接给自身授予leader，并在调用grantLeader()时进行job调度执行
         return runner;
     }
 

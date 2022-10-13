@@ -102,12 +102,12 @@ public abstract class AbstractStreamTaskNetworkInput<
                 }
 
                 if (result.isFullRecord()) {
-                    processElement(deserializationDelegate.getInstance(), output); // TODO BY dps@51doit.cn : output:OneInputStreamTask$StreamTaskNetworkOutput
+                    processElement(deserializationDelegate.getInstance(), output); // 多易教育:  output:OneInputStreamTask$StreamTaskNetworkOutput
                     return DataInputStatus.MORE_AVAILABLE;
                 }
             }
 
-            Optional<BufferOrEvent> bufferOrEvent = checkpointedInputGate.pollNext(); // TODO BY dps@51doit.cn : CheckpointedInputGate
+            Optional<BufferOrEvent> bufferOrEvent = checkpointedInputGate.pollNext(); // 多易教育:  CheckpointedInputGate
             if (bufferOrEvent.isPresent()) {
                 // return to the mailbox after receiving a checkpoint barrier to avoid processing of
                 // data after the barrier before checkpoint is performed for unaligned checkpoint

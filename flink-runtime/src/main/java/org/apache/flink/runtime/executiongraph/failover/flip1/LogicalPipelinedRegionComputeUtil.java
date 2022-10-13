@@ -32,7 +32,7 @@ import static org.apache.flink.runtime.executiongraph.failover.flip1.PipelinedRe
 
 /** Utils for computing {@link LogicalPipelinedRegion}s. */
 public final class LogicalPipelinedRegionComputeUtil {
-    // TODO BY dps@51doit.cn : 分割pipeLinedRegion的方法
+    // 多易教育:  分割pipeLinedRegion的方法
     public static Set<Set<LogicalVertex>> computePipelinedRegions(
             final Iterable<? extends LogicalVertex> topologicallySortedVertices) {
 

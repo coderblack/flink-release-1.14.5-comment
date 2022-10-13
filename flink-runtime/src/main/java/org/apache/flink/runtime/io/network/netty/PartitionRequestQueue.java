@@ -51,7 +51,7 @@ import static org.apache.flink.util.Preconditions.checkArgument;
  * A nonEmptyReader of partition queues, which listens for channel writability changed events before
  * writing and flushing {@link Buffer} instances.
  */
-//TODO BY dps@51doit.cn :
+//多易教育: 
 // PartitionRequestQueue 负责将 ResultSubparition 中的数据通过网络发送给 RemoteInputChannel。
 // 在 PartitionRequestQueue 中保存了所有的 NetworkSequenceViewReader 和 InputChannelID 之间的映射关系，
 // 以及一个 ArrayDeque<NetworkSequenceViewReader> availableReaders 队列。
@@ -145,7 +145,7 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
         allReaders.put(reader.getReceiverId(), reader);
     }
 
-    // TODO BY dps@51doit.cn : cancel一个inputChannel，操作方式为触发一个netty handler自定义事件，msg为一个InputChannelID
+    // 多易教育:  cancel一个inputChannel，操作方式为触发一个netty handler自定义事件，msg为一个InputChannelID
     public void cancel(InputChannelID receiverId) {
         ctx.pipeline().fireUserEventTriggered(receiverId);
     }
@@ -237,11 +237,11 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
         // hand over of reader queues and cancelled producers.
 
         if (msg instanceof NetworkSequenceViewReader) {
-            // TODO BY dps@51doit.cn : NetworkSequenceViewReader有数据可读取，加入队列中
+            // 多易教育:  NetworkSequenceViewReader有数据可读取，加入队列中
             enqueueAvailableReader((NetworkSequenceViewReader) msg);
         } else if (msg.getClass() == InputChannelID.class) {
             // Release partition view that get a cancel request.
-            //TODO BY dps@51doit.cn : 释放inputChannelId对应的reader
+            //多易教育:  释放inputChannelId对应的reader
             // 这里的msg名字令人费解，既然是要释放channel的msg，怎么直接命名为InputChannelId呢
             // 通过搜索 “ctx.pipeline().fireUserEventTriggered”，得知发送本msg的方法为  cancel(InputChannelID)
             InputChannelID toCancel = (InputChannelID) msg;
@@ -255,17 +255,17 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
                 releaseViewReader(toRelease);
             }
         } else {
-            ctx.fireUserEventTriggered(msg);  // TODO BY dps@51doit.cn : 默认行为，向后续handler传播事件
+            ctx.fireUserEventTriggered(msg);  // 多易教育:  默认行为，向后续handler传播事件
         }
     }
 
-    // TODO BY dps@51doit.cn : netty接口方法，当channel可写时回调
+    // 多易教育:  netty接口方法，当channel可写时回调
     @Override
     public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
         writeAndFlushNextMessageIfPossible(ctx.channel());
     }
 
-    // TODO BY dps@51doit.cn : 写入数据到channel
+    // 多易教育:  写入数据到channel
     private void writeAndFlushNextMessageIfPossible(final Channel channel) throws IOException {
         if (fatalError || !channel.isWritable()) {
             return;
@@ -277,10 +277,10 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
 
         BufferAndAvailability next = null;
         try {
-            //TODO BY dps@51doit.cn : 一次循环中取到一个可用reader进行数据读取并发送出去，并回调监听，监听内又是调用本方法，又进入循环
+            //多易教育:  一次循环中取到一个可用reader进行数据读取并发送出去，并回调监听，监听内又是调用本方法，又进入循环
             // 因而产生的效果是：不会一直拿着一个reader持续读完数据再处理下一个reader，而是各个reader雨露均沾
             while (true) {
-                // TODO BY dps@51doit.cn : 取到一个可用的reader（并会将该reader设置为available=false）
+                // 多易教育:  取到一个可用的reader（并会将该reader设置为available=false）
                 NetworkSequenceViewReader reader = pollAvailableReader();
 
                 // No queue with available data. We allow this here, because
@@ -289,15 +289,15 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
                     return;
                 }
 
-                next = reader.getNextBuffer();  // TODO BY dps@51doit.cn : 获取数据
+                next = reader.getNextBuffer();  // 多易教育:  获取数据
 
-                // TODO BY dps@51doit.cn : 1.如果没有读到数据
+                // 多易教育:  1.如果没有读到数据
                 if (next == null) {
-                    // TODO BY dps@51doit.cn : 如果此reader还没有被释放，则短路循环跳到下一个reader
+                    // 多易教育:  如果此reader还没有被释放，则短路循环跳到下一个reader
                     if (!reader.isReleased()) {
                         continue;
                     }
-                    //TODO BY dps@51doit.cn : 否则（即reader已被释放），检查reader是否有异常，如果有则将异常发送出去
+                    //多易教育:  否则（即reader已被释放），检查reader是否有异常，如果有则将异常发送出去
                     // 如果没有异常，则直接跳到下一个reader处理
                     Throwable cause = reader.getFailureCause();
                     if (cause != null) {
@@ -307,13 +307,13 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
 
                         ctx.writeAndFlush(msg);
                     }
-                } else {  // TODO BY dps@51doit.cn : 2.如果读到了数据
+                } else {  // 多易教育:  2.如果读到了数据
                     // This channel was now removed from the available reader queue.
                     // We re-add it into the queue if it is still available
-                    if (next.moreAvailable()) {   // TODO BY dps@51doit.cn : 如果还有更多可用数据
-                        registerAvailableReader(reader);  // TODO BY dps@51doit.cn : 将本reader重新设置为可用，并重新放回可用reader队列
+                    if (next.moreAvailable()) {   // 多易教育:  如果还有更多可用数据
+                        registerAvailableReader(reader);  // 多易教育:  将本reader重新设置为可用，并重新放回可用reader队列
                     }
-                    // TODO BY dps@51doit.cn : 构造一个响应数据
+                    // 多易教育:  构造一个响应数据
                     BufferResponse msg =
                             new BufferResponse(
                                     next.buffer(),
@@ -323,9 +323,9 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
 
                     // Write and flush and wait until this is done before
                     // trying to continue with the next buffer.
-                    // TODO BY dps@51doit.cn : 向 client 发送数据，发送成功之后通过 writeListener 的回调触发下一次发送
+                    // 多易教育:  向 client 发送数据，发送成功之后通过 writeListener 的回调触发下一次发送
                     channel.writeAndFlush(msg).addListener(writeListener);
-                    // TODO BY dps@51doit.cn : 但凡成功发送了一个buffer，则返回（终止整个while循环），其持续发送是通过上面的listener实现
+                    // 多易教育:  但凡成功发送了一个buffer，则返回（终止整个while循环），其持续发送是通过上面的listener实现
                     return;
                 }
             }

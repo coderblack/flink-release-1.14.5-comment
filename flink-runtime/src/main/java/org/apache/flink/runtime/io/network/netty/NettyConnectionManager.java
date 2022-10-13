@@ -31,16 +31,16 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 public class NettyConnectionManager implements ConnectionManager {
 
-    // TODO BY dps@51doit.cn : netty服务端
+    // 多易教育:  netty服务端
     private final NettyServer server;
 
-    // TODO BY dps@51doit.cn : netty客户端
+    // 多易教育:  netty客户端
     private final NettyClient client;
 
-    // TODO BY dps@51doit.cn : 网络缓冲池
+    // 多易教育:  网络缓冲池
     private final NettyBufferPool bufferPool;
 
-    // TODO BY dps@51doit.cn : partition请求客户端构造工厂
+    // 多易教育:  partition请求客户端构造工厂
     private final PartitionRequestClientFactory partitionRequestClientFactory;
 
     private final NettyProtocol nettyProtocol;
@@ -72,7 +72,7 @@ public class NettyConnectionManager implements ConnectionManager {
                 new PartitionRequestClientFactory(client, nettyConfig.getNetworkRetries());
 
         this.nettyProtocol =
-                new NettyProtocol(  // TODO BY dps@51doit.cn : partitionProvider:ResultPartitionManager,TaskEventDispatcher
+                new NettyProtocol(  // 多易教育:  partitionProvider:ResultPartitionManager,TaskEventDispatcher
                         checkNotNull(partitionProvider), checkNotNull(taskEventPublisher));
     }
 

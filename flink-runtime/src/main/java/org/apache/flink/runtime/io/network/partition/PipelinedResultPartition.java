@@ -52,7 +52,7 @@ public class PipelinedResultPartition extends BufferWritingResultPartition
         implements CheckpointedResultPartition, ChannelStateHolder {
     private static final int PIPELINED_RESULT_PARTITION_ITSELF = -42;
 
-    // TODO BY dps@51doit.cn : 父类BufferWritingResultPartition中有重要成员
+    // 多易教育:  父类BufferWritingResultPartition中有重要成员
     //  protected final ResultSubpartition[] subpartitions;
 
     /**
@@ -143,14 +143,14 @@ public class PipelinedResultPartition extends BufferWritingResultPartition
      * The pipelined partition releases automatically once all subpartition readers are released.
      * That is because pipelined partitions cannot be consumed multiple times, or reconnect.
      */
-    //TODO BY dps@51doit.cn : 一旦所有的subpartition 被消费完，则pipelined partition会自动释放
+    //多易教育:  一旦所有的subpartition 被消费完，则pipelined partition会自动释放
     // 因为pipelined partition（流式处理中）不能被多次消费或者重连接
     @Override
     void onConsumedSubpartition(int subpartitionIndex) {
-        decrementNumberOfUsers(subpartitionIndex);  // TODO BY dps@51doit.cn : 减少消费者
+        decrementNumberOfUsers(subpartitionIndex);  // 多易教育:  减少消费者
     }
 
-    // TODO BY dps@51doit.cn : 减少消费者数（即未完成的sub partition数量）
+    // 多易教育:  减少消费者数（即未完成的sub partition数量）
     //  方法内会判断剩余未完成的 sub partition是否为0，如是，则释放整个 partition
     private void decrementNumberOfUsers(int subpartitionIndex) {
         if (isReleased()) {
@@ -176,7 +176,7 @@ public class PipelinedResultPartition extends BufferWritingResultPartition
         LOG.debug(
                 "{}: Received consumed notification for subpartition {}.", this, subpartitionIndex);
 
-        if (remainingUnconsumed == 0) {  // TODO BY dps@51doit.cn : 如果未完成的sub partition = 0，则释放整个partition
+        if (remainingUnconsumed == 0) {  // 多易教育:  如果未完成的sub partition = 0，则释放整个partition
             partitionManager.onConsumedPartition(this);
         } else if (remainingUnconsumed < 0) {
             throw new IllegalStateException(

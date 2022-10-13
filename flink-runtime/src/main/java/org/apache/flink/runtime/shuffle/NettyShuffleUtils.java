@@ -56,7 +56,7 @@ public class NettyShuffleUtils {
      * Calculates and returns local network buffer pool size used by the result partition. The
      * left/right value of the returned pair represent the min/max buffers require by the pool.
      */
-    public static Pair<Integer, Integer> getMinMaxNetworkBuffersPerResultPartition(  // TODO BY dps@51doit.cn : 计算result partition的buffer pool所需的最小、最大buffer
+    public static Pair<Integer, Integer> getMinMaxNetworkBuffersPerResultPartition(  // 多易教育:  计算result partition的buffer pool所需的最小、最大buffer
             final int configuredNetworkBuffersPerChannel,  // 2
             final int numFloatingBuffersPerGate,  // 8
             final int sortShuffleMinParallelism, // 2147483647

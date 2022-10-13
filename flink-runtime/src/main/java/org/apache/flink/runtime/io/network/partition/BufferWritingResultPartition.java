@@ -57,7 +57,7 @@ public abstract class BufferWritingResultPartition extends ResultPartition {
      * For non-broadcast mode, each subpartition maintains a separate BufferBuilder which might be
      * null.
      */
-    private final BufferBuilder[] unicastBufferBuilders; // TODO BY dps@51doit.cn : 对于单播模式，每个sub分区对应一个独立的BufferBuilder
+    private final BufferBuilder[] unicastBufferBuilders; // 多易教育:  对于单播模式，每个sub分区对应一个独立的BufferBuilder
 
     /** For broadcast mode, a single BufferBuilder is shared by all subpartitions. */
     private BufferBuilder broadcastBufferBuilder;
@@ -139,12 +139,12 @@ public abstract class BufferWritingResultPartition extends ResultPartition {
 
     @Override
     public void emitRecord(ByteBuffer record, int targetSubpartition) throws IOException {
-        BufferBuilder buffer = appendUnicastDataForNewRecord(record, targetSubpartition);  // TODO BY dps@51doit.cn : 为新记录追加单播数据
-        // TODO BY dps@51doit.cn : 只要record内容没有完全写入memorySegment，则循环不断写
+        BufferBuilder buffer = appendUnicastDataForNewRecord(record, targetSubpartition);  // 多易教育:  为新记录追加单播数据
+        // 多易教育:  只要record内容没有完全写入memorySegment，则循环不断写
         while (record.hasRemaining()) {
             // full buffer, partial record   满buffer，部分record
-            finishUnicastBufferBuilder(targetSubpartition);  // TODO BY dps@51doit.cn : 完成bufferBuilder（更新输出字节计数器，输出缓存计数器，回收内存）
-            buffer = appendUnicastDataForRecordContinuation(record, targetSubpartition); // TODO BY dps@51doit.cn : 追加后续内容到单播数据
+            finishUnicastBufferBuilder(targetSubpartition);  // 多易教育:  完成bufferBuilder（更新输出字节计数器，输出缓存计数器，回收内存）
+            buffer = appendUnicastDataForRecordContinuation(record, targetSubpartition); // 多易教育:  追加后续内容到单播数据
         }
 
         if (buffer.isFull()) {
@@ -258,12 +258,12 @@ public abstract class BufferWritingResultPartition extends ResultPartition {
             throw new ArrayIndexOutOfBoundsException(targetSubpartition);
         }
         BufferBuilder buffer = unicastBufferBuilders[targetSubpartition];
-        // TODO BY dps@51doit.cn : 如果目标分区对应的BufferBuilder为空，则申请一个新的BufferBuilder
+        // 多易教育:  如果目标分区对应的BufferBuilder为空，则申请一个新的BufferBuilder
         if (buffer == null) {
             buffer = requestNewUnicastBufferBuilder(targetSubpartition);
             addToSubpartition(buffer, targetSubpartition, 0);
         }
-        // TODO BY dps@51doit.cn : 追加和提交数据到bufferBuilder（底层即为写入memorySegment）
+        // 多易教育:  追加和提交数据到bufferBuilder（底层即为写入memorySegment）
         buffer.appendAndCommit(record);
 
         return buffer;
@@ -357,15 +357,15 @@ public abstract class BufferWritingResultPartition extends ResultPartition {
 
     private BufferBuilder requestNewBufferBuilderFromPool(int targetSubpartition)
             throws IOException {
-        BufferBuilder bufferBuilder = bufferPool.requestBufferBuilder(targetSubpartition); // TODO BY dps@51doit.cn : 根据目标sub分区，申请memorySegment
+        BufferBuilder bufferBuilder = bufferPool.requestBufferBuilder(targetSubpartition); // 多易教育:  根据目标sub分区，申请memorySegment
         if (bufferBuilder != null) {
             return bufferBuilder;
         }
-        // TODO BY dps@51doit.cn : 如果memorySegment申请失败，则开启背压计时
+        // 多易教育:  如果memorySegment申请失败，则开启背压计时
         backPressuredTimeMsPerSecond.markStart();
-        try {  // TODO BY dps@51doit.cn : 再次申请memorySegment，并以阻塞方式申请（底层有一个ArrayDeque<MemorySegment>）
+        try {  // 多易教育:  再次申请memorySegment，并以阻塞方式申请（底层有一个ArrayDeque<MemorySegment>）
             bufferBuilder = bufferPool.requestBufferBuilderBlocking(targetSubpartition);
-            backPressuredTimeMsPerSecond.markEnd();  // TODO BY dps@51doit.cn : 阻塞式申请成功，结束背压计时
+            backPressuredTimeMsPerSecond.markEnd();  // 多易教育:  阻塞式申请成功，结束背压计时
             return bufferBuilder;
         } catch (InterruptedException e) {
             throw new IOException("Interrupted while waiting for buffer");
@@ -375,10 +375,10 @@ public abstract class BufferWritingResultPartition extends ResultPartition {
     private void finishUnicastBufferBuilder(int targetSubpartition) {
         final BufferBuilder bufferBuilder = unicastBufferBuilders[targetSubpartition];
         if (bufferBuilder != null) {
-            numBytesOut.inc(bufferBuilder.finish()); // TODO BY dps@51doit.cn : 更新输出字节数计数器
-            numBuffersOut.inc();// TODO BY dps@51doit.cn : 更新输出buffer数计数器
-            unicastBufferBuilders[targetSubpartition] = null; // TODO BY dps@51doit.cn : 将目标sub分区的bufferBuilder位置为空
-            bufferBuilder.close(); // TODO BY dps@51doit.cn : 关闭bufferBuilder（回收内存）
+            numBytesOut.inc(bufferBuilder.finish()); // 多易教育:  更新输出字节数计数器
+            numBuffersOut.inc();// 多易教育:  更新输出buffer数计数器
+            unicastBufferBuilders[targetSubpartition] = null; // 多易教育:  将目标sub分区的bufferBuilder位置为空
+            bufferBuilder.close(); // 多易教育:  关闭bufferBuilder（回收内存）
         }
     }
 

@@ -163,7 +163,7 @@ public class JobMasterServiceLeadershipRunner implements JobManagerRunner, Leade
     @Override
     public void start() throws Exception {
         LOG.debug("Start leadership runner for job {}.", getJobID());
-        leaderElectionService.start(this);  // TODO BY dps@51doit.cn : StandaloneLeaderElectionService,开启leader选举（授予自身leader，并调用job调度执行）
+        leaderElectionService.start(this);  // 多易教育:  StandaloneLeaderElectionService,开启leader选举（授予自身leader，并调用job调度执行）
     }
 
     @Override
@@ -242,11 +242,11 @@ public class JobMasterServiceLeadershipRunner implements JobManagerRunner, Leade
             return jobMasterServiceProcess.isInitializedAndRunning();
         }
     }
-    // TODO BY dps@51doit.cn : JobMaster的leader授权回调，回调的流程极长，其中最重要的就是会创建出JobMasterService，并启动job的调度执行
+    // 多易教育:  JobMaster的leader授权回调，回调的流程极长，其中最重要的就是会创建出JobMasterService，并启动job的调度执行
     @Override
     public void grantLeadership(UUID leaderSessionID) {
         runIfStateRunning(
-                () -> startJobMasterServiceProcessAsync(leaderSessionID),  // TODO BY dps@51doit.cn : 开始job调度执行
+                () -> startJobMasterServiceProcessAsync(leaderSessionID),  // 多易教育:  开始job调度执行
                 "starting a new JobMasterServiceProcess");
     }
 
@@ -259,7 +259,7 @@ public class JobMasterServiceLeadershipRunner implements JobManagerRunner, Leade
                                         leaderSessionId,
                                         ThrowingRunnable.unchecked(
                                                 () ->
-                                                        // TODO BY dps@51doit.cn : 最底层的job执行入口,创建JobMasterService，并调度执行job
+                                                        // 多易教育:  最底层的job执行入口,创建JobMasterService，并调度执行job
                                                         verifyJobSchedulingStatusAndCreateJobMasterServiceProcess(
                                                                 leaderSessionId)),
                                         "verify job scheduling status and create JobMasterServiceProcess"));
@@ -270,15 +270,15 @@ public class JobMasterServiceLeadershipRunner implements JobManagerRunner, Leade
     @GuardedBy("lock")
     private void verifyJobSchedulingStatusAndCreateJobMasterServiceProcess(UUID leaderSessionId)
             throws FlinkException {
-        // TODO BY dps@51doit.cn : 获取job调度状态
+        // 多易教育:  获取job调度状态
         final RunningJobsRegistry.JobSchedulingStatus jobSchedulingStatus =
                 getJobSchedulingStatus();
 
-        // TODO BY dps@51doit.cn : 如果状态为DONE，则返回成功但异常的结果
+        // 多易教育:  如果状态为DONE，则返回成功但异常的结果
         if (jobSchedulingStatus == RunningJobsRegistry.JobSchedulingStatus.DONE) {
             jobAlreadyDone();
         } else {
-            // TODO BY dps@51doit.cn : 否则，创建一个新的JobMasterServiceProcess(创建流程很长，其中的核心环节是创建出一个JobMaster并start()起来
+            // 多易教育:  否则，创建一个新的JobMasterServiceProcess(创建流程很长，其中的核心环节是创建出一个JobMaster并start()起来
             createNewJobMasterServiceProcess(leaderSessionId);
         }
     }
@@ -327,11 +327,11 @@ public class JobMasterServiceLeadershipRunner implements JobManagerRunner, Leade
                     e);
         }
 
-        // TODO BY dps@51doit.cn : 创建出JobMasterServiceProcess（它负责启动运行JobMasterService）,在创建过程中，就会开启job调度执行
-        // TODO BY dps@51doit.cn : 走的是： DefaultJobMasterServiceProcessFactory.create(), 方法内会调用 new DefaultJobMasterServiceProcess()
-        // TODO BY dps@51doit.cn : new DefaultJobMasterServiceProcess()中会调用： jobMasterServiceFactory.createJobMasterService(leaderSessionId, this);
-        // TODO BY dps@51doit.cn : 进而, DefaultJobMasterServiceFactory.createJobMasterService() -> internalCreateJobMasterService()
-        // TODO BY dps@51doit.cn : 进而, new JobMaster().start()
+        // 多易教育:  创建出JobMasterServiceProcess（它负责启动运行JobMasterService）,在创建过程中，就会开启job调度执行
+        // 多易教育:  走的是： DefaultJobMasterServiceProcessFactory.create(), 方法内会调用 new DefaultJobMasterServiceProcess()
+        // 多易教育:  new DefaultJobMasterServiceProcess()中会调用： jobMasterServiceFactory.createJobMasterService(leaderSessionId, this);
+        // 多易教育:  进而, DefaultJobMasterServiceFactory.createJobMasterService() -> internalCreateJobMasterService()
+        // 多易教育:  进而, new JobMaster().start()
         jobMasterServiceProcess = jobMasterServiceProcessFactory.create(leaderSessionId);
 
         forwardIfValidLeader(

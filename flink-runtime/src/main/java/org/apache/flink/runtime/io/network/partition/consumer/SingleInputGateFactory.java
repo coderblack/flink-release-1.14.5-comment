@@ -235,7 +235,7 @@ public class SingleInputGateFactory {
         Pair<Integer, Integer> pair =
                 NettyShuffleUtils.getMinMaxFloatingBuffersPerInputGate(
                         floatingNetworkBuffersPerGate);
-        return () -> bufferPoolFactory.createBufferPool(pair.getLeft(), pair.getRight()); // TODO BY dps@51doit.cn : NetworkBufferPool
+        return () -> bufferPoolFactory.createBufferPool(pair.getLeft(), pair.getRight()); // 多易教育:  NetworkBufferPool
     }
 
     /** Statistics of input channels. */

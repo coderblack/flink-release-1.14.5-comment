@@ -559,7 +559,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     // ----------------------------------------------------------------------
 
     @Override
-    public CompletableFuture<Acknowledge> submitTask(  // TODO BY dps@51doit.cn :  提交task
+    public CompletableFuture<Acknowledge> submitTask(  // 多易教育:   提交task
             TaskDeploymentDescriptor tdd, JobMasterId jobMasterId, Time timeout) {
 
         try {
@@ -1033,7 +1033,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     // ----------------------------------------------------------------------
     // Slot allocation RPCs
     // ----------------------------------------------------------------------
-    // TODO BY dps@51doit.cn : 对外暴露的rpc方法： 请求slot
+    // 多易教育:  对外暴露的rpc方法： 请求slot
     @Override
     public CompletableFuture<Acknowledge> requestSlot(
             final SlotID slotId,
@@ -1061,7 +1061,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             return FutureUtils.completedExceptionally(new TaskManagerException(message));
         }
 
-        try {  // TODO BY dps@51doit.cn : 分配slot资源
+        try {  // 多易教育:  分配slot资源
             allocateSlot(slotId, jobId, allocationId, resourceProfile);
         } catch (SlotAllocationException sae) {
             return FutureUtils.completedExceptionally(sae);
@@ -1094,7 +1094,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             return FutureUtils.completedExceptionally(
                     new SlotAllocationException("Could not create new job.", e));
         }
-        // TODO BY dps@51doit.cn : 如果job已连接，则提供slot给到jobManager
+        // 多易教育:  如果job已连接，则提供slot给到jobManager
         if (job.isConnected()) {
             offerSlotsToJobManager(jobId);
         }
@@ -1484,7 +1484,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             currentSlotOfferPerJob.put(jobId, slotOfferId);
 
             CompletableFuture<Collection<SlotOffer>> acceptedSlotsFuture =
-                    jobMasterGateway.offerSlots(  // TODO BY dps@51doit.cn : 通过gateway rpc请求jobMaster
+                    jobMasterGateway.offerSlots(  // 多易教育:  通过gateway rpc请求jobMaster
                             getResourceID(),
                             reservedSlots,
                             taskManagerConfiguration.getRpcTimeout());

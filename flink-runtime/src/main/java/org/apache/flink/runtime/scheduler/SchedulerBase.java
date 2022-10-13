@@ -187,7 +187,7 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
                 SchedulerUtils.createCheckpointIDCounterIfCheckpointingIsEnabled(
                         jobGraph, checkNotNull(checkpointRecoveryFactory));
 
-        // TODO BY dps@51doit.cn : 这里是生成 ExecutionGraph 的方法
+        // 多易教育:  这里是生成 ExecutionGraph 的方法
         this.executionGraph =
                 createAndRestoreExecutionGraph(
                         completedCheckpointStore,
@@ -209,7 +209,7 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
         this.executionGraphHandler =
                 new ExecutionGraphHandler(executionGraph, log, ioExecutor, this.mainThreadExecutor);
 
-        this.operatorCoordinatorHandler = // TODO BY dps@51doit.cn : DefaultOperatorCoordinatorHandler
+        this.operatorCoordinatorHandler = // 多易教育:  DefaultOperatorCoordinatorHandler
                 new DefaultOperatorCoordinatorHandler(executionGraph, this::handleGlobalFailure);
         operatorCoordinatorHandler.initializeOperatorCoordinators(this.mainThreadExecutor);
 
@@ -332,7 +332,7 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
             JobStatusListener jobStatusListener)
             throws Exception {
 
-        // TODO BY dps@51doit.cn : 根据jobGraph生成ExecutionGraph
+        // 多易教育:  根据jobGraph生成ExecutionGraph
         final ExecutionGraph newExecutionGraph =
                 executionGraphFactory.createAndRestoreExecutionGraph(
                         jobGraph,
@@ -349,7 +349,7 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
         newExecutionGraph.setInternalTaskFailuresListener(
                 new UpdateSchedulerNgOnInternalFailuresListener(this));
         newExecutionGraph.registerJobStatusListener(jobStatusListener);
-        newExecutionGraph.start(mainThreadExecutor);  // TODO BY dps@51doit.cn : mainThreadExecutor:RpcEndpoint$MainThreadExecutor
+        newExecutionGraph.start(mainThreadExecutor);  // 多易教育:  mainThreadExecutor:RpcEndpoint$MainThreadExecutor
 
         return newExecutionGraph;
     }

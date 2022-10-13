@@ -84,12 +84,12 @@ public class DispatcherRestEndpoint extends WebMonitorEndpoint<DispatcherGateway
     protected List<Tuple2<RestHandlerSpecification, ChannelInboundHandler>> initializeHandlers(
             final CompletableFuture<String> localAddressFuture) {
         List<Tuple2<RestHandlerSpecification, ChannelInboundHandler>> handlers =
-                super.initializeHandlers(localAddressFuture); // TODO BY dps@51doit.cn : 添加各类通用处理器
+                super.initializeHandlers(localAddressFuture); // 多易教育:  添加各类通用处理器
 
         // Add the Dispatcher specific handlers
 
         final Time timeout = restConfiguration.getTimeout();
-        // TODO BY dps@51doit.cn : 追加一个job提交处理器
+        // 多易教育:  追加一个job提交处理器
         JobSubmitHandler jobSubmitHandler =
                 new JobSubmitHandler(
                         leaderRetriever, timeout, responseHeaders, executor, clusterConfiguration);

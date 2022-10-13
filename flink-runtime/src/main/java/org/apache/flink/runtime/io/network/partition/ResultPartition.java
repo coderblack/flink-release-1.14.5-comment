@@ -78,7 +78,7 @@ public abstract class ResultPartition implements ResultPartitionWriter {
 
     protected static final Logger LOG = LoggerFactory.getLogger(ResultPartition.class);
 
-    // TODO BY dps@51doit.cn : resultPartition的拥有者（task）
+    // 多易教育:  resultPartition的拥有者（task）
     private final String owningTaskName;
 
     private final int partitionIndex;
@@ -86,12 +86,12 @@ public abstract class ResultPartition implements ResultPartitionWriter {
     protected final ResultPartitionID partitionId;
 
     /** Type of this partition. Defines the concrete subpartition implementation to use. */
-    protected final ResultPartitionType partitionType;  // TODO BY dps@51doit.cn : BLOCKING,PIPELINED_BOUNDED,PIPELINED等
+    protected final ResultPartitionType partitionType;  // 多易教育:  BLOCKING,PIPELINED_BOUNDED,PIPELINED等
 
-    // TODO BY dps@51doit.cn : ResultPartitionManager 管理当前 TaskManager 所有的 ResultPartition
+    // 多易教育:  ResultPartitionManager 管理当前 TaskManager 所有的 ResultPartition
     protected final ResultPartitionManager partitionManager;
 
-    //TODO BY dps@51doit.cn : ResultSubpartition 的数量由下游消费 Task 数和 DistributionPattern 来决定。
+    //多易教育:  ResultSubpartition 的数量由下游消费 Task 数和 DistributionPattern 来决定。
     // FORWARD：1，SHUFFLE：下游算子并行度，BROADCAST
     protected final int numSubpartitions;
 
@@ -101,7 +101,7 @@ public abstract class ResultPartition implements ResultPartitionWriter {
 
     private final AtomicBoolean isReleased = new AtomicBoolean();
 
-    // TODO BY dps@51doit.cn : 缓冲池
+    // 多易教育:  缓冲池
     protected BufferPool bufferPool;
 
     private boolean isFinished;
@@ -153,7 +153,7 @@ public abstract class ResultPartition implements ResultPartitionWriter {
         checkState(
                 this.bufferPool == null,
                 "Bug in result partition setup logic: Already registered buffer pool.");
-        // TODO BY dps@51doit.cn : bufferPoolFactory : ResultPartitionFactory$lambda
+        // 多易教育:  bufferPoolFactory : ResultPartitionFactory$lambda
         this.bufferPool = checkNotNull(bufferPoolFactory.get());
         partitionManager.registerResultPartition(this);
     }
