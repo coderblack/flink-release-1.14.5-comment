@@ -181,6 +181,7 @@ public class BufferManager implements BufferListener, BufferRecycler {
         assert Thread.holdsLock(bufferQueue);
 
         int numRequestedBuffers = 0;
+        // TODO BY dps@51doit.cn : 只要还没达到所要求的buffer数，则不停地申请
         while (bufferQueue.getAvailableBufferSize() < numRequiredBuffers
                 && !isWaitingForFloatingBuffers) {
             BufferPool bufferPool = inputChannel.inputGate.getBufferPool();
@@ -303,6 +304,7 @@ public class BufferManager implements BufferListener, BufferRecycler {
      * @param buffer Buffer that becomes available in buffer pool.
      * @return true if the buffer is accepted by this listener.
      */
+    // TODO BY dps@51doit.cn : LocalBufferPool 通过本方法通知有 buffer 可用
     @Override
     public boolean notifyBufferAvailable(Buffer buffer) {
         // Assuming two remote channels with respective buffer managers as listeners inside

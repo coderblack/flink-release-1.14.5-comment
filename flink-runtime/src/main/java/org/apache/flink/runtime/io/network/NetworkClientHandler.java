@@ -28,6 +28,8 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 
 /** Channel handler to read and write network messages on client side. */
+//TODO BY dps@51doit.cn : 默认实现类：CreditBasedPartitionRequestClientHandler
+// 负责接收服务端通过 Netty channel 发送的数据，解析数据后交给对应的 RemoteInputChannel进行处理
 public interface NetworkClientHandler extends ChannelHandler {
 
     void addInputChannel(RemoteInputChannel inputChannel) throws IOException;

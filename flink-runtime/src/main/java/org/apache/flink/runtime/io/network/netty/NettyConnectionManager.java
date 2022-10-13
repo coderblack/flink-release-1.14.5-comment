@@ -31,12 +31,16 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 public class NettyConnectionManager implements ConnectionManager {
 
+    // TODO BY dps@51doit.cn : netty服务端
     private final NettyServer server;
 
+    // TODO BY dps@51doit.cn : netty客户端
     private final NettyClient client;
 
+    // TODO BY dps@51doit.cn : 网络缓冲池
     private final NettyBufferPool bufferPool;
 
+    // TODO BY dps@51doit.cn : partition请求客户端构造工厂
     private final PartitionRequestClientFactory partitionRequestClientFactory;
 
     private final NettyProtocol nettyProtocol;

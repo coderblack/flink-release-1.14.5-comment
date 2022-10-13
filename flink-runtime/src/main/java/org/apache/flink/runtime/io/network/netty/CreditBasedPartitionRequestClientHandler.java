@@ -261,10 +261,13 @@ class CreditBasedPartitionRequestClientHandler extends ChannelInboundHandlerAdap
         final Class<?> msgClazz = msg.getClass();
 
         // ---- Buffer --------------------------------------------------------
+        // TODO BY dps@51doit.cn : 如果是数据
         if (msgClazz == NettyMessage.BufferResponse.class) {
             NettyMessage.BufferResponse bufferOrEvent = (NettyMessage.BufferResponse) msg;
-
+            // TODO BY dps@51doit.cn : 根据 ID 定位到对应的 RemoteInputChannel
             RemoteInputChannel inputChannel = inputChannels.get(bufferOrEvent.receiverId);
+
+            // TODO BY dps@51doit.cn : 如果channel已释放，则发送取消请求的消息给服务端
             if (inputChannel == null || inputChannel.isReleased()) {
                 bufferOrEvent.releaseBuffer();
 
@@ -274,6 +277,7 @@ class CreditBasedPartitionRequestClientHandler extends ChannelInboundHandlerAdap
             }
 
             try {
+                // 解码数据buffer或event（方法中会将解码后的数据交给InputChannel处理）
                 decodeBufferOrEvent(inputChannel, bufferOrEvent);
             } catch (Throwable t) {
                 inputChannel.onError(t);
@@ -281,23 +285,27 @@ class CreditBasedPartitionRequestClientHandler extends ChannelInboundHandlerAdap
 
         } else if (msgClazz == NettyMessage.ErrorResponse.class) {
             // ---- Error ---------------------------------------------------------
+            // TODO BY dps@51doit.cn : 错误响应信息处理
             NettyMessage.ErrorResponse error = (NettyMessage.ErrorResponse) msg;
 
             SocketAddress remoteAddr = ctx.channel().remoteAddress();
 
             if (error.isFatalError()) {
+                // TODO BY dps@51doit.cn : 如果是致命错误，则通知所有channel错误和关闭
                 notifyAllChannelsOfErrorAndClose(
                         new RemoteTransportException(
                                 "Fatal error at remote task manager '" + remoteAddr + "'.",
                                 remoteAddr,
                                 error.cause));
-            } else {
+            } else {  // TODO BY dps@51doit.cn : 非致命错误，通知对应channel进行处理
                 RemoteInputChannel inputChannel = inputChannels.get(error.receiverId);
 
                 if (inputChannel != null) {
                     if (error.cause.getClass() == PartitionNotFoundException.class) {
+                        // TODO BY dps@51doit.cn : 分区请求错误，通知对应channel进行分区请求错误处理
                         inputChannel.onFailedPartitionRequest();
                     } else {
+                        // TODO BY dps@51doit.cn : 其他错误通用处理
                         inputChannel.onError(
                                 new RemoteTransportException(
                                         "Error at remote task manager '" + remoteAddr + "'.",
@@ -307,15 +315,18 @@ class CreditBasedPartitionRequestClientHandler extends ChannelInboundHandlerAdap
                 }
             }
         } else if (msgClazz == NettyMessage.BacklogAnnouncement.class) {
+            // TODO BY dps@51doit.cn : 如果是数据积压通知
             NettyMessage.BacklogAnnouncement announcement = (NettyMessage.BacklogAnnouncement) msg;
 
             RemoteInputChannel inputChannel = inputChannels.get(announcement.receiverId);
             if (inputChannel == null || inputChannel.isReleased()) {
+                // TODO BY dps@51doit.cn : 如果积压数据所对应的channel已经释放，则发送取消请求消息
                 cancelRequestFor(announcement.receiverId);
                 return;
             }
 
             try {
+                // TODO BY dps@51doit.cn : 向对应channel调用积压消息处理
                 inputChannel.onSenderBacklog(announcement.backlog);
             } catch (Throwable throwable) {
                 inputChannel.onError(throwable);
@@ -332,7 +343,8 @@ class CreditBasedPartitionRequestClientHandler extends ChannelInboundHandlerAdap
         if (bufferOrEvent.isBuffer() && bufferOrEvent.bufferSize == 0) {
             inputChannel.onEmptyBuffer(bufferOrEvent.sequenceNumber, bufferOrEvent.backlog);
         } else if (bufferOrEvent.getBuffer() != null) {
-            inputChannel.onBuffer(   // TODO BY dps@51doit.cn : handler获取到网络buffer时，调用RemoteInputChannel的onBuffer方法
+            // TODO BY dps@51doit.cn : handler获取到网络buffer时，调用RemoteInputChannel的onBuffer方法
+            inputChannel.onBuffer(
                     bufferOrEvent.getBuffer(), bufferOrEvent.sequenceNumber, bufferOrEvent.backlog);
         } else {
             throw new IllegalStateException(
@@ -346,6 +358,7 @@ class CreditBasedPartitionRequestClientHandler extends ChannelInboundHandlerAdap
      * <p>This method may be called by the first input channel enqueuing, or the complete future's
      * callback in previous input channel, or the channel writability changed event.
      */
+    // TODO BY dps@51doit.cn : 套路类似服务端
     private void writeAndFlushNextMessageIfPossible(Channel channel) {
         if (channelError.get() != null || !channel.isWritable()) {
             return;

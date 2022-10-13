@@ -43,16 +43,22 @@ import static org.apache.flink.util.Preconditions.checkArgument;
  * non-emptiness, similar to the {@link LocalInputChannel}.
  */
 class CreditBasedSequenceNumberingViewReader
-        implements BufferAvailabilityListener, NetworkSequenceViewReader {
+        implements BufferAvailabilityListener, NetworkSequenceViewReader {  // TODO BY dps@51doit.cn : 实现了数据可用监听器
 
     private final Object requestLock = new Object();
 
     private final InputChannelID receiverId;
 
+    //TODO BY dps@51doit.cn :
+    // PartitionRequestQueue 负责将 ResultSubpartition 中的数据通过网络发送给 RemoteInputChannel。
+    // 在 PartitionRequestQueue 中保存了所有的 NetworkSequenceViewReader 和 InputChannelID 之间的映射关系，
+    // 以及一个 ArrayDeque<NetworkSequenceViewReader> availableReaders 队列。
+    // 当一个 NetworkSequenceViewReader 中有数据可以被消费时，就会被加入到 availableReaders 队列中
     private final PartitionRequestQueue requestQueue;
 
     private final int initialCredit;
 
+    // TODO BY dps@51doit.cn : 消费 ResultSubpartition 的数据，并在 ResultSubpartition 有数据可用时获得通知
     private volatile ResultSubpartitionView subpartitionView;
 
     /**
@@ -65,6 +71,7 @@ class CreditBasedSequenceNumberingViewReader
     private boolean isRegisteredAsAvailable = false;
 
     /** The number of available buffers for holding data on the consumer side. */
+    // TODO BY dps@51doit.cn : 消费端还能够容纳的buffer的数量，也就是允许生产端发送的buffer的数量
     private int numCreditsAvailable;
 
     CreditBasedSequenceNumberingViewReader(
@@ -77,6 +84,7 @@ class CreditBasedSequenceNumberingViewReader
         this.requestQueue = requestQueue;
     }
 
+    // TODO BY dps@51doit.cn : 创建一个 ResultSubpartitionView，用于读取数据，并在有数据可用时获得通知
     @Override
     public void requestSubpartitionView(
             ResultPartitionProvider partitionProvider,
@@ -90,14 +98,20 @@ class CreditBasedSequenceNumberingViewReader
                 // schedule a separate task at the event loop that will
                 // start consuming this. Otherwise the reference to the
                 // view cannot be available in getNextBuffer().
-                this.subpartitionView =
+                this.subpartitionView =  // TODO BY dps@51doit.cn : 创建ResultSubPartitionView
                         partitionProvider.createSubpartitionView(
                                 resultPartitionId, subPartitionIndex, this);
             } else {
                 throw new IllegalStateException("Subpartition already requested");
             }
         }
-
+        //TODO BY dps@51doit.cn : 通知已有数据可用
+        // 通知中的逻辑：触发一个用户自定义事件
+        //  RequestQueue.notifyReaderNonEmpty(this);
+        //       ctx.executor().execute(() -> ctx.pipeline().fireUserEventTriggered(reader));
+        //  PartitionRequestQueue#userEventTriggered()
+        //      if (msg instanceof NetworkSequenceViewReader) {
+        //          enqueueAvailableReader((NetworkSequenceViewReader) msg);
         notifyDataAvailable();
     }
 
@@ -187,12 +201,13 @@ class CreditBasedSequenceNumberingViewReader
         return subpartitionView.getAvailabilityAndBacklog(Integer.MAX_VALUE);
     }
 
+    // TODO BY dps@51doit.cn : 读取数据
     @Nullable
     @Override
     public BufferAndAvailability getNextBuffer() throws IOException {
         BufferAndBacklog next = subpartitionView.getNextBuffer();
         if (next != null) {
-            if (next.buffer().isBuffer() && --numCreditsAvailable < 0) {
+            if (next.buffer().isBuffer() && --numCreditsAvailable < 0) {  // TODO BY dps@51doit.cn : 要发送一个buffer，对应的 numCreditsAvailable 要减 1
                 throw new IllegalStateException("no credit available");
             }
 
@@ -224,8 +239,12 @@ class CreditBasedSequenceNumberingViewReader
         subpartitionView.releaseAllResources();
     }
 
+    //TODO BY dps@51doit.cn : 监听器接口方法，在 ResultSubpartition 中有数据时会回调该方法
+    // 告知 PartitionRequestQueue 当前 ViewReader 有数据可读
     @Override
     public void notifyDataAvailable() {
+        //TODO BY dps@51doit.cn : 通知中的逻辑：触发一个用户自定义事件
+        // ctx.executor().execute(() -> ctx.pipeline().fireUserEventTriggered(reader));
         requestQueue.notifyReaderNonEmpty(this);
     }
 

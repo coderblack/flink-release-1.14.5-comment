@@ -77,6 +77,7 @@ class PartitionRequestClientFactory {
             final NettyPartitionRequestClient client;
 
             if (clientFuture == null) {
+                // TODO BY dps@51doit.cn : 如果分区请求client尚不存在，则尝试创建（带连接重试机制）
                 try {
                     client = connectWithRetries(connectionId);
                 } catch (Throwable e) {

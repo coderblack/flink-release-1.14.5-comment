@@ -76,6 +76,8 @@ public class RemoteInputChannel extends InputChannel {
     private final ConnectionID connectionId;
 
     /** The connection manager to use connect to the remote partition provider. */
+    // TODO BY dps@51doit.cn : 构造对象时即会传入
+    //  多个channel共用同一个连接管理器（该管理器是在taskManagerRunner启动过程中，创建nettyShuffleEnvironment时创建的）
     private final ConnectionManager connectionManager;
 
     /**
@@ -91,6 +93,7 @@ public class RemoteInputChannel extends InputChannel {
     private final AtomicBoolean isReleased = new AtomicBoolean();
 
     /** Client to establish a (possibly shared) TCP connection and request the partition. */
+    // TODO BY dps@51doit.cn : 不会在构造对象时赋值，而是在需要使用时再通过连接管理器创建（或取已存在的）
     private volatile PartitionRequestClient partitionRequestClient;
 
     /** The next expected sequence number for the next buffer. */
@@ -102,6 +105,8 @@ public class RemoteInputChannel extends InputChannel {
     /** The number of available buffers that have not been announced to the producer yet. */
     private final AtomicInteger unannouncedCredit = new AtomicInteger(0);
 
+    //TODO BY dps@51doit.cn : buffer管理器，每个RemoteInputChannel都会持有一个自己的管理器对象
+    // 而管理器中，又会持有本channel对象
     private final BufferManager bufferManager;
 
     @GuardedBy("receivedBuffers")
@@ -178,6 +183,7 @@ public class RemoteInputChannel extends InputChannel {
                     channelStatePersister);
             // Create a client and request the partition
             try {
+                // TODO BY dps@51doit.cn : 从连接管理器中获取id对应的客户端（如果尚不存在，会创建）
                 partitionRequestClient =
                         connectionManager.createPartitionRequestClient(connectionId);
             } catch (IOException e) {
@@ -185,7 +191,7 @@ public class RemoteInputChannel extends InputChannel {
                 // TaskExecutor
                 throw new PartitionConnectionException(partitionId, e);
             }
-
+            // TODO BY dps@51doit.cn : NettyPartitionRequestClient
             partitionRequestClient.requestSubpartition(partitionId, subpartitionIndex, this, 0);
         }
     }
@@ -540,17 +546,23 @@ public class RemoteInputChannel extends InputChannel {
 
                 SequenceBuffer sequenceBuffer = new SequenceBuffer(buffer, sequenceNumber);
                 DataType dataType = buffer.getDataType();
-                // TODO BY dps@51doit.cn : 添加到receivedBuffers（PrioritizedDeque）中
+
+                //TODO BY dps@51doit.cn : 如果是有权限的数据，添加到receivedBuffers中(并放到非优先数据的最前面）
                 if (dataType.hasPriority()) {
                     firstPriorityEvent = addPriorityBuffer(sequenceBuffer);
                     recycleBuffer = false;
                 } else {
+                    // TODO BY dps@51doit.cn : 否则，添加到receivedBuffers中
                     receivedBuffers.add(sequenceBuffer);
                     recycleBuffer = false;
                     if (dataType.requiresAnnouncement()) {
+                        //TODO BY dps@51doit.cn : 如果数据需要announce，则包装后再次放入（此处还未理解什么是announcement ###）
+                        // 从被调方法的逻辑中可以看出只有checkpoint barrier才可以被announce
                         firstPriorityEvent = addPriorityBuffer(announce(sequenceBuffer));
                     }
                 }
+
+                // TODO BY dps@51doit.cn : 将本次收到的barrierId做记录
                 channelStatePersister
                         .checkForBarrier(sequenceBuffer.buffer)
                         .filter(id -> id > lastBarrierId)
@@ -559,20 +571,25 @@ public class RemoteInputChannel extends InputChannel {
                                     // checkpoint was not yet started by task thread,
                                     // so remember the numbers of buffers to spill for the time when
                                     // it will be started
-                                    lastBarrierId = id;  // TODO BY dps@51doit.cn : 将本次收到的barrierId做记录
+                                    lastBarrierId = id;  //
                                     lastBarrierSequenceNumber = sequenceBuffer.sequenceNumber;
                                 });
+                // TODO BY dps@51doit.cn : 尝试对buffer进行state持久化
                 channelStatePersister.maybePersist(buffer);
                 ++expectedSequenceNumber;
             }
 
+            // TODO BY dps@51doit.cn : 如果这是第一个优先event，则立即进行通知（通知inputGate）
             if (firstPriorityEvent) {
                 notifyPriorityEvent(sequenceNumber);
             }
+            //TODO BY dps@51doit.cn : 如果在此前received buffers没有数据（此次是第一个），则立即进行channel非空通知
+            // 通知inputGate
             if (wasEmpty) {
                 notifyChannelNonEmpty();
             }
 
+            // TODO BY dps@51doit.cn : 如果上游数据积压数>0，则进行积压处理（申请浮动buffer）
             if (backlog >= 0) {
                 onSenderBacklog(backlog);
             }
@@ -597,7 +614,7 @@ public class RemoteInputChannel extends InputChannel {
         checkAnnouncedOnlyOnce(sequenceBuffer);
         AbstractEvent event =
                 EventSerializer.fromBuffer(sequenceBuffer.buffer, getClass().getClassLoader());
-        checkState(
+        checkState(  // TODO BY dps@51doit.cn : 只有checkpointBarrier才是可以被announce的
                 event instanceof CheckpointBarrier,
                 "Only a CheckpointBarrier can be announced but found %s",
                 sequenceBuffer.buffer);
@@ -626,7 +643,9 @@ public class RemoteInputChannel extends InputChannel {
      * Spills all queued buffers on checkpoint start. If barrier has already been received (and
      * reordered), spill only the overtaken buffers.
      */
+    // TODO BY dps@51doit.cn : 当ck开始时，溢出所有队列中的buffer
     public void checkpointStarted(CheckpointBarrier barrier) throws CheckpointException {
+        // TODO BY dps@51doit.cn : 拿到锁才能进行溢出操作（写入buffer的动作则会被阻塞）
         synchronized (receivedBuffers) {
             if (barrier.getId() < lastBarrierId) {
                 throw new CheckpointException(
@@ -644,6 +663,7 @@ public class RemoteInputChannel extends InputChannel {
                 resetLastBarrier();
             }
 
+            // TODO BY dps@51doit.cn : 持久化buffer
             channelStatePersister.startPersisting(
                     barrier.getId(), getInflightBuffersUnsafe(barrier.getId()));
         }

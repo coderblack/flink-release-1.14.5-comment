@@ -58,15 +58,16 @@ import static org.apache.flink.util.Preconditions.checkState;
  * <p>Tasks, which consume a result partition have to request one of its subpartitions. The request
  * happens either remotely (see {@link RemoteInputChannel}) or locally (see {@link
  * LocalInputChannel})
+ * <p>task消费一个resultPartition时需要请求具体的subPartitions，可能通过是网络（RemoteInputChannel），也可能通过本地（LocalInputChannel）
  *
  * <h2>Life-cycle</h2>
  *
  * <p>The life-cycle of each result partition has three (possibly overlapping) phases:
- *
+ * <p>resultPartition的生命周期由3个阶段：
  * <ol>
- *   <li><strong>Produce</strong>:
- *   <li><strong>Consume</strong>:
- *   <li><strong>Release</strong>:
+ *   <li><strong>Produce</strong>: 生产
+ *   <li><strong>Consume</strong>: 消费
+ *   <li><strong>Release</strong>: 释放
  * </ol>
  *
  * <h2>Buffer management</h2>
@@ -77,6 +78,7 @@ public abstract class ResultPartition implements ResultPartitionWriter {
 
     protected static final Logger LOG = LoggerFactory.getLogger(ResultPartition.class);
 
+    // TODO BY dps@51doit.cn : resultPartition的拥有者（task）
     private final String owningTaskName;
 
     private final int partitionIndex;
@@ -84,18 +86,22 @@ public abstract class ResultPartition implements ResultPartitionWriter {
     protected final ResultPartitionID partitionId;
 
     /** Type of this partition. Defines the concrete subpartition implementation to use. */
-    protected final ResultPartitionType partitionType;
+    protected final ResultPartitionType partitionType;  // TODO BY dps@51doit.cn : BLOCKING,PIPELINED_BOUNDED,PIPELINED等
 
+    // TODO BY dps@51doit.cn : ResultPartitionManager 管理当前 TaskManager 所有的 ResultPartition
     protected final ResultPartitionManager partitionManager;
 
+    //TODO BY dps@51doit.cn : ResultSubpartition 的数量由下游消费 Task 数和 DistributionPattern 来决定。
+    // FORWARD：1，SHUFFLE：下游算子并行度，BROADCAST
     protected final int numSubpartitions;
 
     private final int numTargetKeyGroups;
 
-    // - Runtime state --------------------------------------------------------
+    // - Runtime state   运行时状态-------------------------------------------------
 
     private final AtomicBoolean isReleased = new AtomicBoolean();
 
+    // TODO BY dps@51doit.cn : 缓冲池
     protected BufferPool bufferPool;
 
     private boolean isFinished;
@@ -138,7 +144,7 @@ public abstract class ResultPartition implements ResultPartitionWriter {
      * Registers a buffer pool with this result partition.
      *
      * <p>There is one pool for each result partition, which is shared by all its sub partitions.
-     *
+     * <p>每个Result Partition拥有一个buffer pool，由其所有的 sub partitions共享
      * <p>The pool is registered with the partition *after* it as been constructed in order to
      * conform to the life-cycle of task registrations in the {@link TaskExecutor}.
      */
