@@ -187,7 +187,7 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
                 SchedulerUtils.createCheckpointIDCounterIfCheckpointingIsEnabled(
                         jobGraph, checkNotNull(checkpointRecoveryFactory));
 
-        // 多易教育:  这里是生成 ExecutionGraph 的方法
+        // 多易教育:  这里是生成ExecutionGraph的方法
         this.executionGraph =
                 createAndRestoreExecutionGraph(
                         completedCheckpointStore,
@@ -323,6 +323,7 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
         return computeVertexParallelismStore(jobGraph.getVertices());
     }
 
+    // 多易教育:  根据jobGraph生成ExecutionGraph
     private ExecutionGraph createAndRestoreExecutionGraph(
             CompletedCheckpointStore completedCheckpointStore,
             CheckpointsCleaner checkpointsCleaner,
@@ -332,7 +333,8 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
             JobStatusListener jobStatusListener)
             throws Exception {
 
-        // 多易教育:  根据jobGraph生成ExecutionGraph
+        // 多易教育:  利用DefaultExecutionGraphFactory工厂类来生成ExecutionGraph
+        //  工厂类中又利用DefaultExecutionGraphBuilder.buildGraph来生成executionGraph
         final ExecutionGraph newExecutionGraph =
                 executionGraphFactory.createAndRestoreExecutionGraph(
                         jobGraph,
@@ -585,6 +587,7 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
         mainThreadExecutor.assertRunningInMainThread();
         registerJobMetrics();
         operatorCoordinatorHandler.startAllOperatorCoordinators();
+        //多易教育: Job调度内部方法
         startSchedulingInternal();
     }
 
@@ -593,7 +596,7 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
         jobManagerJobMetricGroup.gauge(MetricNames.FULL_RESTARTS, this::getNumberOfRestarts);
     }
 
-    protected abstract void startSchedulingInternal();
+    protected abstract void startSchedulingInternal();  //多易教育: 走实现 DefaultScheduler
 
     @Override
     public CompletableFuture<Void> closeAsync() {

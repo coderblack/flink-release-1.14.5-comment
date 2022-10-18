@@ -318,6 +318,9 @@ public class TaskSlotTableImpl<T extends TaskSlotPayload> implements TaskSlotTab
             return false;
         }
 
+        //多易教育: 前面一大段都是异常处理（比如槽位重复分配，槽位已被分配给别的allocation等）
+        // 分配槽位的过程中，会创建TaskSlot对象，
+        // 而一个TaskSlot对象在创建时即指定了JobId，allocationId，所以TaskSlot就是为槽位分配而生的
         taskSlot =
                 new TaskSlot<>(
                         index,
@@ -326,15 +329,17 @@ public class TaskSlotTableImpl<T extends TaskSlotPayload> implements TaskSlotTab
                         jobId,
                         allocationId,
                         memoryVerificationExecutor);
-        taskSlots.put(index, taskSlot);
+        taskSlots.put(index, taskSlot);  //多易教育: 放入总容器，用index标识（index是递增的）
 
         // update the allocation id to task slot map
-        allocatedSlots.put(allocationId, taskSlot);
+        allocatedSlots.put(allocationId, taskSlot);  //多易教育: 放入已分配容器，用allocationId标识
 
         // register a timeout for this slot since it's in state allocated
+        //多易教育: 注册超时监听
         timerService.registerTimeout(allocationId, slotTimeout.getSize(), slotTimeout.getUnit());
 
         // add this slot to the set of job slots
+        //多易教育: 放入slotsPerJob容器， jobId->hashSet(allocationId)
         Set<AllocationID> slots = slotsPerJob.get(jobId);
 
         if (slots == null) {
@@ -441,10 +446,10 @@ public class TaskSlotTableImpl<T extends TaskSlotPayload> implements TaskSlotTab
 
         if (taskSlot.isEmpty()) {
             // remove the allocation id to task slot mapping
-            allocatedSlots.remove(allocationId);
+            allocatedSlots.remove(allocationId);  //多易教育: 从已分配中移除
 
             // unregister a potential timeout
-            timerService.unregisterTimeout(allocationId);
+            timerService.unregisterTimeout(allocationId);  //多易教育: 取消分配超时监听
 
             JobID jobId = taskSlot.getJobId();
             Set<AllocationID> slots = slotsPerJob.get(jobId);
@@ -456,13 +461,13 @@ public class TaskSlotTableImpl<T extends TaskSlotPayload> implements TaskSlotTab
                                 + ". This indicates a programming bug.");
             }
 
-            slots.remove(allocationId);
+            slots.remove(allocationId);  //多易教育: 从perJobSlots中移除
 
             if (slots.isEmpty()) {
-                slotsPerJob.remove(jobId);
+                slotsPerJob.remove(jobId);  //多易教育: 如果该job的分配号已空，则从slotsPerJob中移除该job
             }
 
-            taskSlots.remove(taskSlot.getIndex());
+            taskSlots.remove(taskSlot.getIndex());  //多易教育: 从taskSlots总池中移除
             budgetManager.release(taskSlot.getResourceProfile());
         }
         return taskSlot.closeAsync(cause);

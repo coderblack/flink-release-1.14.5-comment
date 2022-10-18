@@ -40,13 +40,20 @@ import java.util.function.Function;
  * Default {@link JobMasterServiceProcess} which is responsible for creating and running a {@link
  * JobMasterService}. The process is responsible for receiving the signals from the {@link
  * JobMasterService} and to create the respective {@link JobManagerRunnerResult} from it.
+ * 多易教育：JobMasterServiceProcess负责创建和运行 JobMasterService； process负责接收JobMasterService的信号
+ *  并创建对应的JobManagerRunnerResult结果
+ *
  *
  * <p>The {@link JobMasterService} can be created asynchronously and the creation can also fail.
  * That is why the process needs to observe the creation operation and complete the {@link
  * #resultFuture} with an initialization failure.
+ * 多易教育：JobMasterService用异步的方式创建，并有可能失败；所以process需要观察创建操作，
+ *   并有可能以初始化失败来完成resultFuture
  *
  * <p>The {@link #resultFuture} can be completed with the following values:
- *
+ * 多易教育: resultFuture可能以如下值来填充：
+ *   JobManagerRunnerResult（JobMasterService初始化失败或job的完成）
+ *   JobNotFinishedException、Exception
  * <ul>
  *   <li>{@link JobManagerRunnerResult} to signal an initialization failure of the {@link
  *       JobMasterService} or the completion of a job
@@ -92,8 +99,10 @@ public class DefaultJobMasterServiceProcess
         this.jobMasterServiceFuture =
                 jobMasterServiceFactory.createJobMasterService(leaderSessionId, this);
 
+        //多易教育: 根据创建JobMasterService的future结果，做善后处理
         jobMasterServiceFuture.whenComplete(
                 (jobMasterService, throwable) -> {
+                    //多易教育: 如果jobMasterServiceFuture有异常，则构造初始化异常填充到resultFuture中
                     if (throwable != null) {
                         final JobInitializationException jobInitializationException =
                                 new JobInitializationException(
@@ -112,6 +121,7 @@ public class DefaultJobMasterServiceProcess
                                                         jobInitializationException)),
                                         jobInitializationException));
                     } else {
+                        //多易教育: 如果jobMasterServiceFuture没有异常，则填充信息到各future（jobMasterGateway，leaderAddress等）
                         registerJobMasterServiceFutures(jobMasterService);
                     }
                 });
@@ -125,6 +135,7 @@ public class DefaultJobMasterServiceProcess
         jobMasterGatewayFuture.complete(jobMasterService.getGateway());
         leaderAddressFuture.complete(jobMasterService.getAddress());
 
+        //多易教育: 获取terminationFuture，如有意外中断，进行善后处理
         jobMasterService
                 .getTerminationFuture()
                 .whenComplete(

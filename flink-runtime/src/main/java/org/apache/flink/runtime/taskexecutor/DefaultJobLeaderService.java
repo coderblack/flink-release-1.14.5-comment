@@ -61,6 +61,7 @@ public class DefaultJobLeaderService implements JobLeaderService {
     private final UnresolvedTaskManagerLocation ownLocation;
 
     /** The leader retrieval service and listener for each registered job. */
+    //多易教育: 存放每个注册job的leader获取服务和leader监听器
     private final Map<
                     JobID,
                     Tuple2<
@@ -179,6 +180,7 @@ public class DefaultJobLeaderService implements JobLeaderService {
         }
     }
 
+    //多易教育: 根据给定的jobId和目标JobManager地址，来注册job，会创建leader连接服务和监听器
     @Override
     public void addJob(final JobID jobId, final String defaultTargetAddress) throws Exception {
         Preconditions.checkState(
@@ -187,6 +189,7 @@ public class DefaultJobLeaderService implements JobLeaderService {
 
         LOG.info("Add job {} for job leader monitoring.", jobId);
 
+        //多易教育: StandAlone模式下，创建的是： StandaloneLeaderRetrievalService
         final LeaderRetrievalService leaderRetrievalService =
                 highAvailabilityServices.getJobManagerLeaderRetriever(jobId, defaultTargetAddress);
 
@@ -196,12 +199,13 @@ public class DefaultJobLeaderService implements JobLeaderService {
         final Tuple2<LeaderRetrievalService, JobManagerLeaderListener> oldEntry =
                 jobLeaderServices.put(
                         jobId, Tuple2.of(leaderRetrievalService, jobManagerLeaderListener));
-
+        //多易教育: 如果此job之前的leaderRetrieval和listener已存在，则停掉他们
         if (oldEntry != null) {
-            oldEntry.f0.stop();
-            oldEntry.f1.stop();
+            oldEntry.f0.stop();  //多易教育: 会关闭此前的老leader的rpc连接
+            oldEntry.f1.stop();  //多易教育: 关闭老leader的监听器和rpc连接
         }
-
+        //多易教育: 开启leader连接服务（StandaloneLeaderRetrievalService）
+        // 在standalone模式下，start仅仅只是调用一下listener的callback方法（notifyLeaderAddress）而已
         leaderRetrievalService.start(jobManagerLeaderListener);
     }
 
@@ -287,6 +291,7 @@ public class DefaultJobLeaderService implements JobLeaderService {
             }
         }
 
+        //多易教育: LeaderRetrievalService中的leaderListener会回调此方法来通知获取的leader(JobLeader)地址
         @Override
         public void notifyLeaderAddress(
                 @Nullable final String leaderAddress, @Nullable final UUID leaderId) {
@@ -319,7 +324,9 @@ public class DefaultJobLeaderService implements JobLeaderService {
                                     "Ongoing attempt to connect to leader of job {}. Ignoring duplicate leader information.",
                                     jobId);
                         } else {
+                            //多易教育: 关闭之前的rpc连接（如果此前已存在连接的话），对新leader建立新的连接
                             closeRpcConnection();
+                            //多易教育: 向jobMaster注册（如果成功，则获取gateway,调用JobManagerRegisteredRpcConnection的onsuccess回调方法，否则回调其他方法）
                             openRpcConnectionTo(leaderAddress, jobMasterId);
                         }
                     }

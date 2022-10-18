@@ -102,7 +102,8 @@ public abstract class AbstractStreamTaskNetworkInput<
                 }
 
                 if (result.isFullRecord()) {
-                    processElement(deserializationDelegate.getInstance(), output); // 多易教育:  output:OneInputStreamTask$StreamTaskNetworkOutput
+                    // 多易教育:  output:OneInputStreamTask$StreamTaskNetworkOutput
+                    processElement(deserializationDelegate.getInstance(), output);
                     return DataInputStatus.MORE_AVAILABLE;
                 }
             }
@@ -130,14 +131,15 @@ public abstract class AbstractStreamTaskNetworkInput<
     }
 
     private void processElement(StreamElement recordOrMark, DataOutput<T> output) throws Exception {
-        if (recordOrMark.isRecord()) {
+
+        if (recordOrMark.isRecord()) {  //多易教育: 流数据处理
             output.emitRecord(recordOrMark.asRecord());
-        } else if (recordOrMark.isWatermark()) {
+        } else if (recordOrMark.isWatermark()) {  //多易教育: watermark处理
             statusWatermarkValve.inputWatermark(
                     recordOrMark.asWatermark(), flattenedChannelIndices.get(lastChannel), output);
-        } else if (recordOrMark.isLatencyMarker()) {
+        } else if (recordOrMark.isLatencyMarker()) {  //多易教育: 延迟标记处理
             output.emitLatencyMarker(recordOrMark.asLatencyMarker());
-        } else if (recordOrMark.isWatermarkStatus()) {
+        } else if (recordOrMark.isWatermarkStatus()) {  //多易教育: watermark状态处理
             statusWatermarkValve.inputWatermarkStatus(
                     recordOrMark.asWatermarkStatus(),
                     flattenedChannelIndices.get(lastChannel),
@@ -149,6 +151,8 @@ public abstract class AbstractStreamTaskNetworkInput<
 
     protected DataInputStatus processEvent(BufferOrEvent bufferOrEvent) {
         // Event received
+        //多易教育: AbstractEvent实现类由RuntimeEvent
+        // RuntimeEvent下由EndOfData、EndOfChannelStateEvent、CheckpointBarrier、EndOfPartitionEvent等
         final AbstractEvent event = bufferOrEvent.getEvent();
         if (event.getClass() == EndOfData.class) {
             if (checkpointedInputGate.hasReceivedEndOfData()) {

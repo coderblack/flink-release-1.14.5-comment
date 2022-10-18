@@ -1264,12 +1264,14 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
             }
         }
 
+        //多易教育: 会在DeclarativeSlotManager中的slot分配过程中调用（资源不够导致slot分配失败时）
         @Override
         public void notifyNotEnoughResourcesAvailable(
                 JobID jobId, Collection<ResourceRequirement> acquiredResources) {
             validateRunsInMainThread();
 
             JobManagerRegistration jobManagerRegistration = jobManagerRegistrations.get(jobId);
+            //多易教育: 向job所属的jobManager通知资源不够
             if (jobManagerRegistration != null) {
                 jobManagerRegistration
                         .getJobManagerGateway()

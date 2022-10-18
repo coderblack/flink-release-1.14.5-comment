@@ -141,10 +141,10 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
     private final Map<JobVertexID, ExecutionJobVertex> tasks;
 
     /** All vertices, in the order in which they were created. * */
-    private final List<ExecutionJobVertex> verticesInCreationOrder;
+    private final List<ExecutionJobVertex> verticesInCreationOrder;   //多易教育: 所有点的列表，以创建顺序
 
     /** All intermediate results that are part of this graph. */
-    private final Map<IntermediateDataSetID, IntermediateResult> intermediateResults;
+    private final Map<IntermediateDataSetID, IntermediateResult> intermediateResults;  //多易教育: 所有中间结果集
 
     /** The currently executed tasks, for callbacks. */
     private final Map<ExecutionAttemptID, Execution> currentExecutions;
@@ -262,8 +262,8 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
 
     private final EdgeManager edgeManager;
 
-    private final Map<ExecutionVertexID, ExecutionVertex> executionVerticesById;
-    private final Map<IntermediateResultPartitionID, IntermediateResultPartition>
+    private final Map<ExecutionVertexID, ExecutionVertex> executionVerticesById;  //多易教育: 所有的点的ID索引
+    private final Map<IntermediateResultPartitionID, IntermediateResultPartition>  //多易教育: 所有中间结果的ID索引
             resultPartitionsById;
 
     // --------------------------------------------------------------------------------------------
@@ -347,8 +347,8 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
         this.parallelismStore = vertexParallelismStore;
 
         this.edgeManager = new EdgeManager();
-        this.executionVerticesById = new HashMap<>();
-        this.resultPartitionsById = new HashMap<>();
+        this.executionVerticesById = new HashMap<>();  //多易教育: 点集合在构造时赋值为空的map
+        this.resultPartitionsById = new HashMap<>();  //多易教育: 边集合在构造时赋值为空的map
     }
 
     @Override
@@ -755,7 +755,8 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
     // --------------------------------------------------------------------------------------------
     //  Actions
     // --------------------------------------------------------------------------------------------
-
+    //多易教育: 这里需要重点梳理，attach究竟做什么事？
+    // q&a:  看起来是传入的JobVertex后，进而生成topology（部署拓扑逻辑？）
     @Override
     public void attachJobGraph(List<JobVertex> topologicallySorted) throws JobException {
 
@@ -789,7 +790,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                             createTimestamp,
                             parallelismInfo,
                             initialAttemptCounts.getAttemptCounts(jobVertex.getID()));
-
+            //多易教育: 为ejv设置入边
             ejv.connectToPredecessors(this.intermediateResults);
 
             ExecutionJobVertex previousTask = this.tasks.putIfAbsent(jobVertex.getID(), ejv);
@@ -800,6 +801,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                                 jobVertex.getID(), ejv, previousTask));
             }
 
+            //多易教育: 将ejv的所有出边，添加到graph的边集合中
             for (IntermediateResult res : ejv.getProducedDataSets()) {
                 IntermediateResult previousDataSet =
                         this.intermediateResults.putIfAbsent(res.getId(), res);
@@ -810,14 +812,17 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                                     res.getId(), res, previousDataSet));
                 }
             }
-
+            //多易教育: 将创建好的executionVertex添加到点集合
             this.verticesInCreationOrder.add(ejv);
             this.numVerticesTotal += ejv.getParallelism();
         }
-
+        //多易教育: 将点和中间结果注册到ID索引map中
         registerExecutionVerticesAndResultPartitions(this.verticesInCreationOrder);
 
         // the topology assigning should happen before notifying new vertices to failoverStrategy
+        //多易教育: topology分配，应该在将新点通知到failoverStrategy之前进行
+        // 生成 executionTopology
+        // q&a: 这里的topology究竟是干啥，不太明白
         executionTopology = DefaultExecutionTopology.fromExecutionGraph(this);
 
         partitionGroupReleaseStrategy =

@@ -39,11 +39,14 @@ import java.util.UUID;
 /**
  * Container for multiple {@link TaskSlot} instances. Additionally, it maintains multiple indices
  * for faster access to tasks and sets of allocated slots.
+ * 多易教育: taskSlot的容器；另外，它维护着多个索引来加快tasks和allocated slots的访问
  *
  * <p>The task slot table automatically registers timeouts for allocated slots which cannot be
  * assigned to a job manager.
+ * 多易教育: taskSlotTable会为已分配槽位自动注册一个“分配给jobmanager“时的超时监听器
  *
  * <p>Before the task slot table can be used, it must be started via the {@link #start} method.
+ * 多易教育: taskSlotTable需要先执行start方法后才能被使用
  */
 public interface TaskSlotTable<T extends TaskSlotPayload>
         extends TimeoutListener<AllocationID>, AutoCloseableAsync {
@@ -62,14 +65,14 @@ public interface TaskSlotTable<T extends TaskSlotPayload>
      * @param jobId for which to return the set of {@link AllocationID}.
      * @return Set of {@link AllocationID} for the given job
      */
-    Set<AllocationID> getAllocationIdsPerJob(JobID jobId);
+    Set<AllocationID> getAllocationIdsPerJob(JobID jobId);  //多易教育: 返回制定jobId的所有allocationId
 
     /**
      * Returns the {@link AllocationID} of any active task listed in this {@code TaskSlotTable}.
      *
      * @return The {@code AllocationID} of any active task.
      */
-    Set<AllocationID> getActiveTaskSlotAllocationIds();
+    Set<AllocationID> getActiveTaskSlotAllocationIds(); //多易教育: 返回所有的active taskSlot的allocationIds
 
     /**
      * Returns the {@link AllocationID} of active {@link TaskSlot}s attached to the job with the
@@ -82,12 +85,15 @@ public interface TaskSlotTable<T extends TaskSlotPayload>
      */
     Set<AllocationID> getActiveTaskSlotAllocationIdsPerJob(JobID jobId);
 
-    SlotReport createSlotReport(ResourceID resourceId);
+    SlotReport createSlotReport(ResourceID resourceId);  //多易教育: 生成指定resourceId的slot报告
 
     /**
      * Allocate the slot with the given index for the given job and allocation id. If negative index
      * is given, a new auto increasing index will be generated. Returns true if the slot could be
      * allocated. Otherwise it returns false.
+     * 多易教育: 按照指定的索引号、job和allocationId来分配一个槽位；
+     *  如果给定的index为负数，则会自动生成一个递增的index；
+     *  如果可分配则返回true，否则返回false
      *
      * @param index of the task slot to allocate, use negative value for dynamic slot allocation
      * @param jobId to allocate the task slot for
@@ -102,7 +108,7 @@ public interface TaskSlotTable<T extends TaskSlotPayload>
      * Allocate the slot with the given index for the given job and allocation id. If negative index
      * is given, a new auto increasing index will be generated. Returns true if the slot could be
      * allocated. Otherwise it returns false.
-     *
+     * 多易教育: 相比上面的重载方法，多了一个指定资源的参数
      * @param index of the task slot to allocate, use negative value for dynamic slot allocation
      * @param jobId to allocate the task slot for
      * @param allocationId identifying the allocation
@@ -110,6 +116,8 @@ public interface TaskSlotTable<T extends TaskSlotPayload>
      *     be ignored otherwise
      * @param slotTimeout until the slot times out
      * @return True if the task slot could be allocated; otherwise false
+     * 多易教育: 从方法的参数来看，需要指定allocationId，那么应该是在这个方法中，去创建taskSlot来提供分配
+     *  allocationId是跟一次分配唯一绑定的
      */
     boolean allocateSlot(
             int index,
@@ -144,6 +152,8 @@ public interface TaskSlotTable<T extends TaskSlotPayload>
      * Try to free the slot. If the slot is empty it will set the state of the task slot to free and
      * return its index. If the slot is not empty, then it will set the state of the task slot to
      * releasing, fail all tasks and return -1.
+     * --------------
+     * 多易教育: 尝试free该slot；如果此时slot不为empty，则会 => 将slot状态设置为releasing，fail掉所有的task，返回-1
      *
      * @param allocationId identifying the task slot to be freed
      * @throws SlotNotFoundException if there is not task slot for the given allocation id
@@ -162,6 +172,7 @@ public interface TaskSlotTable<T extends TaskSlotPayload>
      * @param cause to fail the tasks with if slot is not empty
      * @throws SlotNotFoundException if there is not task slot for the given allocation id
      * @return Index of the freed slot if the slot could be freed; otherwise -1
+     * 多易教育: 相比上面的方法，多了一个cause的参数，用来指定fail掉task的原因
      */
     int freeSlot(AllocationID allocationId, Throwable cause) throws SlotNotFoundException;
 
@@ -229,7 +240,7 @@ public interface TaskSlotTable<T extends TaskSlotPayload>
 
     /**
      * Add the given task to the slot identified by the task's allocation id.
-     *
+     * 多易教育: 虽然传入的参数只有task，但是最终的标识依然是 allocationId（task中携带了allocationId）
      * @param task to add to the task slot with the respective allocation id
      * @throws SlotNotFoundException if there was no slot for the given allocation id
      * @throws SlotNotActiveException if there was no slot active for task's job and allocation id
@@ -241,10 +252,13 @@ public interface TaskSlotTable<T extends TaskSlotPayload>
      * Remove the task with the given execution attempt id from its task slot. If the owning task
      * slot is in state releasing and empty after removing the task, the slot is freed via the slot
      * actions.
+     * 多易教育:根据 execution attemptID从它的槽位中移除task；
+     *  如果它所属的槽位，状态为releasing且移除该task后变empty，这个槽位将通过slotActions被释放
      *
      * @param executionAttemptID identifying the task to remove
      * @return The removed task if there is any for the given execution attempt id; otherwise null
      */
+    // q&a: 为什么这里是用executionAttemptId来标识呢？？？
     T removeTask(ExecutionAttemptID executionAttemptID);
 
     /**

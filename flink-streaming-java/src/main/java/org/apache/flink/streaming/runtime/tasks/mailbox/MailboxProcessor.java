@@ -196,11 +196,17 @@ public class MailboxProcessor implements Closeable {
 
         final MailboxController defaultActionContext = new MailboxController(this);
 
+        //多易教育: 只要 mailboxLoopRunning 为true，则永远成立
+        //  而 mailboxLoopRunning的变更，是在task所有动作完成之后（数据处理任务完成）
         while (isNextLoopPossible()) {
             // The blocking `processMail` call will not return until default action is available.
-            processMail(localMailbox, false);  // 多易教育:  优先处理mail(只要默认动作不可能，mail处理就不会返回)
-            if (isNextLoopPossible()) {
-                mailboxDefaultAction.runDefaultAction(  // 多易教育:  然后再执行默认动作（数据处理）
+            // 多易教育:  优先处理mail(只要默认动作不可用，mail处理就不会返回)
+            processMail(localMailbox, false);
+            if (isNextLoopPossible()) {  //多易教育: 再做一次检查，因为上面的 mail 处理可能会改变运行状态 ；判断逻辑： !suspended
+                // 多易教育:  然后再执行默认动作（数据处理）
+                //  StreamTask 的核心是处理消息流中的 StreamRecord，这个处理逻辑是 MailboxProcessor 的默认行为
+                //  这里就是StreamTask的processInput()方法
+                mailboxDefaultAction.runDefaultAction(
                         defaultActionContext); // lock is acquired inside default action as needed
             }
         }
@@ -321,6 +327,7 @@ public class MailboxProcessor implements Closeable {
 
         // If the default action is currently not available, we can run a blocking mailbox execution
         // until the default action becomes available again.
+        //多易教育: 只要默认行为当前不可用，则会一直执行mail处理（内有循环）
         processed |= processMailsWhenDefaultActionUnavailable();
 
         return processed;
@@ -329,7 +336,9 @@ public class MailboxProcessor implements Closeable {
     private boolean processMailsWhenDefaultActionUnavailable() throws Exception {
         boolean processedSomething = false;
         Optional<Mail> maybeMail;
-        while (!isDefaultActionAvailable() && isNextLoopPossible()) {  // 多易教育:  只要默认动作还不可用，则一直循环处理mail
+
+        // 多易教育:  只要默认动作还不可用，则一直循环处理mail
+        while (!isDefaultActionAvailable() && isNextLoopPossible()) {
             maybeMail = mailbox.tryTake(MIN_PRIORITY);
             if (!maybeMail.isPresent()) {
                 maybeMail = Optional.of(mailbox.take(MIN_PRIORITY));
@@ -350,7 +359,8 @@ public class MailboxProcessor implements Closeable {
             if (processedMails++ == 0) {
                 maybePauseIdleTimer();
             }
-            maybeMail.get().run();  // 多易教育:  执行邮件逻辑动作
+            // 多易教育:  执行邮件逻辑动作
+            maybeMail.get().run();
             if (singleStep) {
                 break;
             }
@@ -456,10 +466,13 @@ public class MailboxProcessor implements Closeable {
 
         @Override
         public void resume() {
+            //多易教育: 如果是在mailbox的处理线程中触发resume
             if (mailbox.isMailboxThread()) {
+                //多易教育: 则直接将processor内的suspendedDefaultAction状态对象置为null
                 resumeInternal();
             } else {
                 try {
+                    //多易教育: 否则（由外部线程触发resume），通过把resumeInternal作为mail发送到mailbox
                     sendControlMail(this::resumeInternal, "resume default action");
                 } catch (MailboxClosedException ex) {
                     // Ignored

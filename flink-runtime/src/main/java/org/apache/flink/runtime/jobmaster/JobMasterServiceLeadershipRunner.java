@@ -163,7 +163,8 @@ public class JobMasterServiceLeadershipRunner implements JobManagerRunner, Leade
     @Override
     public void start() throws Exception {
         LOG.debug("Start leadership runner for job {}.", getJobID());
-        leaderElectionService.start(this);  // 多易教育:  StandaloneLeaderElectionService,开启leader选举（授予自身leader，并调用job调度执行）
+        // 多易教育:  StandaloneLeaderElectionService,开启leader选举（授予自身leader，并调用job调度执行）
+        leaderElectionService.start(this);
     }
 
     @Override
@@ -246,7 +247,8 @@ public class JobMasterServiceLeadershipRunner implements JobManagerRunner, Leade
     @Override
     public void grantLeadership(UUID leaderSessionID) {
         runIfStateRunning(
-                () -> startJobMasterServiceProcessAsync(leaderSessionID),  // 多易教育:  开始job调度执行
+                // 多易教育:  开始job调度执行
+                () -> startJobMasterServiceProcessAsync(leaderSessionID),
                 "starting a new JobMasterServiceProcess");
     }
 
@@ -317,7 +319,7 @@ public class JobMasterServiceLeadershipRunner implements JobManagerRunner, Leade
                 leaderSessionId);
 
         try {
-            // 设置job注册信息为正在运行
+            //多易教育: 设置job注册信息为正在运行
             runningJobsRegistry.setJobRunning(getJobID());
         } catch (IOException e) {
             throw new FlinkException(

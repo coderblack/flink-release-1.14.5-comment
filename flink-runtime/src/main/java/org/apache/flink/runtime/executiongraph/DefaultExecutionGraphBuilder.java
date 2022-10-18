@@ -70,6 +70,9 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 /**
  * Utility class to encapsulate the logic of building an {@link DefaultExecutionGraph} from a {@link
  * JobGraph}.
+ *
+ * 将DefaultExecutionGraph封装成JobGraph的工具类
+ *
  */
 public class DefaultExecutionGraphBuilder {
 
@@ -119,8 +122,12 @@ public class DefaultExecutionGraphBuilder {
 
         // create a new execution graph, if none exists so far
         // 多易教育:   终于到了最终的ExecutionGraph构造方法
+        //  通过DefaultExecutionGraph的构造器来得到executionGraph
         final DefaultExecutionGraph executionGraph;
         try {
+            //多易教育: 此处的构造函数，并没有真正形成点集合和边集合，只是填充了一些配置和组件（如blobWriter，shuffleMaster等），
+            // 真正的形成点、边，是在后续的attach方法中，
+            // 因为ExecutionGraph对比器JobGraph来说，并不会改变拓扑结构，而只是改变点、边的封装形式和属性内容
             executionGraph =
                     new DefaultExecutionGraph(
                             jobInformation,
@@ -186,6 +193,7 @@ public class DefaultExecutionGraphBuilder {
                 (System.nanoTime() - initMasterStart) / 1_000_000);
 
         // topologically sort the job vertices and attach the graph to the existing one
+        //多易教育: 对所有JobVertex从source节点开始做拓扑排序，并粘附这个graph上（吐槽：这里的注释英文水平烂的一笔）
         List<JobVertex> sortedTopology = jobGraph.getVerticesSortedTopologicallyFromSources();
         if (log.isDebugEnabled()) {
             log.debug(
@@ -195,7 +203,7 @@ public class DefaultExecutionGraphBuilder {
                     jobId);
         }
 
-        /// 多易教育:  ExecutionGraph，绑定job图中的各个JobVertex  BY DEEPSEA
+        // 多易教育:  ExecutionGraph，绑定job图中的各个JobVertex，这里才是真正生成点、边集合的地方
         executionGraph.attachJobGraph(sortedTopology);
 
         if (log.isDebugEnabled()) {

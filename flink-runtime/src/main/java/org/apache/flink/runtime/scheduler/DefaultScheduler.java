@@ -137,6 +137,8 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
             final Time rpcTimeout)
             throws Exception {
 
+        //多易教育: 父类（SchedulerBase）的构造中，会构建出SchedulingTopology,并以成员属性方式持有,
+        // this.schedulingTopology = executionGraph.getSchedulingTopology();
         super(
                 log,
                 jobGraph,
@@ -177,6 +179,8 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
         this.executionFailureHandler =
                 new ExecutionFailureHandler(
                         getSchedulingTopology(), failoverStrategy, restartBackoffTimeStrategy);
+        //多易教育: DefaultScheduler在构造schedulingStrategy时，
+        // 会先getSchedulingTopology() 得到topology传给strategy持有
         this.schedulingStrategy =
                 schedulingStrategyFactory.createInstance(this, getSchedulingTopology());
 
@@ -210,7 +214,8 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
                 "Starting scheduling with scheduling strategy [{}]",
                 schedulingStrategy.getClass().getName());
         transitionToRunning();
-        // 多易教育:  按实际调度策略，开始调度 ,PipelinedRegionSchedulingStrategy.startScheduling
+        // 多易教育:  按实际调度策略，开始调度
+        //  PipelinedRegionSchedulingStrategy.startScheduling
         schedulingStrategy.startScheduling();
     }
 

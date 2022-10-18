@@ -394,7 +394,8 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
     @Override
     protected void onStart() throws JobMasterException {
         try {
-            startJobExecution();  //TODO   BY DEEP SEA: 正式开始执行job
+            // 多易教育: 正式开始执行job
+            startJobExecution();
         } catch (Exception e) {
             final JobMasterException jobMasterException =
                     new JobMasterException("Could not start the JobMaster.", e);
@@ -879,7 +880,7 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
         JobShuffleContext context = new JobShuffleContextImpl(jobGraph.getJobID(), this);
         shuffleMaster.registerJob(context);
 
-        // 启动job master的各类服务： task manager心跳服务，资源服务心跳服务，slot pool服务……
+        // 多易教育: 启动job master的各类服务： task manager心跳服务，资源服务心跳服务，slot pool服务……
         startJobMasterServices();
 
         log.info(
@@ -888,7 +889,7 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
                 jobGraph.getJobID(),
                 getFencingToken());
 
-        // 开始调度
+        // 多易教育: 开始调度
         startScheduling();
     }
 
@@ -972,8 +973,8 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
     }
 
     private void startScheduling() {
-        // 走的实现类：SchedulerBase的startScheduling()
-        // 然后走的DefaultScheduler.startSchedulingInternal()
+        // 多易教育: 走的实现类：SchedulerBase的startScheduling()
+        //  然后走的 DefaultScheduler.startSchedulingInternal()
         schedulerNG.startScheduling();
     }
 

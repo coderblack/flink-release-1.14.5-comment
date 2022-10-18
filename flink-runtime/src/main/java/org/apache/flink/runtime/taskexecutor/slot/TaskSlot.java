@@ -110,9 +110,14 @@ public class TaskSlot<T extends TaskSlotPayload> implements AutoCloseableAsync {
         this.asyncExecutor = Preconditions.checkNotNull(asyncExecutor);
 
         this.tasks = new HashMap<>(4);
-        this.state = TaskSlotState.ALLOCATED;  // 多易教育: 构造时状态为 “已分配”,也就是只有当需要分配槽位时才创建一个TaskSlot ？
+
+        //多易教育: 构造时状态为 “已分配”,也就是只有当需要分配槽位时才创建一个TaskSlot ？
+        // 意味着构造一个TaskSlot，就是为了一个安排一个Task而做的
+        this.state = TaskSlotState.ALLOCATED;
 
         this.jobId = jobId;
+        //多易教育: 构造taskSlot时即需要指定allocationId
+        //  在taskExecutor的submitTask中，就已经为task对象设置了allocationId
         this.allocationId = allocationId;
 
         this.memoryManager = createMemoryManager(resourceProfile, memoryPageSize);
@@ -195,15 +200,15 @@ public class TaskSlot<T extends TaskSlotPayload> implements AutoCloseableAsync {
      * <p>In case that the task slot state is not active an {@link IllegalStateException} is thrown.
      * In case that the task's job id and allocation id don't match with the job id and allocation
      * id for which the task slot has been allocated, an {@link IllegalArgumentException} is thrown.
-     *
-     * @param task to be added to the task slot
-     * @throws IllegalStateException if the task slot is not in state active
-     * @return true if the task was added to the task slot; otherwise false
-     *
+     * ------------------------------
      * 多易教育: TaskSlot 提供了修改状态的方法，如 allocate(JobID newJobId, AllocationID newAllocationId) 方法会将 slot 标记为 Allocated 状态；
      *  markFree() 会将 slot 标记为 Free 状态，但只有在所有 Task 都被移除之后才能释放成功。
      *  slot 在切换状态的时候会先判断它当前所处的状态。
      *  另外，可以通过 add(Task task) 向 slot 中添加 Task，需要保证这些 Task 都来自同一个 Job。
+     * -------------------------------
+     * @param task to be added to the task slot
+     * @throws IllegalStateException if the task slot is not in state active
+     * @return true if the task was added to the task slot; otherwise false
      *
      */
     //多易教育: 添加一个task到taskSlot；同一个槽位中不允许存在同一个task的不同attemptId；

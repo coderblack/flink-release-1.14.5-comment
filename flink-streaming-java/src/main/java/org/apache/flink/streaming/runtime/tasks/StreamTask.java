@@ -206,7 +206,8 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     private final StreamTaskActionExecutor actionExecutor;
 
     /** The input processor. Initialized in {@link #init()} method. */
-    @Nullable protected StreamInputProcessor inputProcessor;   // 多易教育:  关键成员，由子类（OneInputStreamTask、TwoInputStreamTask等）在init方法中初始化
+    // 多易教育:  关键成员，由子类（OneInputStreamTask、TwoInputStreamTask等）在init方法中初始化
+    @Nullable protected StreamInputProcessor inputProcessor;
 
     /** the main operator that consumes the input streams of this task. */
     protected OP mainOperator;
@@ -268,9 +269,11 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
     private final RecordWriterDelegate<SerializationDelegate<StreamRecord<OUT>>> recordWriter;
 
-    protected final MailboxProcessor mailboxProcessor;   // 多易教育:  mailBox线程模型处理器（关键字段）
+    // 多易教育:  mailBox线程模型处理器（关键字段）
+    protected final MailboxProcessor mailboxProcessor;
 
-    final MailboxExecutor mainMailboxExecutor;  // 多易教育:  mailBox线程模型线程runnable执行封装
+    // 多易教育:  mailBox线程模型线程runnable执行封装
+    final MailboxExecutor mainMailboxExecutor;
 
     /** TODO it might be replaced by the global IO executor on TaskManager level future. */
     private final ExecutorService channelIOExecutor;
@@ -333,6 +336,9 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                 environment,
                 timerService,
                 uncaughtExceptionHandler,
+                //多易教育: StreamTask的ActionExecutor的实例直接是定死的
+                // ActionExecutor就是一个用于执行Runnable的封装
+                // 其中执行Runnable的时候也不是用Thread方式，而是直接调用run()方法
                 StreamTaskActionExecutor.IMMEDIATE);
     }
 
@@ -361,6 +367,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                 timerService,
                 uncaughtExceptionHandler,
                 actionExecutor,
+                //多易教育: 此处由TaskMailbox的构造，说明每个Task拥有一个TaskMailbox
                 new TaskMailboxImpl(Thread.currentThread()));
     }
 
@@ -375,7 +382,9 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         this.configuration = new StreamConfig(environment.getTaskConfiguration());
         this.recordWriter = createRecordWriterDelegate(configuration, environment);
         this.actionExecutor = Preconditions.checkNotNull(actionExecutor);
-        this.mailboxProcessor = new MailboxProcessor(this::processInput, mailbox, actionExecutor); // 多易教育:  new MailboxProcessor(controller -> { this.processInput(controller);},mailbox,actionExecutor);
+        // 多易教育:  new MailboxProcessor(controller -> { this.processInput(controller);},mailbox,actionExecutor);
+        //  传入的defaultAction就是StreamTask的processInput
+        this.mailboxProcessor = new MailboxProcessor(this::processInput, mailbox, actionExecutor);
         this.mainMailboxExecutor = mailboxProcessor.getMainMailboxExecutor();
         this.asyncExceptionHandler = new StreamTaskAsyncExceptionHandler(environment);
         this.asyncOperationsThreadPool =
@@ -420,7 +429,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         injectChannelStateWriterIntoChannels();
 
         environment.getMetricGroup().getIOMetricGroup().setEnableBusyTime(true);
-        this.throughputCalculator = environment.getThroughputCalculator();
+        this.throughputCalculator = environment.getThroughputCalculator();  //多易教育: 吞吐量计算器
         Configuration taskManagerConf = environment.getTaskManagerInfo().getConfiguration();
 
         this.bufferDebloatPeriod = taskManagerConf.get(BUFFER_DEBLOAT_PERIOD).toMillis();
@@ -447,6 +456,8 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     private TimerService createTimerService(String timerThreadName) {
         ThreadFactory timerThreadFactory =
                 new DispatcherThreadFactory(TRIGGER_THREAD_GROUP, timerThreadName);
+        //多易教育: 构造SystemProcessingTimeService时传入了线程工厂,而线程工厂得到线程是通过new来构造的
+        // 因此，SystemProcessingTimeService的工作是在一个自己的线程中运行
         return new SystemProcessingTimeService(this::handleTimerException, timerThreadFactory);
     }
 
@@ -493,6 +504,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
      * @throws Exception on any problems in the action.
      */
     protected void processInput(MailboxDefaultAction.Controller controller) throws Exception {
+        //多易教育: 处理输入数据，返回状态
         DataInputStatus status = inputProcessor.processInput();
         switch (status) {
             case MORE_AVAILABLE:
@@ -520,17 +532,23 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         TaskIOMetricGroup ioMetrics = getEnvironment().getMetricGroup().getIOMetricGroup();
         PeriodTimer timer;
         CompletableFuture<?> resumeFuture;
+        //多易教育: 如果输出不可用（背压了），则获取“输出器”的可用future,并开启秒均背压度量
         if (!recordWriter.isAvailable()) {
             timer = new GaugePeriodTimer(ioMetrics.getBackPressuredTimePerSecond());
             resumeFuture = recordWriter.getAvailableFuture();
         } else {
+            //多易教育: 否则，获取“输入处理器”的可用的future，并开启吞吐量度量器
             timer =
                     new ThroughputPeriodTimer(
                             ioMetrics.getIdleTimeMsPerSecond(), throughputCalculator);
             resumeFuture = inputProcessor.getAvailableFuture();
         }
+
+        //多易教育: 构造Wrapper开始计时，一旦输入或者输出变得可用调用runnable的run方法，触发suspend.resume()
         assertNoException(
                 resumeFuture.thenRun(
+                        //多易教育: 构造方法中会执行timer.start()，而在其中的run方法中，会进行suspend.resume()
+                        // q&a: 这里的resume，是mailbox线程内的resume 还是 线程外的触发？
                         new ResumeWrapper(controller.suspendDefaultAction(timer), timer)));
     }
 
@@ -744,6 +762,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         }
     }
 
+    //多易教育: Task被启动执行的入口方法
     @Override
     public final void invoke() throws Exception {
         // Allow invoking method 'invoke' without having to call 'restore' before it.
@@ -758,6 +777,8 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         scheduleBufferDebloater();
 
         // let the task do its work
+        //多易教育: 使用MailboxProcessor对数据进行循环处理（包含mail和streamRecord）
+        // 而mailboxProcessor的defaultAction就是StreamTask中的processInput()方法
         runMailboxLoop();
 
         // if this left the run() method cleanly despite the fact that this was canceled,
@@ -806,6 +827,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     }
 
     public void runMailboxLoop() throws Exception {
+        //多易教育: 使用mailboxProcessor执行mailbox循环
         mailboxProcessor.runMailboxLoop();
     }
 

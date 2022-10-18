@@ -45,15 +45,15 @@ public class DefaultSlotTracker implements SlotTracker {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultSlotTracker.class);
 
     /** Map for all registered slots. */
-    private final Map<SlotID, DeclarativeTaskManagerSlot> slots = new HashMap<>();
+    private final Map<SlotID, DeclarativeTaskManagerSlot> slots = new HashMap<>();  //多易教育: 所有已注册的TaskManagerSlot
 
     /** Index of all currently free slots. */
-    private final Map<SlotID, DeclarativeTaskManagerSlot> freeSlots = new LinkedHashMap<>();
+    private final Map<SlotID, DeclarativeTaskManagerSlot> freeSlots = new LinkedHashMap<>();  //多易教育: 当前所有空闲的slots
 
-    private final MultiSlotStatusUpdateListener slotStatusUpdateListeners =
-            new MultiSlotStatusUpdateListener();
+    private final MultiSlotStatusUpdateListener slotStatusUpdateListeners =   //多易教育: slot状态变更监听器
+            new MultiSlotStatusUpdateListener();  //多易教育: 它是多个监听器的包装类，需要往其中加入具体的监听器才会由实质行为
 
-    private final SlotStatusStateReconciler slotStatusStateReconciler =
+    private final SlotStatusStateReconciler slotStatusStateReconciler =  //多易教育: slot状态协调器（状态转换机）
             new SlotStatusStateReconciler(
                     this::transitionSlotToFree,
                     this::transitionSlotToPending,

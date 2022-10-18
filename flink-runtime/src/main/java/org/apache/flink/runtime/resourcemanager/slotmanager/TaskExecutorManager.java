@@ -60,6 +60,9 @@ import java.util.stream.StreamSupport;
  *   <li>tracking pending slots (expected slots from executors that are currently being allocated
  *   <li>tracking how many slots are used on each task executor
  * </ul>
+ * 多易教育: SlotManager用于管理多个taskExecutor的组件，包含：
+ *  跟踪注册的taskExecutor，分配新的taskExecutor（按需求或者按冗余），
+ *  释放空闲的executor，跟踪pending slots，跟踪每个taskExecutor被使用的slots数
  *
  * <p>Dev note: This component only exists to keep the code out of the slot manager. It covers many
  * aspects that aren't really the responsibility of the slot manager, and should be refactored to
@@ -153,6 +156,7 @@ class TaskExecutorManager implements AutoCloseable {
             SlotReport initialSlotReport,
             ResourceProfile totalResourceProfile,
             ResourceProfile defaultSlotResourceProfile) {
+        //多易教育: 校验新slot注册后是否超出slotManager的上限：slotmanager.number-of-slots.max
         if (isMaxSlotNumExceededAfterRegistration(initialSlotReport)) {
             LOG.info(
                     "The total number of slots exceeds the max limitation {}, releasing the excess task executor.",
@@ -168,7 +172,7 @@ class TaskExecutorManager implements AutoCloseable {
                         taskExecutorConnection,
                         StreamSupport.stream(initialSlotReport.spliterator(), false)
                                 .map(SlotStatus::getSlotID)
-                                .collect(Collectors.toList()),
+                                .collect(Collectors.toList()),  //多易教育: Collection<SlotID> slots
                         totalResourceProfile,
                         defaultSlotResourceProfile);
 
@@ -176,6 +180,7 @@ class TaskExecutorManager implements AutoCloseable {
                 taskExecutorConnection.getInstanceID(), taskManagerRegistration);
 
         // next register the new slots
+        //多易教育: 比对资源是否匹配，并移除 pendingTaskManagerSlot（挂起等待中的slot需求）
         for (SlotStatus slotStatus : initialSlotReport) {
             if (slotStatus.getJobID() == null) {
                 findAndRemoveExactlyMatchingPendingTaskManagerSlot(slotStatus.getResourceProfile());

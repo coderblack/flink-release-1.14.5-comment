@@ -227,7 +227,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     private final Executor ioExecutor;
 
     // --------- task slot allocation table -----------
-
+    //多易教育: 槽位分配表
     private final TaskSlotTable<Task> taskSlotTable;
 
     private final Map<JobID, UUID> currentSlotOfferPerJob = new HashMap<>();
@@ -329,6 +329,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         this.resourceManagerHeartbeatManager =
                 createResourceManagerHeartbeatManager(heartbeatServices, resourceId);
 
+        // q&a: 采样线程？  工厂中获得线程的办法是，通过接收一个runnable后new了一个thread
         ExecutorThreadFactory sampleThreadFactory =
                 new ExecutorThreadFactory.Builder()
                         .setPoolName("flink-thread-info-sampler")
@@ -1033,7 +1034,9 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     // ----------------------------------------------------------------------
     // Slot allocation RPCs
     // ----------------------------------------------------------------------
-    // 多易教育:  对外暴露的rpc方法： 请求slot
+    // 多易教育:  对外暴露的rpc方法： Resource Manager通过该方法来请求slot，
+    //  由于 Resource Manager 知道所有 slot 的当前状况，因此分配请求会精确到具体的 SlotID,
+    //  这里让人意外的是，一次调用居然只请求一个slot
     @Override
     public CompletableFuture<Acknowledge> requestSlot(
             final SlotID slotId,
@@ -1072,6 +1075,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         try {
             job =
                     jobTable.getOrCreateJob(
+                            //多易教育: 注册新的job，创建相关服务（jobLeader的连接服务）
                             jobId, () -> registerNewJobAndCreateServices(jobId, targetAddress));
         } catch (Exception e) {
             // free the allocated slot
@@ -1094,7 +1098,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             return FutureUtils.completedExceptionally(
                     new SlotAllocationException("Could not create new job.", e));
         }
-        // 多易教育:  如果job已连接，则提供slot给到jobManager
+        // 多易教育:  如果job已连接，则将分配好的 slot 资源提供给 JobManager
         if (job.isConnected()) {
             offerSlotsToJobManager(jobId);
         }
@@ -1104,6 +1108,10 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
     private TaskExecutorJobServices registerNewJobAndCreateServices(
             JobID jobId, String targetAddress) throws Exception {
+        //多易教育: DefaultJobLeaderService中持有一个jobLeaderService(Map结构)：
+        //  注册job对应的LeaderRetrievalService和JobManagerLeaderListener，
+        //  addJob就是得到该job对应的retrievalService和leaderListener放入该Map中;
+        //  同时，还会为此job创建leader连接服务及leader监听器
         jobLeaderService.addJob(jobId, targetAddress);
         final PermanentBlobCache permanentBlobService = blobCacheService.getPermanentBlobService();
         permanentBlobService.registerJob(jobId);
@@ -1113,10 +1121,15 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                 () -> permanentBlobService.releaseJob(jobId));
     }
 
+    //多易教育: 为指定的slotId、jobId、allocationId、资源要求，来分配槽位
     private void allocateSlot(
             SlotID slotId, JobID jobId, AllocationID allocationId, ResourceProfile resourceProfile)
             throws SlotAllocationException {
+        //多易教育: 1.如果槽位为free状态
         if (taskSlotTable.isSlotFree(slotId.getSlotNumber())) {
+            //多易教育: 分配槽位，核心处理就是在TaskSlotTable中，创建TaskSlot，
+            // 并与allocationId、jobId等建立绑定，并注册到各类容器，
+            // 注册成功会返回 true，否则返回 false
             if (taskSlotTable.allocateSlot(
                     slotId.getSlotNumber(),
                     jobId,
@@ -1128,12 +1141,16 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                 log.info("Could not allocate slot for {}.", allocationId);
                 throw new SlotAllocationException("Could not allocate slot.");
             }
-        } else if (!taskSlotTable.isAllocated(slotId.getSlotNumber(), jobId, allocationId)) {
+        }
+
+        //多易教育: 2.如果槽位不为free状态，且判断发现slot已经被分配给了别的job，则抛出一个"槽位已占用"的异常
+        else if (!taskSlotTable.isAllocated(slotId.getSlotNumber(), jobId, allocationId)) {
             final String message =
                     "The slot " + slotId + " has already been allocated for a different job.";
 
             log.info(message);
 
+            //多易教育: 如果返回false，说明slot分配失败，抛出slot占用异常
             final AllocationID allocationID =
                     taskSlotTable.getCurrentAllocation(slotId.getSlotNumber());
             throw new SlotOccupiedException(
@@ -1344,6 +1361,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             InstanceID taskExecutorRegistrationId,
             ClusterInformation clusterInformation) {
 
+        //多易教育: 向resourceManager发送slot报告
         final CompletableFuture<Acknowledge> slotReportResponseFuture =
                 resourceManagerGateway.sendSlotReport(
                         getResourceID(),
@@ -1363,11 +1381,13 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                 getMainThreadExecutor());
 
         // monitor the resource manager as heartbeat target
+        //多易教育: 将resourceManager作为监控对象添加到心跳管理器中
         resourceManagerHeartbeatManager.monitorTarget(
                 resourceManagerResourceId,
                 new ResourceManagerHeartbeatTarget(resourceManagerGateway));
 
         // set the propagated blob server address
+        //多易教育: 从注册后的响应信息中获取blob服务地址信息，并设置到blobCacheService中
         final InetSocketAddress blobServerAddress =
                 new InetSocketAddress(
                         clusterInformation.getBlobServerHostname(),
@@ -1462,6 +1482,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     }
 
     private void internalOfferSlotsToJobManager(JobTable.Connection jobManagerConnection) {
+        //多易教育: jobId和jobManagerConnection一一对应
         final JobID jobId = jobManagerConnection.getJobId();
 
         if (taskSlotTable.hasAllocatedSlots(jobId)) {
@@ -1469,26 +1490,32 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
             final JobMasterGateway jobMasterGateway = jobManagerConnection.getJobManagerGateway();
 
+            //多易教育: 取出为指定job已分配的slots，称之为保留slots
             final Iterator<TaskSlot<Task>> reservedSlotsIterator =
                     taskSlotTable.getAllocatedSlots(jobId);
             final JobMasterId jobMasterId = jobManagerConnection.getJobMasterId();
 
             final Collection<SlotOffer> reservedSlots = new HashSet<>(2);
 
+            //多易教育: 将slot封装为SlotOffer
             while (reservedSlotsIterator.hasNext()) {
                 SlotOffer offer = reservedSlotsIterator.next().generateSlotOffer();
                 reservedSlots.add(offer);
             }
 
+            //多易教育: 为job生成一个随机uuid作为offerId
             final UUID slotOfferId = UUID.randomUUID();
+            //多易教育: 注册hashMap中
             currentSlotOfferPerJob.put(jobId, slotOfferId);
 
             CompletableFuture<Collection<SlotOffer>> acceptedSlotsFuture =
-                    jobMasterGateway.offerSlots(  // 多易教育:  通过gateway rpc请求jobMaster
+                    // 多易教育:  通过gateway rpc请求jobMaster，提供slot
+                    jobMasterGateway.offerSlots(
                             getResourceID(),
                             reservedSlots,
                             taskManagerConfiguration.getRpcTimeout());
 
+            //多易教育: 异步请求完成后，对offer的接受情况进行处理
             acceptedSlotsFuture.whenCompleteAsync(
                     handleAcceptedSlotOffers(
                             jobId, jobMasterGateway, jobMasterId, reservedSlots, slotOfferId),
@@ -1531,11 +1558,13 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                 return;
             }
 
+            //多易教育: 异常处理
             if (throwable != null) {
                 if (throwable instanceof TimeoutException) {
                     log.info(
                             "Slot offering to JobManager did not finish in time. Retrying the slot offering.");
                     // We ran into a timeout. Try again.
+                    //多易教育: 如果是超时异常，则重试一次
                     offerSlotsToJobManager(jobId);
                 } else {
                     log.warn(
@@ -1544,6 +1573,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                             throwable);
 
                     // We encountered an exception. Free the slots and return them to the RM.
+                    //多易教育: 如果是其他异常，则对offer的slot进行释放
                     for (SlotOffer reservedSlot : offeredSlots) {
                         freeSlotInternal(reservedSlot.getAllocationId(), throwable);
                     }
@@ -1554,28 +1584,32 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                     // mark accepted slots active
                     for (SlotOffer acceptedSlot : acceptedSlots) {
                         final AllocationID allocationId = acceptedSlot.getAllocationId();
+                        //多易教育: 对每一个被接受的slot，标注active状态
                         try {
                             if (!taskSlotTable.markSlotActive(allocationId)) {
                                 // the slot is either free or releasing at the moment
                                 final String message =
                                         "Could not mark slot " + allocationId + " active.";
                                 log.debug(message);
+                                //多易教育: 如果标注active失败，则通知jobMaster进行failSlot
                                 jobMasterGateway.failSlot(
                                         getResourceID(), allocationId, new FlinkException(message));
                             }
                         } catch (SlotNotFoundException e) {
+                            //多易教育: 如果发生slotNotFound异常，则通知jobMaster进行failSlot
                             final String message =
                                     "Could not mark slot " + allocationId + " active.";
                             jobMasterGateway.failSlot(
                                     getResourceID(), allocationId, new FlinkException(message));
                         }
-
+                        //多易教育: 一切正常时，从offeredSlots中剔除被接受的slot
                         offeredSlots.remove(acceptedSlot);
                     }
 
                     final Exception e = new Exception("The slot was rejected by the JobManager.");
 
                     for (SlotOffer rejectedSlot : offeredSlots) {
+                        // 遍历剩余的slot（被拒绝的slot），进行内部的释放
                         freeSlotInternal(rejectedSlot.getAllocationId(), e);
                     }
                 } else {
@@ -1589,6 +1623,8 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         };
     }
 
+    //多易教育: 建立与新的jobMaster的连接
+    // 由 jobManagerGainedLeadership()方法执行的callback
     private void establishJobManagerConnection(
             JobTable.Job job,
             final JobMasterGateway jobMasterGateway,
@@ -1618,6 +1654,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
         ResourceID jobManagerResourceID = registrationSuccess.getResourceID();
 
+        //多易教育: 建立连接（会创建ck响应器，resultPartition可消费通知器等）
         final JobTable.Connection establishedConnection =
                 associateWithJobManager(job, jobManagerResourceID, jobMasterGateway);
 
@@ -1625,6 +1662,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         jobManagerHeartbeatManager.monitorTarget(
                 jobManagerResourceID, new JobManagerHeartbeatTarget(jobMasterGateway));
 
+        //多易教育: 使用创建好的连接对象，发送slots offer
         internalOfferSlotsToJobManager(establishedConnection);
     }
 
@@ -1696,10 +1734,11 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         checkNotNull(jobMasterGateway);
 
         TaskManagerActions taskManagerActions = new TaskManagerActionsImpl(jobMasterGateway);
-
+        //多易教育: 与jobManager联系时，会创建ck响应器
         CheckpointResponder checkpointResponder = new RpcCheckpointResponder(jobMasterGateway);
         GlobalAggregateManager aggregateManager = new RpcGlobalAggregateManager(jobMasterGateway);
 
+        //多易教育: 与jobManager联系时，会创建resultPartitionConsumableNotifier通知器（会被入connect对象中）
         ResultPartitionConsumableNotifier resultPartitionConsumableNotifier =
                 new RpcResultPartitionConsumableNotifier(
                         jobMasterGateway,
@@ -1711,6 +1750,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
         registerQueryableState(job.getJobId(), jobMasterGateway);
 
+        //多易教育: 返回job连接对象
         return job.connect(
                 resourceID,
                 jobMasterGateway,
@@ -1898,12 +1938,14 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         try {
             final JobID jobId = taskSlotTable.getOwningJob(allocationId);
 
+            //多易教育: 调用taskSlotTable来释放slot
             final int slotIndex = taskSlotTable.freeSlot(allocationId, cause);
 
             if (slotIndex != -1) {
 
                 if (isConnectedToResourceManager()) {
                     // the slot was freed. Tell the RM about it
+                    //多易教育: slot被释放时，告知resourceManager：slot可用
                     ResourceManagerGateway resourceManagerGateway =
                             establishedResourceManagerConnection.getResourceManagerGateway();
 
@@ -1914,6 +1956,8 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                 }
 
                 if (jobId != null) {
+                    //多易教育: 如果和 allocationID 绑定的 Job 已经没有分配的 slot 了，
+                    // 那么可以断开和 JobMaster 的连接 并释放一系列资源了（网络连接，内存分配等）
                     closeJobManagerConnectionIfNoAllocatedResources(jobId);
                 }
             }
@@ -2266,6 +2310,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                         //noinspection ObjectEquality
                         if (resourceManagerConnection == connection) {
                             try {
+                                //多易教育: 注册成功后，会确认连接，并在确认过程中发送slot报告
                                 establishResourceManagerConnection(
                                         resourceManagerGateway,
                                         resourceManagerId,

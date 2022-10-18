@@ -143,6 +143,7 @@ public class DefaultExecutionTopology implements SchedulingTopology {
         return edgeManager;
     }
 
+    //多易教育: 从executionGraph得到executionTopology
     public static DefaultExecutionTopology fromExecutionGraph(
             DefaultExecutionGraph executionGraph) {
         checkNotNull(executionGraph, "execution graph can not be null");
