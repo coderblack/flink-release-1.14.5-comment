@@ -76,38 +76,59 @@ public class JobVertex implements java.io.Serializable {
      */
     private final List<OperatorIDPair> operatorIDs;
 
-    /** List of produced data sets, one per writer. 多易教育: 输出数据集，每 writer一个  */
+    /** List of produced data sets, one per writer.
+     * 多易教育: 输出数据集，每 writer一个
+     * */
     private final ArrayList<IntermediateDataSet> results = new ArrayList<>();
 
-    /** List of edges with incoming data. One per Reader. 多易教育: 输入数据边的列表； 每 reader一个  */
+    /** List of edges with incoming data. One per Reader.
+     * 多易教育: 输入数据边的列表； 每 reader一个
+     * */
     private final ArrayList<JobEdge> inputs = new ArrayList<>();
 
     /** The list of factories for operator coordinators. */
     private final ArrayList<SerializedValue<OperatorCoordinator.Provider>> operatorCoordinators =
             new ArrayList<>();
 
-    /** Number of subtasks to split this task into at runtime. 多易教育: task运行时默认并行度 */
+    /** Number of subtasks to split this task into at runtime.
+     * 多易教育: task运行时默认并行度
+     * */
     private int parallelism = ExecutionConfig.PARALLELISM_DEFAULT;
 
-    /** Maximum number of subtasks to split this task into a runtime. 多易教育: task运行时最大并行度 */
+    /** Maximum number of subtasks to split this task into a runtime.
+     * 多易教育: task运行时最大并行度
+     * */
     private int maxParallelism = MAX_PARALLELISM_DEFAULT;
 
-    /** The minimum resource of the vertex. 多易教育: 最小资源描述 */
+    /** The minimum resource of the vertex.
+     * 多易教育: 最小资源描述
+     * */
     private ResourceSpec minResources = ResourceSpec.DEFAULT;
 
-    /** The preferred resource of the vertex. 多易教育: 优选资源描述 */
+    /** The preferred resource of the vertex.
+     * 多易教育: 优选资源描述
+     * */
     private ResourceSpec preferredResources = ResourceSpec.DEFAULT;
 
-    /** Custom configuration passed to the assigned task at runtime. 多易教育: 传给task运行时的用户自定义参数*/
+    /** Custom configuration passed to the assigned task at runtime.
+     * 多易教育: 传给task运行时的用户自定义参数
+     * */
     private Configuration configuration;
 
-    /** The class of the invokable. 多易教育: 可执行类 （vertex中能真正被调用执行的任务逻辑类）*/
+    /**
+     * The class of the invokable.
+     * 多易教育: 可执行类 （vertex中能真正被调用执行的任务逻辑类）
+     * */
     private String invokableClassName;
 
-    /** Indicates of this job vertex is stoppable or not. 多易教育: 标识 vertex 是否可以被stop */
+    /** Indicates of this job vertex is stoppable or not.
+     * 多易教育: 标识 vertex 是否可以被stop
+     * */
     private boolean isStoppable = false;
 
-    /** Optionally, a source of input splits. 多易教育: 可选，可切片source */
+    /** Optionally, a source of input splits.
+     * 多易教育: 可选，可切片source
+     * */
     private InputSplitSource<?> inputSplitSource;
 
     /**
@@ -122,8 +143,7 @@ public class JobVertex implements java.io.Serializable {
      * concurrently in one slot.
      *
      * 多易教育: 所属的资源共享槽位
-     *  （注：不同job vertex之间的subtask可以共享资源槽位）
-     *
+     *  （注：不同jobVertex之间的subtask可以共享资源槽位）
      */
     @Nullable private SlotSharingGroup slotSharingGroup;
 

@@ -35,13 +35,17 @@ public class IntermediateDataSet implements java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    //多易教育: 数据集的唯一标识
     private final IntermediateDataSetID id; // the identifier
 
+    //多易教育: 数据集的生产者（上游JobVertex）
     private final JobVertex producer; // the operation that produced this data set
 
+    //多易教育: 数据集的消费者（以JobEdge边来标识）
     private final List<JobEdge> consumers = new ArrayList<JobEdge>();
 
     // The type of partition to use at runtime
+    //多易教育: 数据集的类型
     private final ResultPartitionType resultType;
 
     // --------------------------------------------------------------------------------------------
