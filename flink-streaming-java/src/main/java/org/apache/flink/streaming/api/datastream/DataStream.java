@@ -592,6 +592,7 @@ public class DataStream<T> {
      */
     public <R> SingleOutputStreamOperator<R> map(
             MapFunction<T, R> mapper, TypeInformation<R> outputType) {
+        // 多易教育: StreamMap是一个AbstractUdfStreamOperator,它持有了用户所传入的userFunction
         return transform("Map", outputType, new StreamMap<>(clean(mapper)));
     }
 
@@ -1161,7 +1162,7 @@ public class DataStream<T> {
             TypeInformation<R> outTypeInfo,
             OneInputStreamOperator<T, R> operator) {
 
-        //TODO 这里的 SimpleOperatorFactory 居然是写死的  // BY DEEP SEA
+        //多易教育: SimpleOperatorFactory.of(operator),内部是对operator类型进行判断，然后得到不同的factory,
         // SimpleOperatorFactory 有 :
         // SimpleInputFormatOperatorFactory/SimpleOutputFormatOperatorFactory/simpleUdfStreamOperatorFactory
         return doTransform(operatorName, outTypeInfo, SimpleOperatorFactory.of(operator));
@@ -1197,24 +1198,27 @@ public class DataStream<T> {
         // read the output type of the input Transform to coax out errors about MissingTypeInfo
         transformation.getOutputType();
 
-        // 先构造transform
-        // transform中的核心要素是 operator（称之为运算函数更合适），以及一个对应的operatorFactory工厂对象
+        // 多易教育: 先构造transform
+        //  transform中的核心要素是 operator（称之为运算函数更合适），以及一个对应的operatorFactory工厂对象
         OneInputTransformation<T, R> resultTransform =
                 new OneInputTransformation<>(
-                        this.transformation,  //TODO 每个Transform都包含输入transform // BY DEEP SEA
+                        this.transformation,  //多易教育:每个Transform都包含前向transform
                         operatorName,
                         operatorFactory,
                         outTypeInfo,
                         environment.getParallelism());
 
-        // 再构造返回的dataStream（要吐个大槽：返回的datastream命名为xxOperator，而底层的Mapper等算子也命名位Operator）
-        // 每个datastream中都包含着这一步的核心要素：transform
+        // 多易教育: 注意，SingleOutputStreamOperator其实是继承自DataStream
+        //  （要吐个大槽：返回的datastream命名为xxOperator，而算子函数的封装也叫Operator，混淆不堪）
+        //  构造返回的dataStream, 每个Datastream中都包含核心要素：transformation
+        //  (而这个resultTransformation中持有前向transformation的引用）
         @SuppressWarnings({"unchecked", "rawtypes"})
         SingleOutputStreamOperator<R> returnStream =
                 new SingleOutputStreamOperator(environment, resultTransform);
 
-        // 将transform对象添加到env中
-        // 从这里就可以看出来，构造计算逻辑的核心要素是transform，而datastream（被命名为xxOperator的东西）只是为了面向用户提供链式调用api
+        // 多易教育: 将transform对象添加到env中
+        //  从这里就可以看出来，构造计算逻辑的核心要素是transform，而DataStream（只是为了面向用户提供链式调用api)
+        //  addOperator(resultTransform)调用的就是env.transformations.add(transformation);
         getExecutionEnvironment().addOperator(resultTransform);
 
         return returnStream;

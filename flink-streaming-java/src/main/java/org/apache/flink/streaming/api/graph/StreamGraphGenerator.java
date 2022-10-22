@@ -182,7 +182,7 @@ public class StreamGraphGenerator {
                     TransformationTranslator<?, ? extends Transformation>>
             translatorMap;
 
-    //TODO   BY DEEP SEA
+    //多易教育:
     // 各种transform所对应的translator
     static {
         @SuppressWarnings("rawtypes")
@@ -304,24 +304,46 @@ public class StreamGraphGenerator {
         this.savepointRestoreSettings = savepointRestoreSettings;
     }
 
+    //多易教育--------------------------------
+    // 生成StreamGraph的入口方法
+    // --------------------------------
     public StreamGraph generate() {
+        // 多易教育: 先构造一个初始化对象
         streamGraph = new StreamGraph(executionConfig, checkpointConfig, savepointRestoreSettings);
+        //多易教育: 配置项 execution.checkpointing.checkpoints-after-tasks-finish.enabled
         streamGraph.setEnableCheckpointsAfterTasksFinish(
                 configuration.get(
                         ExecutionCheckpointingOptions.ENABLE_CHECKPOINTS_AFTER_TASKS_FINISH));
+        //多易教育: 执行模式，优先看配置，如果是AUTOMATIC，则看是否存在无界源
         shouldExecuteInBatchMode = shouldExecuteInBatchMode();
+
+        //多易教育: 设置各类属性，如chaining，backend，checkpointStorage等
         configureStreamGraph(streamGraph);
 
         alreadyTransformed = new HashMap<>();
 
+        //多易教育----------------------------------------------------------------------
+        //  graph生成的核心逻辑就在这个循环遍历中,
+        //  循环遍历transformation，逐一生成StreamNode，StreamEdge等，并填充到streamGraph中,
+        //  在transform方法中，会以递归方式先处理当前节点的所有父节点
+        // -----------------------------------------------------------------------------
         for (Transformation<?> transformation : transformations) {
+            //多易教育: transform有Collection<Integer> ids 返回值，但是这里并没有使用
             transform(transformation);
         }
 
+
+        //多易教育---------------
+        //  各种补充设置
+        // --------------------
+        //多易教育: 设置slotSharingGroup资源
         streamGraph.setSlotSharingGroupResource(slotSharingGroupResources);
 
+        //多易教育: 设置fineGrained exchange模式
+        // fine-grained.shuffle-mode.all-blocking = true 且执行模式为 batch模式 ，时才有效
         setFineGrainedGlobalStreamExchangeMode(streamGraph);
 
+        //多易教育: 设置非对齐checkpoint配置
         for (StreamNode node : streamGraph.getStreamNodes()) {
             if (node.getInEdges().stream().anyMatch(this::shouldDisableUnalignedCheckpointing)) {
                 for (StreamEdge edge : node.getInEdges()) {
@@ -336,6 +358,7 @@ public class StreamGraphGenerator {
         alreadyTransformed = null;
         streamGraph = null;
 
+        // q&a:为什么不直接返回 streamGraph对象而是要用一个新变量来引用呢？
         return builtStreamGraph;
     }
 
@@ -461,7 +484,8 @@ public class StreamGraphGenerator {
 
         final boolean existsUnboundedSource = existsUnboundedSource();
 
-        checkState(
+        //多易教育: 如果配置成了BATCH模式，那么一定不能存在无界源，否则不允许
+        checkState(      //多易教育: 没有配置为BATCH模式 || 不存在无界源
                 configuredMode != RuntimeExecutionMode.BATCH || !existsUnboundedSource,
                 "Detected an UNBOUNDED source with the '"
                         + ExecutionOptions.RUNTIME_MODE.key()
@@ -470,9 +494,16 @@ public class StreamGraphGenerator {
                         + ExecutionOptions.RUNTIME_MODE.key()
                         + "' to STREAMING or AUTOMATIC");
 
+        //多易教育: 经过上面的检查后，能通过的只有如下集中情况：
+        // 1. 配置成了BATCH,且source都有界
+        // 2.配置成了STREAMING
+        // 3.配置成了AUTOMATIC
+
+        //多易教育: 如果配成了BATCH,那自然是BATCH； 如果配成了STREAMING，那么自然是STREAMING
         if (checkNotNull(configuredMode) != RuntimeExecutionMode.AUTOMATIC) {
             return configuredMode == RuntimeExecutionMode.BATCH;
         }
+        //多易教育: 否则，就看是否存在无界源
         return !existsUnboundedSource;
     }
 
@@ -498,8 +529,7 @@ public class StreamGraphGenerator {
      * delegates to one of the transformation specific methods.
      */
     private Collection<Integer> transform(Transformation<?> transform) {
-        //TODO   BY DEEP SEA
-        // 如果已经处理过，则直接取出返回
+        //多易教育: 如果已经处理过，则直接取出返回
         if (alreadyTransformed.containsKey(transform)) {
             return alreadyTransformed.get(transform);
         }
@@ -510,16 +540,14 @@ public class StreamGraphGenerator {
 
             // if the max parallelism hasn't been set, then first use the job wide max parallelism
             // from the ExecutionConfig.
-            //TODO   BY DEEP SEA
-            // 如果没有设置最大并行度，则使用job全局的最大并行度
+            //多易教育：如果没有设置最大并行度，则使用job全局的最大并行度
             int globalMaxParallelismFromConfig = executionConfig.getMaxParallelism();
             if (globalMaxParallelismFromConfig > 0) {
                 transform.setMaxParallelism(globalMaxParallelismFromConfig);
             }
         }
 
-        //TODO   BY DEEP SEA
-        // 对slot共享组配置进行处理
+        //多易教育: 对slot共享组配置进行处理
         transform
                 .getSlotSharingGroup()
                 .ifPresent(
@@ -550,15 +578,19 @@ public class StreamGraphGenerator {
         // call at least once to trigger exceptions about MissingTypeInfo
         transform.getOutputType();
 
-        //TODO   BY DEEP SEA
-        // 获取translator
+        //多易教育: 获取translator
         @SuppressWarnings("unchecked")
         final TransformationTranslator<?, Transformation<?>> translator =
                 (TransformationTranslator<?, Transformation<?>>)
                         translatorMap.get(transform.getClass());
 
+        //多易教育: 已经转译过的transformationId，为何要用一个集合呢？
+        // q&a: 难道一个transformation被转译后，还能返回多个id不成？
+        //  实际上，AbstractOneInputTransformationTranslator，返回的是singleton列表
+        //  AbstractTwoInputTransformationTranslator,返回的也是singleton列表
         Collection<Integer> transformedIds;
         if (translator != null) {
+            //多易教育: translate方法中有递归调用 transform
             transformedIds = translate(translator, transform);
         } else {
             transformedIds = legacyTransform(transform);
@@ -567,6 +599,7 @@ public class StreamGraphGenerator {
         // need this check because the iterate transformation adds itself before
         // transforming the feedback edges
         if (!alreadyTransformed.containsKey(transform)) {
+            //多易教育: 将转译完成的 transform 记录在 alreadyTransformed 中
             alreadyTransformed.put(transform, transformedIds);
         }
 
@@ -657,8 +690,6 @@ public class StreamGraphGenerator {
         List<Integer> resultIds = new ArrayList<>();
 
         // first transform the input stream(s) and store the result IDs
-        //TODO   BY DEEP SEA
-        // 递归调用transform，对本transform对象的所有输入transform进行处理
         Collection<Integer> inputIds = transform(input);
         resultIds.addAll(inputIds);
 
@@ -804,15 +835,18 @@ public class StreamGraphGenerator {
         return Collections.singleton(itSource.getId());
     }
 
+    //多易教育: 本方法中，会递归调回 Generator的transform方法
     private Collection<Integer> translate(
             final TransformationTranslator<?, Transformation<?>> translator,
             final Transformation<?> transform) {
         checkNotNull(translator);
         checkNotNull(transform);
 
+        //多易教育: 这里是一个递归调用，getParentInputIds会再次调用transform方法
         final List<Collection<Integer>> allInputIds = getParentInputIds(transform.getInputs());
 
         // the recursive call might have already transformed this
+        //多易教育: 递归调用的过程中，可能已经转译过本transformation，先做一个检查
         if (alreadyTransformed.containsKey(transform)) {
             return alreadyTransformed.get(transform);
         }
@@ -831,6 +865,10 @@ public class StreamGraphGenerator {
 
         return shouldExecuteInBatchMode
                 ? translator.translateForBatch(transform, context)
+                //多易教育: 调用translator将transformation转译成StreamNode
+                // -> SimpleTransformationTranslator#translateForStreaming
+                // -> OneInputTransformationTranslator#translateForStreamingInternal
+                // -> AbstractOneInputTransformationTranslator#translateInternal
                 : translator.translateForStreaming(transform, context);
     }
 
@@ -848,10 +886,12 @@ public class StreamGraphGenerator {
             @Nullable final Collection<Transformation<?>> parentTransformations) {
         final List<Collection<Integer>> allInputIds = new ArrayList<>();
         if (parentTransformations == null) {
+            //多易教育: 这里就是递归的退出条件=>如果没有父节点了，则直接在这里返回了
             return allInputIds;
         }
 
         for (Transformation<?> transformation : parentTransformations) {
+            //多易教育: 递归调用transform，对本节点的父节点进行转译
             allInputIds.add(transform(transformation));
         }
         return allInputIds;

@@ -316,7 +316,9 @@ public class StreamGraph implements Pipeline {
                 inTypeInfo,
                 outTypeInfo,
                 operatorName,
+                //多易教育: 任务执行类为 SourceOperatorStreamTask
                 SourceOperatorStreamTask.class);
+        //多易教育:  Set<Integer> sources
         sources.add(vertexID);
     }
 
@@ -370,6 +372,7 @@ public class StreamGraph implements Pipeline {
             TypeInformation<IN> inTypeInfo,
             TypeInformation<OUT> outTypeInfo,
             String operatorName) {
+        //多易教育: 为StreamNode获得invokableClass
         Class<? extends TaskInvokable> invokableClass =
                 operatorFactory.isStreamSource()
                         ? SourceStreamTask.class
@@ -395,13 +398,15 @@ public class StreamGraph implements Pipeline {
             String operatorName,
             Class<? extends TaskInvokable> invokableClass) {
 
+        //多易教育: 添加节点
         addNode(
                 vertexID,
                 slotSharingGroup,
                 coLocationGroup,
-                invokableClass,
+                invokableClass,  //多易教育: 任务可执行类
                 operatorFactory,
                 operatorName);
+        //多易教育: 设置node的输入和输出序列化器
         setSerializers(vertexID, createSerializer(inTypeInfo), null, createSerializer(outTypeInfo));
 
         if (operatorFactory.isOutputTypeConfigurable() && outTypeInfo != null) {
@@ -418,6 +423,7 @@ public class StreamGraph implements Pipeline {
         }
     }
 
+    //多易教育: 用于AbstractTwoInputTransformationTranslator，特点是节点拥有两个输入一个输出
     public <IN1, IN2, OUT> void addCoOperator(
             Integer vertexID,
             String slotSharingGroup,
@@ -428,13 +434,14 @@ public class StreamGraph implements Pipeline {
             TypeInformation<OUT> outTypeInfo,
             String operatorName) {
 
+        //多易教育: 两输入的Node，其vertexClass是固定的 TwoInputStreamTask
         Class<? extends TaskInvokable> vertexClass = TwoInputStreamTask.class;
 
         addNode(
                 vertexID,
                 slotSharingGroup,
                 coLocationGroup,
-                vertexClass,
+                vertexClass, //多易教育: 任务可执行类
                 taskOperatorFactory,
                 operatorName);
 
@@ -499,6 +506,7 @@ public class StreamGraph implements Pipeline {
             throw new RuntimeException("Duplicate vertexID " + vertexID);
         }
 
+        //多易教育: 构造StreamNode，并放入Map集合： Map<Integer, StreamNode> streamNodes
         StreamNode vertex =
                 new StreamNode(
                         vertexID,
@@ -573,6 +581,7 @@ public class StreamGraph implements Pipeline {
                     "Already has virtual partition node with id " + virtualId);
         }
 
+        //多易教育:  Map<Integer, Tuple3<Integer, StreamPartitioner<?>, StreamExchangeMode>> virtualPartitionNodes
         virtualPartitionNodes.put(virtualId, new Tuple3<>(originalId, partitioner, exchangeMode));
     }
 
@@ -601,21 +610,27 @@ public class StreamGraph implements Pipeline {
                 null);
     }
 
+    //多易教育: 在当前节点和上游节点之间建立StreamEdge
     private void addEdgeInternal(
-            Integer upStreamVertexID,
-            Integer downStreamVertexID,
+            Integer upStreamVertexID,  //多易教育: 上游节点
+            Integer downStreamVertexID,  //多易教育: 当前节点
             int typeNumber,
             StreamPartitioner<?> partitioner,
             List<String> outputNames,
             OutputTag outputTag,
             StreamExchangeMode exchangeMode) {
 
+        //多易教育: 1. 对sideOutput虚拟节点处理（直接连接虚拟节点的上游节点）
+        // 如果上游节点是虚拟侧输出节点
         if (virtualSideOutputNodes.containsKey(upStreamVertexID)) {
             int virtualId = upStreamVertexID;
+            // 多易教育：取到上游虚拟节点的上游节点
             upStreamVertexID = virtualSideOutputNodes.get(virtualId).f0;
             if (outputTag == null) {
+                //多易教育: 获得输出tag
                 outputTag = virtualSideOutputNodes.get(virtualId).f1;
             }
+            //多易教育: 在当前节点和上游节点（虚拟节点）的上游节点之间建立StreamEdge
             addEdgeInternal(
                     upStreamVertexID,
                     downStreamVertexID,
@@ -624,22 +639,32 @@ public class StreamGraph implements Pipeline {
                     null,
                     outputTag,
                     exchangeMode);
-        } else if (virtualPartitionNodes.containsKey(upStreamVertexID)) {
+        }
+        //多易教育: 2. 对partition虚拟节点处理
+        // 如果上游节点是一个虚拟节点，则直接连接虚拟节点的上游节点
+        else if (virtualPartitionNodes.containsKey(upStreamVertexID)) {
             int virtualId = upStreamVertexID;
+            //多易教育: Map<Integer, Tuple3<originalId, partitioner, StreamExchangeMode>> virtualPartitionNodes
+            // 取到虚拟节点的上游节点
             upStreamVertexID = virtualPartitionNodes.get(virtualId).f0;
             if (partitioner == null) {
+                //多易教育: 取到分区器
                 partitioner = virtualPartitionNodes.get(virtualId).f1;
             }
+            //多易教育: 取到数据交换模式
             exchangeMode = virtualPartitionNodes.get(virtualId).f2;
+
+            //多易教育: 跳过上游的虚拟节点，在当前节点和上上游节点之间建立StreamEdge
             addEdgeInternal(
-                    upStreamVertexID,
-                    downStreamVertexID,
+                    upStreamVertexID,  //多易教育: 上上游节点
+                    downStreamVertexID, //多易教育: 当前节点
                     typeNumber,
                     partitioner,
                     outputNames,
                     outputTag,
                     exchangeMode);
         } else {
+            //多易教育: 3. 真实创建edge，为上游节点添加出边，为下游节点添加入边
             createActualEdge(
                     upStreamVertexID,
                     downStreamVertexID,
@@ -707,7 +732,7 @@ public class StreamGraph implements Pipeline {
                         exchangeMode,
                         uniqueId);
 
-        //TODO   BY DEEP SEA
+        //多易教育:
         // 为上游节点添加出边
         // 为下游节点添加入边
         getStreamNode(edge.getSourceId()).addOutEdge(edge);

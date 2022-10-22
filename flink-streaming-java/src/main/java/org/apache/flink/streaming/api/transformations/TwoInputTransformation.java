@@ -77,6 +77,7 @@ public class TwoInputTransformation<IN1, IN2, OUT> extends PhysicalTransformatio
     }
 
     public TwoInputTransformation(
+            //多易教育: 有两个前向transformation
             Transformation<IN1> input1,
             Transformation<IN2> input2,
             String name,

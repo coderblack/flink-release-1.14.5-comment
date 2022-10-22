@@ -63,15 +63,18 @@ public class OneInputTransformation<IN, OUT> extends PhysicalTransformation<OUT>
      * @param parallelism The parallelism of this {@code OneInputTransformation}
      */
     public OneInputTransformation(
+            //多易教育: 前向transformation
             Transformation<IN> input,
             String name,
-            OneInputStreamOperator<IN, OUT> operator,
+            OneInputStreamOperator<IN, OUT> operator,  // q&a: operator封装了用户函数UserFunction ?
             TypeInformation<OUT> outputType,
             int parallelism) {
+        //多易教育: operator会被封装在factory中
         this(input, name, SimpleOperatorFactory.of(operator), outputType, parallelism);
     }
 
     public OneInputTransformation(
+            //多易教育: 前向transformation
             Transformation<IN> input,
             String name,
             StreamOperatorFactory<OUT> operatorFactory,

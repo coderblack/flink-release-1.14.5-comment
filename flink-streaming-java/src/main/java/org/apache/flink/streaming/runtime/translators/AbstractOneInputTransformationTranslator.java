@@ -45,7 +45,7 @@ abstract class AbstractOneInputTransformationTranslator<IN, OUT, OP extends Tran
 
     protected Collection<Integer> translateInternal(
             final Transformation<OUT> transformation,
-            final StreamOperatorFactory<OUT> operatorFactory,
+            final StreamOperatorFactory<OUT> operatorFactory,  //多易教育: transformation对象构造时就确定了factory，
             final TypeInformation<IN> inputType,
             @Nullable final KeySelector<IN, ?> stateKeySelector,
             @Nullable final TypeInformation<?> stateKeyType,
@@ -60,8 +60,10 @@ abstract class AbstractOneInputTransformationTranslator<IN, OUT, OP extends Tran
         final int transformationId = transformation.getId();
         final ExecutionConfig executionConfig = streamGraph.getExecutionConfig();
 
+        // 多易教育: 向graph中添加算子(StreamNode)
+        //  内部是生成StreamNode，并添加到graph中 (Map<Integer, StreamNode> streamNodes)
         streamGraph.addOperator(
-                transformationId,
+                transformationId,  //多易教育: 直接作为vertexId
                 slotSharingGroup,
                 transformation.getCoLocationGroupKey(),
                 operatorFactory,
@@ -69,11 +71,13 @@ abstract class AbstractOneInputTransformationTranslator<IN, OUT, OP extends Tran
                 transformation.getOutputType(),
                 transformation.getName());
 
+        //多易教育: 为transformationId对应的StreamNode，设置stateKeySelector和keySerializer
         if (stateKeySelector != null) {
             TypeSerializer<?> keySerializer = stateKeyType.createSerializer(executionConfig);
             streamGraph.setOneInputStateKey(transformationId, stateKeySelector, keySerializer);
         }
 
+        //多易教育: 为transformationId对应的StreamNode，设置并行度和默认并行度
         int parallelism =
                 transformation.getParallelism() != ExecutionConfig.PARALLELISM_DEFAULT
                         ? transformation.getParallelism()
@@ -82,13 +86,13 @@ abstract class AbstractOneInputTransformationTranslator<IN, OUT, OP extends Tran
         streamGraph.setMaxParallelism(transformationId, transformation.getMaxParallelism());
 
         final List<Transformation<?>> parentTransformations = transformation.getInputs();
+        // 多易教育 ：本类是AbstractOneInputTransformationTranslator，限定上游transformation只能有一个
         checkState(
                 parentTransformations.size() == 1,
                 "Expected exactly one input transformation but found "
                         + parentTransformations.size());
 
-        //TODO   BY DEEP SEA
-        // 本类是AbstractOneInputTransformationTranslator，已经限定了上游transform只有一个
+        //多易教育 ：在本节点与每一个上游节点之间添加出边和入边
         for (Integer inputId : context.getStreamNodeIds(parentTransformations.get(0))) {
             streamGraph.addEdge(inputId, transformationId, 0);
         }

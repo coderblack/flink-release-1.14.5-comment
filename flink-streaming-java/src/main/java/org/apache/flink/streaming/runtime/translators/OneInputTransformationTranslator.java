@@ -64,6 +64,8 @@ public final class OneInputTransformationTranslator<IN, OUT>
             final OneInputTransformation<IN, OUT> transformation, final Context context) {
         return translateInternal(
                 transformation,
+                //多易教育: transformation在构造生成时，即已确定OperatorFactory
+                // 如OneInputTransformation中，SimpleOperatorFactory.of(operator)
                 transformation.getOperatorFactory(),
                 transformation.getInputType(),
                 transformation.getStateKeySelector(),

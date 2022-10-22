@@ -20,6 +20,7 @@ package org.apache.flink.streaming.runtime.translators;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.dag.Transformation;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.graph.SimpleTransformationTranslator;
 import org.apache.flink.streaming.api.graph.StreamGraph;
 import org.apache.flink.streaming.api.graph.TransformationTranslator;
@@ -62,20 +63,30 @@ public class PartitionTransformationTranslator<OUT>
         final StreamGraph streamGraph = context.getStreamGraph();
 
         final List<Transformation<?>> parentTransformations = transformation.getInputs();
+
+        //多易教育: 检查上游transformation只能有一个
         checkState(
                 parentTransformations.size() == 1,
                 "Expected exactly one input transformation but found "
                         + parentTransformations.size());
+        //多易教育: 取到上游transformation
         final Transformation<?> input = parentTransformations.get(0);
 
         List<Integer> resultIds = new ArrayList<>();
 
+        //多易教育:
+        // 这里调用的是 streamGraphGenerator.alreadyTransformed.get(transformation)
+        // => 已转译完成的transformationId
         for (Integer inputId : context.getStreamNodeIds(input)) {
+            //多易教育: 生成一个新的nodeId作为本虚拟节点的虚拟id
             final int virtualId = Transformation.getNewNodeId();
+            //多易教育: 添加虚拟节点
+            // Map<Integer, Tuple3<Integer, StreamPartitioner<?>, StreamExchangeMode>> virtualPartitionNodes
+            // StreamGraph.virtualPartitionNodes.put(virtualId, new Tuple3<>(originalId, partitioner, exchangeMode));
             streamGraph.addVirtualPartitionNode(
-                    inputId,
-                    virtualId,
-                    transformation.getPartitioner(),
+                    inputId,  // 上游transformationId ,即所谓 originalId
+                    virtualId,  // 本虚拟节点id
+                    transformation.getPartitioner(),  // 分区器partitioner
                     transformation.getExchangeMode());
             resultIds.add(virtualId);
         }

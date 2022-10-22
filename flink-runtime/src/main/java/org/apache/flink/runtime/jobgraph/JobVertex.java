@@ -70,50 +70,50 @@ public class JobVertex implements java.io.Serializable {
      *
      * <p>This is the same order that operators are stored in the {@code StreamTask}.
      *
-     * vertex中所包含的所有 operator的id
-     * id对的存储顺序为 深度先后顺序（ 深先浅后）
-     * 每个job vertex 包含一个或多个operator
+     * 多易教育 : vertex中所包含的所有 operator的id
+     *  id对的存储顺序为 深度先后顺序（ 深先浅后）
+     *  每个job vertex 包含一个或多个operator
      */
     private final List<OperatorIDPair> operatorIDs;
 
-    /** List of produced data sets, one per writer. 输出数据集，每 writer一个  */
+    /** List of produced data sets, one per writer. 多易教育: 输出数据集，每 writer一个  */
     private final ArrayList<IntermediateDataSet> results = new ArrayList<>();
 
-    /** List of edges with incoming data. One per Reader. 输入数据边的列表； 每 reader一个  */
+    /** List of edges with incoming data. One per Reader. 多易教育: 输入数据边的列表； 每 reader一个  */
     private final ArrayList<JobEdge> inputs = new ArrayList<>();
 
-    /** The list of factories for operator coordinators. TODO HUNTER */
+    /** The list of factories for operator coordinators. */
     private final ArrayList<SerializedValue<OperatorCoordinator.Provider>> operatorCoordinators =
             new ArrayList<>();
 
-    /** Number of subtasks to split this task into at runtime. task运行时默认并行度 */
+    /** Number of subtasks to split this task into at runtime. 多易教育: task运行时默认并行度 */
     private int parallelism = ExecutionConfig.PARALLELISM_DEFAULT;
 
-    /** Maximum number of subtasks to split this task into a runtime. task运行时最大并行度 */
+    /** Maximum number of subtasks to split this task into a runtime. 多易教育: task运行时最大并行度 */
     private int maxParallelism = MAX_PARALLELISM_DEFAULT;
 
-    /** The minimum resource of the vertex. 最小资源描述 */
+    /** The minimum resource of the vertex. 多易教育: 最小资源描述 */
     private ResourceSpec minResources = ResourceSpec.DEFAULT;
 
-    /** The preferred resource of the vertex. 优选资源描述 */
+    /** The preferred resource of the vertex. 多易教育: 优选资源描述 */
     private ResourceSpec preferredResources = ResourceSpec.DEFAULT;
 
-    /** Custom configuration passed to the assigned task at runtime. 传给task运行时的用户自定义参数*/
+    /** Custom configuration passed to the assigned task at runtime. 多易教育: 传给task运行时的用户自定义参数*/
     private Configuration configuration;
 
-    /** The class of the invokable. 可执行类 （vertex中能真正被调用执行的任务逻辑类）*/
+    /** The class of the invokable. 多易教育: 可执行类 （vertex中能真正被调用执行的任务逻辑类）*/
     private String invokableClassName;
 
-    /** Indicates of this job vertex is stoppable or not. 标识 vertex 是否可以被stop */
+    /** Indicates of this job vertex is stoppable or not. 多易教育: 标识 vertex 是否可以被stop */
     private boolean isStoppable = false;
 
-    /** Optionally, a source of input splits. 可选，可切片source */
+    /** Optionally, a source of input splits. 多易教育: 可选，可切片source */
     private InputSplitSource<?> inputSplitSource;
 
     /**
      * The name of the vertex. This will be shown in runtime logs and will be in the runtime
      * environment.
-     * job vertex 名称，会存在与运行时环境，及运行时log日志中
+     * 多易教育: job vertex 名称，会存在与运行时环境，及运行时log日志中
      */
     private String name;
 
@@ -121,8 +121,8 @@ public class JobVertex implements java.io.Serializable {
      * Optionally, a sharing group that allows subtasks from different job vertices to run
      * concurrently in one slot.
      *
-     * 所属的资源共享槽位
-     * （注：不同job vertex之间的subtask可以共享资源槽位）
+     * 多易教育: 所属的资源共享槽位
+     *  （注：不同job vertex之间的subtask可以共享资源槽位）
      *
      */
     @Nullable private SlotSharingGroup slotSharingGroup;
@@ -134,16 +134,16 @@ public class JobVertex implements java.io.Serializable {
      * Optional, the name of the operator, such as 'Flat Map' or 'Join', to be included in the JSON
      * plan.
      */
-    private String operatorName;  // 算子名称，将呈现在json plan中
+    private String operatorName;  //多易教育: 算子名称，将呈现在json plan中
 
     /**
      * Optional, the description of the operator, like 'Hash Join', or 'Sorted Group Reduce', to be
      * included in the JSON plan.
      */
-    private String operatorDescription; // 算子描述，将呈现在json plan中
+    private String operatorDescription; //多易教育: 算子描述，将呈现在json plan中
 
     /** Optional, pretty name of the operator, to be displayed in the JSON plan. */
-    private String operatorPrettyName; // 算子格式化名称
+    private String operatorPrettyName; //多易教育: 算子格式化名称
 
     /**
      * Optional, the JSON for the optimizer properties of the operator result, to be included in the
@@ -155,7 +155,7 @@ public class JobVertex implements java.io.Serializable {
 
     /**
      * Constructs a new job vertex and assigns it with the given name.
-     * 用给定的name来构造一个新的job vertex
+     * 多易教育: 用给定的name来构造一个新的job vertex
      *
      * @param name The name of the new job vertex.
      */
@@ -165,7 +165,7 @@ public class JobVertex implements java.io.Serializable {
 
     /**
      * Constructs a new job vertex and assigns it with the given name.
-     * 用给定的名称和id来构造一个新的 job vertex
+     * 多易教育: 用给定的名称和id来构造一个新的 job vertex
      *
      * @param name The name of the new job vertex.
      * @param id The id of the job vertex.

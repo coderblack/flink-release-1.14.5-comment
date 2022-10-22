@@ -201,6 +201,7 @@ public class MailboxProcessor implements Closeable {
         while (isNextLoopPossible()) {
             // The blocking `processMail` call will not return until default action is available.
             // 多易教育:  优先处理mail(只要默认动作不可用，mail处理就不会返回)
+            //  mail，封装了一个待执行逻辑（runnable）
             processMail(localMailbox, false);
             if (isNextLoopPossible()) {  //多易教育: 再做一次检查，因为上面的 mail 处理可能会改变运行状态 ；判断逻辑： !suspended
                 // 多易教育:  然后再执行默认动作（数据处理）

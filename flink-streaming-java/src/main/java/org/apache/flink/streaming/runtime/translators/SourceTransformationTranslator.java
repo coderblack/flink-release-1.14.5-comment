@@ -61,6 +61,7 @@ public class SourceTransformationTranslator<OUT, SplitT extends SourceSplit, Enu
     private Collection<Integer> translateInternal(
             final SourceTransformation<OUT, SplitT, EnumChkT> transformation,
             final Context context,
+            //多易教育: 流批模式的转译差别就在此处，流为true，批为false
             boolean emitProgressiveWatermarks) {
         checkNotNull(transformation);
         checkNotNull(context);
@@ -77,16 +78,18 @@ public class SourceTransformationTranslator<OUT, SplitT extends SourceSplit, Enu
                         emitProgressiveWatermarks);
 
         operatorFactory.setChainingStrategy(transformation.getChainingStrategy());
-
+        //多易教育: 添加sourceNode
+        // 内部依然是addOperator()，只是传入的可执行类为： SourceOperatorStreamTask.class
         streamGraph.addSource(
                 transformationId,
                 slotSharingGroup,
                 transformation.getCoLocationGroupKey(),
                 operatorFactory,
-                null,
+                null,  //多易教育: 源节点的输入类型为null
                 transformation.getOutputType(),
                 "Source: " + transformation.getName());
 
+        //多易教育: 如果transformation设置了并行度，则使用；否则使用executionConfig的并行度配置
         final int parallelism =
                 transformation.getParallelism() != ExecutionConfig.PARALLELISM_DEFAULT
                         ? transformation.getParallelism()
