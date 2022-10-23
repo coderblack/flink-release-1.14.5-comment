@@ -55,6 +55,10 @@ public class DataStreamSource<T> extends SingleOutputStreamOperator<T> {
     }
 
     /** The constructor used to create legacy sources. */
+    //多易教育: 生成传统source的构造函数
+    // 对应的transformation是 LegacySourceTransformation
+    // 对应的operator是 AbstractUdfStreamOperator
+    // 对应的operatorFactory是 SimpleUdfStreamOperatorFactory
     public DataStreamSource(
             StreamExecutionEnvironment environment,
             TypeInformation<T> outTypeInfo,
@@ -87,6 +91,9 @@ public class DataStreamSource<T> extends SingleOutputStreamOperator<T> {
     }
 
     /** Constructor for new Sources (FLIP-27). */
+    //多易教育: 新架构source的构造方法
+    // 对应的transformation是： SourceTransformation
+    // 对应的operator（已经不是传统意义上的operator了）是： Source
     public DataStreamSource(
             StreamExecutionEnvironment environment,
             Source<T, ?, ?> source,

@@ -84,6 +84,7 @@ public final class SnapshotStrategyRunner<T extends StateObject, SR extends Snap
                         streamFactory,
                         checkpointOptions);
 
+        //多易教育: 生成异步快照的task逻辑
         FutureTask<SnapshotResult<T>> asyncSnapshotTask =
                 new AsyncSnapshotCallable<SnapshotResult<T>>() {
                     @Override
@@ -106,6 +107,9 @@ public final class SnapshotStrategyRunner<T extends StateObject, SR extends Snap
                 }.toAsyncSnapshotFutureTask(cancelStreamRegistry);
 
         if (executionType == SnapshotExecutionType.SYNCHRONOUS) {
+            //多易教育: 执行异步快照的task逻辑
+            // 这里是调用的FutureTask.run()，因而是在一个单独的线程中异步执行的
+            // 如果触发ck的源头是每个operatorChain中各自触发，那么意味着每个chain其实都是各自开启线程来进行snapshot的
             asyncSnapshotTask.run();
         }
 

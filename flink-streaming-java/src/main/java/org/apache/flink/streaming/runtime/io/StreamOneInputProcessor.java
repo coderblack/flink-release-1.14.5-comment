@@ -63,6 +63,8 @@ public final class StreamOneInputProcessor<IN> implements StreamInputProcessor {
     @Override
     public DataInputStatus processInput() throws Exception {
         // 多易教育:  StreamTaskNetWorkInput,OneInputStreamTask$StreamTaskNetworkOutput
+        //  使用AbstractStreamTaskNetworkInput.emitNext()来处理
+        //  其中，会处理业务数据，也会处理 watermark
         DataInputStatus status = input.emitNext(output);
 
         if (status == DataInputStatus.END_OF_DATA) {

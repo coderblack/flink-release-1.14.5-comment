@@ -58,8 +58,10 @@ public class SourceTransformationTranslator<OUT, SplitT extends SourceSplit, Enu
         return translateInternal(transformation, context, true /* emit progressive watermarks */);
     }
 
+    //多易教育: 针对SourceTransformation的转译方法
+    // 通过env.fromSource()创建的SourceTransformation，就会走到这里
     private Collection<Integer> translateInternal(
-            final SourceTransformation<OUT, SplitT, EnumChkT> transformation,
+            final SourceTransformation<OUT, SplitT, EnumChkT> transformation,  //多易教育: 本方法只接受 SourceTransformation
             final Context context,
             //多易教育: 流批模式的转译差别就在此处，流为true，批为false
             boolean emitProgressiveWatermarks) {
@@ -70,7 +72,9 @@ public class SourceTransformationTranslator<OUT, SplitT extends SourceSplit, Enu
         final String slotSharingGroup = context.getSlotSharingGroup();
         final int transformationId = transformation.getId();
         final ExecutionConfig executionConfig = streamGraph.getExecutionConfig();
-
+        //多易教育: 与传统架构不同；
+        // 传统架构中的operatorFactory是在Transformation构造时指定的（SimpleUdfStreamOperatorFactory,与map/filter等相同），
+        // 而新架构中，是在Translator中生成: SourceOperatorFactory
         SourceOperatorFactory<OUT> operatorFactory =
                 new SourceOperatorFactory<>(
                         transformation.getSource(),

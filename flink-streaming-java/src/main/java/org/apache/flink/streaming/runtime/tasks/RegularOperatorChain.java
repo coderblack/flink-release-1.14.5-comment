@@ -179,10 +179,12 @@ public class RegularOperatorChain<OUT, OP extends StreamOperator<OUT>>
             ChannelStateWriter.ChannelStateWriteResult channelStateWriteResult,
             CheckpointStreamFactory storage)
             throws Exception {
+        //多易教育: 对算子链中的每一个算子，执行状态snapshot
         for (StreamOperatorWrapper<?, ?> operatorWrapper : getAllOperators(true)) {
             if (!operatorWrapper.isClosed()) {
                 operatorSnapshotsInProgress.put(
                         operatorWrapper.getStreamOperator().getOperatorID(),
+                        //多易教育: 调用checkpoint的中间环节
                         buildOperatorSnapshotFutures(
                                 checkpointMetaData,
                                 checkpointOptions,
@@ -202,6 +204,7 @@ public class RegularOperatorChain<OUT, OP extends StreamOperator<OUT>>
             ChannelStateWriter.ChannelStateWriteResult channelStateWriteResult,
             CheckpointStreamFactory storage)
             throws Exception {
+        //多易教育: 执行checkpoint
         OperatorSnapshotFutures snapshotInProgress =
                 checkpointStreamOperator(
                         op, checkpointMetaData, checkpointOptions, storage, isRunning);
@@ -230,6 +233,7 @@ public class RegularOperatorChain<OUT, OP extends StreamOperator<OUT>>
             Supplier<Boolean> isRunning)
             throws Exception {
         try {
+            //多易教育: 调用算子operator的snapshotState,算子内会用 StreamOperatorStateHandler.snapshotState()
             return op.snapshotState(
                     checkpointMetaData.getCheckpointId(),
                     checkpointMetaData.getTimestamp(),

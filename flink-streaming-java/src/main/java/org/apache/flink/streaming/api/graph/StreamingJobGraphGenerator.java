@@ -330,8 +330,8 @@ public class StreamingJobGraphGenerator {
     private Map<Integer, OperatorChainInfo> buildChainedInputsAndGetHeadInputs(
             final Map<Integer, byte[]> hashes, final List<Map<Integer, byte[]>> legacyHashes) {
 
-        final Map<Integer, ChainedSourceInfo> chainedSources = new HashMap<>();
-        final Map<Integer, OperatorChainInfo> chainEntryPoints = new HashMap<>();
+        final Map<Integer, ChainedSourceInfo> chainedSources = new HashMap<>();  //多易教育: 被chain的source
+        final Map<Integer, OperatorChainInfo> chainEntryPoints = new HashMap<>();  //多易教育: chain的入口点（独立的source？）
 
         // 遍历streamGraph中的所有source节点
         for (Integer sourceNodeId : streamGraph.getSourceIDs()) {
@@ -351,38 +351,52 @@ public class StreamingJobGraphGenerator {
             //    在上述条件满足的情况下，把 s->x 中的x作为entryPoint，并携带了s信息
             // -----------------------------------------------------------
 
-            //多易教育: 已破案：这里是一个flink1.12后的优化，称为：chaining source，它可以把nary架构的source，在作为下游节点的多输入场景时，chain上这多个输入节点和下游节点
+            //多易教育: ---------------------------------------------------------
+            // 已破案：这里是一个flink1.12后的优化，称为：chaining source，
+            // 它可以把nary架构的source，在作为下游节点的多输入场景时，chain上这多个输入节点和下游节点
             // 典型应用场景就在flinkSql的连续多个hashJoin的优化中
+            // 传统source :
+            //    对应的transformation是 LegacySourceTransformation
+            //    对应的operator是 AbstractUdfStreamOperator
+            //    对应的operatorFactory是 SimpleUdfStreamOperatorFactory
+            // 新架构source：
+            //    对应的transformation是  SourceTransformation
+            //    对应的operatorFactory是 SourceOperatorFactory
+            // -----------------------------------------------------------------
+
+            //多易教育: 1. 如果是新架构source，且出边为1
             if (sourceNode.getOperatorFactory() instanceof SourceOperatorFactory
                     && sourceNode.getOutEdges().size() == 1) {
                 // as long as only NAry ops support this chaining, we need to skip the other parts
-                final StreamEdge sourceOutEdge = sourceNode.getOutEdges().get(0);
-                final StreamNode target = streamGraph.getStreamNode(sourceOutEdge.getTargetId());
+                final StreamEdge sourceOutEdge = sourceNode.getOutEdges().get(0);  //多易教育: 拿到出边
+                final StreamNode target = streamGraph.getStreamNode(sourceOutEdge.getTargetId()); //多易教育: 拿到出边所对应的目标StreamNode（即下游节点）
                 final ChainingStrategy targetChainingStrategy =
-                        target.getOperatorFactory().getChainingStrategy();
+                        target.getOperatorFactory().getChainingStrategy();  //多易教育: 拿到目标节点的chainStrategy
 
                 //多易教育: 下游节点的chaining strategy=head_with_source 且 source输出是否可chain
                 if (targetChainingStrategy == ChainingStrategy.HEAD_WITH_SOURCES
                         && isChainableInput(sourceOutEdge, streamGraph)) {
                     //多易教育: 取到源节点的hash，封装为OperatorID
                     final OperatorID opId = new OperatorID(hashes.get(sourceNodeId));
-                    //多易教育: 取到source streamNode 的config
+                    //多易教育: 构造一个StreamConfig.SourceInputConfig，作为chain内这个source的config
                     final StreamConfig.SourceInputConfig inputConfig =
                             new StreamConfig.SourceInputConfig(sourceOutEdge);
-                    //多易教育: 创建一个空的streamConfig
+                    //多易教育: 创建一个StreamConfig,作为整个chain的config
                     final StreamConfig operatorConfig = new StreamConfig(new Configuration());
                     //多易教育: 为streamConfig填充各类配置
+                    // 填充后，会被放入成员变量： vertexConfigs.put(vertexID, config);
                     setVertexConfig(
-                            sourceNodeId,  //多易教育: vertex id
+                            sourceNodeId,  //多易教育: 用这个sourceNode的id，作为这个Job点的 vertexId
                             operatorConfig,  //多易教育: stream config
                             Collections.emptyList(), //多易教育: chainableOutputs
                             Collections.emptyList(), //多易教育: nonChainableOutputs
                             Collections.emptyMap()); //多易教育: chainedSources :Map<Integer,ChainedSourceInfo>
                     operatorConfig.setChainIndex(0); //多易教育: sources总是算子链中的第一个
-                    operatorConfig.setOperatorID(opId);
+                    operatorConfig.setOperatorID(opId); //多易教育: sourceNode的id
                     operatorConfig.setOperatorName(sourceNode.getOperatorName());
 
-                    //多易教育: 往 chainedSources填充所chain的source节点id（即本次遍历到的source节点）和配置信息
+                    //多易教育:
+                    // 往 chainedSources 加入 ：所chain的source节点id（ 即本次遍历到的source节点 ）和配置信息
                     chainedSources.put(
                             sourceNodeId, new ChainedSourceInfo(operatorConfig, inputConfig));
 
@@ -392,6 +406,8 @@ public class StreamingJobGraphGenerator {
                             sourceOpFact.getCoordinatorProvider(sourceNode.getOperatorName(), opId);
 
                     //多易教育: 生成OperatorChainInfo对象，并放入chainEntryPoints这个Map容器
+                    // 这里是把被chain的source的下游节点，放入 chainEntryPoints中去
+                    // （相当于把下游节点直接作为了chain的header，当然会带上所chain入的source信息）
                     final OperatorChainInfo chainInfo =
                             chainEntryPoints.computeIfAbsent(
                                     sourceOutEdge.getTargetId(),
@@ -400,15 +416,15 @@ public class StreamingJobGraphGenerator {
                                                     sourceOutEdge.getTargetId(),
                                                     hashes,
                                                     legacyHashes,
-                                                    chainedSources,
+                                                    chainedSources,  //多易教育: 所chain上的source
                                                     streamGraph));
                     chainInfo.addCoordinatorProvider(coord);
-                    continue;
+                    continue;  //多易教育: 继续下轮循环
                 }
             }
 
-            //多易教育: 放入chainEntryPoints 中一个kv对： sourceNodeId -> new OperatorChainInfo()
-            // 此时的chainedSources就是一个空的map
+            //多易教育: 2. 如果不是新架构source且不满足上述一系列条件，则把这个source本身，作为一个chain的入口点放入 chainEntryPoints
+            // 入口点： sourceNodeId -> new OperatorChainInfo()，此时所携带的chainedSources就是一个空的map
             chainEntryPoints.put(
                     sourceNodeId,
                     new OperatorChainInfo(
@@ -429,8 +445,8 @@ public class StreamingJobGraphGenerator {
     private void setChaining(Map<Integer, byte[]> hashes, List<Map<Integer, byte[]>> legacyHashes) {
         // we separate out the sources that run as inputs to another operator (chained inputs)
         // from the sources that needs to run as the main (head) operator.
-        //多易教育: 这里，会区分出两类source节点(作为chain输入源的source，和作为chain header算子的source)
-        // 具体在方法的代码中有注释
+        //多易教育: 这里是解析出chain的入口点，会根据两类不同source进行区别对待
+        // 具体在方法的代码中有注释，大体来说就是对新架构source在满足可chain条件时，把它的下游节点作为chain的入口点，否则把source本身作为chain的入口点
         final Map<Integer, OperatorChainInfo> chainEntryPoints =
                 buildChainedInputsAndGetHeadInputs(hashes, legacyHashes);
 
@@ -443,7 +459,8 @@ public class StreamingJobGraphGenerator {
 
         // iterate over a copy of the values, because this map gets concurrently modified
         //多易教育: 迭代入口点List，为每个入口点生成算子链
-        for (OperatorChainInfo info : initialEntryPoints) {
+        // 算子链生成的核心逻辑所在
+        for (OperatorChainInfo info : initialEntryPoints) {   //多易教育: 遍历的是入口点列表的拷贝，但是又传入了原始的入口点map
             createChain(
                     info.getStartNodeId(),
                     1, // operators start at position 1 because 0 is for chained source inputs
@@ -452,6 +469,7 @@ public class StreamingJobGraphGenerator {
         }
     }
 
+    //多易教育: 生成chain的核心逻辑方法
     private List<StreamEdge> createChain(
             final Integer currentNodeId,
             final int chainIndex,
@@ -468,6 +486,7 @@ public class StreamingJobGraphGenerator {
 
             StreamNode currentNode = streamGraph.getStreamNode(currentNodeId);
 
+            //多易教育: 将当前节点的StreamEdge出边，划分成可chain和不可chain两类
             for (StreamEdge outEdge : currentNode.getOutEdges()) {
                 if (isChainable(outEdge, streamGraph)) {
                     chainableOutputs.add(outEdge);
@@ -476,8 +495,11 @@ public class StreamingJobGraphGenerator {
                 }
             }
 
+            //多易教育: 1. 遍历处理每一个可chain边
             for (StreamEdge chainable : chainableOutputs) {
                 transitiveOutEdges.addAll(
+                        //多易教育: 如果是可chain的边，则什么都不做，直接递归调用；退出条件是 chainableOutputs 为空列表
+                        // 递归参数中是传入下一个节点，索引号+1 ,chainInfo保持当前的（说明同一个chain使用一个chainInfo对象）
                         createChain(
                                 chainable.getTargetId(),
                                 chainIndex + 1,
@@ -485,8 +507,15 @@ public class StreamingJobGraphGenerator {
                                 chainEntryPoints));
             }
 
+            //多易教育: 2. 遍历处理每一个不可chain边
             for (StreamEdge nonChainable : nonChainableOutputs) {
+                //多易教育: 将当前的不可chain边，放入transitive出边集合（说明该集合存放的是两chain之间的边）
                 transitiveOutEdges.add(nonChainable);
+
+                //多易教育: 继续递归调用；退出条件是 nonChainableOutputs 为空列表
+                // 传入的参数是：下一个节点，索引号重新从1开始， 创建新的chainInfo对象
+                // （在chain入口点Map中放入一个新的KV，下一个点作为head，构建新chainInfo对象并返回），
+                // 由此可见 chainEntryPoints这个map集合在 遍历过程中会被修改，所以前面的是用了合初始入口点列表拷贝进行遍历
                 createChain(
                         nonChainable.getTargetId(),
                         1, // operators start at position 1 because 0 is for chained source inputs
@@ -496,18 +525,24 @@ public class StreamingJobGraphGenerator {
                         chainEntryPoints);
             }
 
+            //多易教育: 3. 递归退出条件满足时（当前节点已经没有下游节点或者下游节点的调用已返回），走到这里（生成chain信息）
+            //多易教育: 放入一个chain名，chainedNames是一个全局的成员
             chainedNames.put(
                     currentNodeId,
                     createChainedName(
                             currentNodeId,
                             chainableOutputs,
                             Optional.ofNullable(chainEntryPoints.get(currentNodeId))));
+
+            //多易教育: 生成chain的最小资源，chainedMinResources是一个全局的成员
             chainedMinResources.put(
                     currentNodeId, createChainedMinResources(currentNodeId, chainableOutputs));
+            //多易教育: 生成chain的优选资源，chainedPreferredResources是一个全局的成员
             chainedPreferredResources.put(
                     currentNodeId,
                     createChainedPreferredResources(currentNodeId, chainableOutputs));
 
+            //多易教育: 将当前节点添加到当前所属的chain中
             OperatorID currentOperatorId =
                     chainInfo.addNodeToChain(
                             currentNodeId,
@@ -523,11 +558,15 @@ public class StreamingJobGraphGenerator {
                         .addOutputFormat(currentOperatorId, currentNode.getOutputFormat());
             }
 
+            //多易教育: 如果本节点正好是所属chain的头部节点，则创建出一个JobVertex，并返回一个StreamConfig
+            // 否则，只是生成一个新的StreamConfig
+            // q&a:从这里看，应该是每一个逻辑点都有一个专属的StreamConfig对象
             StreamConfig config =
                     currentNodeId.equals(startNodeId)
                             ? createJobVertex(startNodeId, chainInfo)
                             : new StreamConfig(new Configuration());
 
+            //多易教育: 填充vertex配置，这个方法在区分两类源节点的时候也用过
             setVertexConfig(
                     currentNodeId,
                     config,
@@ -535,34 +574,43 @@ public class StreamingJobGraphGenerator {
                     nonChainableOutputs,
                     chainInfo.getChainedSources());
 
+            //多易教育: 1. 如果当前节点是chain的起始点
             if (currentNodeId.equals(startNodeId)) {
-
+                //多易教育: 设置为chain的起始
                 config.setChainStart();
                 config.setChainIndex(chainIndex);
                 config.setOperatorName(streamGraph.getStreamNode(currentNodeId).getOperatorName());
 
                 for (StreamEdge edge : transitiveOutEdges) {
+                    //多易教育: 为每一个transitive输出StreamEdge边，连接点生成JobEdge边
                     connect(startNodeId, edge);
                 }
-
+                //多易教育: 设置点的出边（真正的外边）
                 config.setOutEdgesInOrder(transitiveOutEdges);
                 config.setTransitiveChainedTaskConfigs(chainedConfigs.get(startNodeId));
 
-            } else {
+            }
+            //多易教育: 2. 如果当前节点不是chain的起始点
+            else {
+                //多易教育: 将本节点的配置信息，放入 全局 chainedConfigs ，以chain的起始点作为key
                 chainedConfigs.computeIfAbsent(
                         startNodeId, k -> new HashMap<Integer, StreamConfig>());
 
                 config.setChainIndex(chainIndex);
                 StreamNode node = streamGraph.getStreamNode(currentNodeId);
                 config.setOperatorName(node.getOperatorName());
-                chainedConfigs.get(startNodeId).put(currentNodeId, config);
+                chainedConfigs.get(startNodeId).put(currentNodeId, config);  //多易教育: 上一步是放入了一个空的map，这一步往空的map中填入本节点Id及其配置对象
             }
 
             config.setOperatorID(currentOperatorId);
 
+            //多易教育: 如果本节点的可chain边为空（chain的end节点），则将本节点的配置信息设置end
             if (chainableOutputs.isEmpty()) {
                 config.setChainEnd();
             }
+            //多易教育: 返回transitiveOutEdges；只有在遇到不可chain的下游点时，才有值
+            // 通过上面的递归逻辑: transitiveOutEdges.addAll(createChain())
+            // 这些不可chain的边，就会成为上游整个 chain 的真实出边
             return transitiveOutEdges;
 
         } else {
@@ -713,6 +761,7 @@ public class StreamingJobGraphGenerator {
         config.setVertexID(vertexID);
 
         // build the inputs as a combination of source and network inputs
+        //多易教育: 构建一个source和网络输入的组合输入
         final List<StreamEdge> inEdges = vertex.getInEdges();
         final TypeSerializer<?>[] inputSerializers = vertex.getTypeSerializersIn();
 
@@ -938,7 +987,7 @@ public class StreamingJobGraphGenerator {
 
     public static boolean isChainable(StreamEdge edge, StreamGraph streamGraph) {
         StreamNode downStreamVertex = streamGraph.getTargetVertex(edge);
-
+        //多易教育: 下游节点的入边=1，且共享槽位、算子可chain，forwardPartitioner，非batch模式，并行度，配置参数为可chain
         return downStreamVertex.getInEdges().size() == 1 && isChainableInput(edge, streamGraph);
     }
 
@@ -946,12 +995,13 @@ public class StreamingJobGraphGenerator {
         StreamNode upStreamVertex = streamGraph.getSourceVertex(edge);
         StreamNode downStreamVertex = streamGraph.getTargetVertex(edge);
 
-        if (!(upStreamVertex.isSameSlotSharingGroup(downStreamVertex)
-                && areOperatorsChainable(upStreamVertex, downStreamVertex, streamGraph)
-                && (edge.getPartitioner() instanceof ForwardPartitioner)
-                && edge.getExchangeMode() != StreamExchangeMode.BATCH
-                && upStreamVertex.getParallelism() == downStreamVertex.getParallelism()
-                && streamGraph.isChainingEnabled())) {
+        //多易教育: 如下条件任意一个不满足，则返回false（不可chain）
+        if (!(upStreamVertex.isSameSlotSharingGroup(downStreamVertex)  //多易教育: 上下游属于相同槽位共享组
+                && areOperatorsChainable(upStreamVertex, downStreamVertex, streamGraph) //多易教育: 算子可chain
+                && (edge.getPartitioner() instanceof ForwardPartitioner) //多易教育: 分区是 ForwardPartitioner
+                && edge.getExchangeMode() != StreamExchangeMode.BATCH  //多易教育: 非BATCH模式
+                && upStreamVertex.getParallelism() == downStreamVertex.getParallelism() //多易教育: 上下游并行度相同
+                && streamGraph.isChainingEnabled())) {  //多易教育: 参数配置为可chain
 
             return false;
         }
@@ -959,6 +1009,8 @@ public class StreamingJobGraphGenerator {
         // check that we do not have a union operation, because unions currently only work
         // through the network/byte-channel stack.
         // we check that by testing that each "type" (which means input position) is used only once
+        //多易教育: 不能是union操作，因为union操作目前只能通过网络栈工作
+        // q&a: 这里的检查逻辑尚有疑问
         for (StreamEdge inEdge : downStreamVertex.getInEdges()) {
             if (inEdge != edge && inEdge.getTypeNumber() == edge.getTypeNumber()) {
                 return false;

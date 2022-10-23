@@ -84,11 +84,13 @@ public abstract class AbstractStreamTaskNetworkInput<
         this.recordDeserializers = checkNotNull(recordDeserializers);
     }
 
+    //多易教育: 执行输入数据处理并输出结果的核心逻辑
     @Override
     public DataInputStatus emitNext(DataOutput<T> output) throws Exception {
 
         while (true) {
             // get the stream element from the deserializer
+            //多易教育: 如果当前记录的反序列化器不为空，则先从反序列化器中获取到输入的流元素
             if (currentRecordDeserializer != null) {
                 RecordDeserializer.DeserializationResult result;
                 try {
@@ -97,6 +99,8 @@ public abstract class AbstractStreamTaskNetworkInput<
                     throw new IOException(
                             String.format("Can't get next record for channel %s", lastChannel), e);
                 }
+                //多易教育:
+                // q&a: 这里将deserializer置空，意思不明
                 if (result.isBufferConsumed()) {
                     currentRecordDeserializer = null;
                 }
@@ -108,14 +112,31 @@ public abstract class AbstractStreamTaskNetworkInput<
                 }
             }
 
+            //多易教育: 从输入口拉取一个 数据
+            // checkpointedInputGate.pollNext()方法,会检测拉取到的是buffer还是event
+            //  如果是buffer，直接返回
+            //  如果是event，则根据event的类型做相应处理后，返回拉取的数据
+            //  吐槽：变量方法等命名实在是太烂了，烂的一比！！！
             Optional<BufferOrEvent> bufferOrEvent = checkpointedInputGate.pollNext(); // 多易教育:  CheckpointedInputGate
             if (bufferOrEvent.isPresent()) {
                 // return to the mailbox after receiving a checkpoint barrier to avoid processing of
                 // data after the barrier before checkpoint is performed for unaligned checkpoint
                 // mode
+                //多易教育-----------------
+                // 收到 ck barrier 时马上回到 mailbox ，
+                // 以避免在非对齐ck模式下出现 ck执行前就开始处理barrier后面的数据
+                // q&a:这一段不知道什么鸟意思!!!
+                //------------------
+
+                //多易教育: 如果是数据buffer，则调用： processBuffer()
                 if (bufferOrEvent.get().isBuffer()) {
                     processBuffer(bufferOrEvent.get());
-                } else {
+                }
+                //多易教育: 如果是事件buffer，则调用：processEvent()
+                // 此处的event处理只是对几个特定事件（输入结束等）进行状态获取了
+                // 真正的事件处理在上面的 pollNext()拉取数据时就已经处理完成了
+                //  吐槽：变量方法等命名实在是太烂了，烂的一比！！！
+                else {
                     return processEvent(bufferOrEvent.get());
                 }
             } else {

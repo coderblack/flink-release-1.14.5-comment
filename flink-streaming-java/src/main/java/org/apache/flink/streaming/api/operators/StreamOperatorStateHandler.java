@@ -216,29 +216,45 @@ public class StreamOperatorStateHandler {
                             snapshotContext.getRawKeyedOperatorStateOutput(), operatorName);
                 }
             }
+            //多易教育: 调用算子operator的snapshotState
             streamOperator.snapshotState(snapshotContext);
 
             snapshotInProgress.setKeyedStateRawFuture(snapshotContext.getKeyedStateStreamFuture());
             snapshotInProgress.setOperatorStateRawFuture(
                     snapshotContext.getOperatorStateStreamFuture());
 
+            //多易教育: 如果算子状态不为空
             if (null != operatorStateBackend) {
                 snapshotInProgress.setOperatorStateManagedFuture(
+                        //多易教育: 调用backend的snapshot
                         operatorStateBackend.snapshot(
                                 checkpointId, timestamp, factory, checkpointOptions));
             }
 
+            //多易教育: 如果keyedStateBackend不为空
             if (null != keyedStateBackend) {
+                //多易教育: 1. 如果ck类型是savepoint
                 if (checkpointOptions.getCheckpointType().isSavepoint()) {
+                    //多易教育: 生成snapshotRunner
                     SnapshotStrategyRunner<KeyedStateHandle, ? extends FullSnapshotResources<?>>
                             snapshotRunner = prepareSavepoint(keyedStateBackend, closeableRegistry);
 
                     snapshotInProgress.setKeyedStateManagedFuture(
+                            //多易教育: 调用runner的snapshot
                             snapshotRunner.snapshot(
                                     checkpointId, timestamp, factory, checkpointOptions));
 
-                } else {
+                }
+                //多易教育: 2. 如果ck类型不是savepoint
+                else {
                     snapshotInProgress.setKeyedStateManagedFuture(
+                            //多易教育: 直接调用backend的snapshot
+                            // 调用链：
+                            //   -> backend.snapshot
+                            //   -> snapshotStrategyRunner.snapshot
+                            //   -> HeapSnapshotStrategy.asyncSnapshot 得到 匿名实现的 SnapshotResultSupplier#get() ，定义了最终输出逻辑
+                            //   -> snapshotStrategyRunner 将上步得到的supplier封装为 asyncSnapshotTask:FutureTask<SnapshotResult<T>>
+                            //   -> asyncSnapshotTask.run() -> asyncSnapshotTask.call() -> supplier.get() -> 执行：最终输出逻辑
                             keyedStateBackend.snapshot(
                                     checkpointId, timestamp, factory, checkpointOptions));
                 }

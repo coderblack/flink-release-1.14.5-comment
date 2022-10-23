@@ -62,6 +62,7 @@ abstract class AbstractAlignedBarrierHandlerState implements BarrierHandlerState
             state.blockChannel(channelInfo);
         }
 
+        //多易教育: 如果barrier已经收齐，则触发真正的checkpoint
         if (controller.allBarriersReceived()) {
             return triggerGlobalCheckpoint(controller, checkpointBarrier);
         }

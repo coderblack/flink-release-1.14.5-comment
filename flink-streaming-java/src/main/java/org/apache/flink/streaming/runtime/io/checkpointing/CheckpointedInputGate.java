@@ -156,6 +156,7 @@ public class CheckpointedInputGate implements PullingAsyncDataInput<BufferOrEven
         BufferOrEvent bufferOrEvent = next.get();
 
         if (bufferOrEvent.isEvent()) {
+            //多易教育: 如果拉取到的是event，则先对event处理，并在这里直接返回处理结果
             return handleEvent(bufferOrEvent);
         } else if (bufferOrEvent.isBuffer()) {
             /**
@@ -171,15 +172,27 @@ public class CheckpointedInputGate implements PullingAsyncDataInput<BufferOrEven
              */
             barrierHandler.addProcessedBytes(bufferOrEvent.getBuffer().getSize());
         }
+        //多易教育: 拉取到的是buffer，从这里返回
         return next;
     }
 
     private Optional<BufferOrEvent> handleEvent(BufferOrEvent bufferOrEvent) throws IOException {
         Class<? extends AbstractEvent> eventClass = bufferOrEvent.getEvent().getClass();
+        //多易教育: 处理checkpoint barrier
         if (eventClass == CheckpointBarrier.class) {
             CheckpointBarrier checkpointBarrier = (CheckpointBarrier) bufferOrEvent.getEvent();
+            //多易教育: ------------------------------
+            // barrierHandler有两个实现类： CheckpointBarrierTracker 和 SingleCheckpointBarrierHandler
+            //  SingleCheckpointBarrierHandler =>
+            //    在收到第一个barrier时即触发ck，并保持跟踪收到的barrier数，并会阻塞掉收到barrier的input，可用于实现eos
+            //  CheckpointBarrierTracker =>
+            //    可以同时接受多个ck-id下的barrier，不阻塞input
+            //    在某个ck-id的barrier收全后，通知监听器去完成checkpoint，可用于实现at-least-once
+            // --------------------
             barrierHandler.processBarrier(checkpointBarrier, bufferOrEvent.getChannelInfo(), false);
-        } else if (eventClass == CancelCheckpointMarker.class) {
+        }
+        //多易教育: 处理cancel checkpoint marker
+        else if (eventClass == CancelCheckpointMarker.class) {
             barrierHandler.processCancellationBarrier(
                     (CancelCheckpointMarker) bufferOrEvent.getEvent(),
                     bufferOrEvent.getChannelInfo());

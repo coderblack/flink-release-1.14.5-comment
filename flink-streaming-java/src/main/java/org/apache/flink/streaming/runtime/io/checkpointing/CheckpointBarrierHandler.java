@@ -144,6 +144,7 @@ public abstract class CheckpointBarrierHandler implements Closeable {
                             .setCheckpointStartDelayNanos(0);
         }
 
+        //多易教育: toNotifyOnCheckpoint就是 CheckpointableTask（各种Task类，如 StreamTask）
         toNotifyOnCheckpoint.triggerCheckpointOnBarrier(
                 checkpointMetaData, checkpointBarrier.getCheckpointOptions(), checkpointMetrics);
     }

@@ -131,6 +131,8 @@ class HeapSnapshotStrategy<K>
                                         createSimpleStream(
                                                 CheckpointedStateScope.EXCLUSIVE, streamFactory);
 
+        //多易教育: 匿名实现，实现了SnapshotResultSupplier的get()方法
+        // 内部逻辑就是snapshot的数据写出逻辑
         return (snapshotCloseableRegistry) -> {
             final Map<StateUID, Integer> stateNamesToId = syncPartResource.getStateNamesToId();
             final Map<StateUID, StateSnapshot> cowStateStableSnapshots =

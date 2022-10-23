@@ -278,12 +278,14 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
         }
     }
 
+    //多易教育: 用于触发ck的回调方法,在内部内ControllerImpl中调用
     private void triggerCheckpoint(CheckpointBarrier trigger) throws IOException {
         LOG.debug(
                 "{}: Triggering checkpoint {} on the barrier announcement at {}.",
                 taskName,
                 trigger.getId(),
                 trigger.getTimestamp());
+        //多易教育: 通知ck，传入barrier
         notifyCheckpoint(trigger);
     }
 
@@ -487,9 +489,12 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
     }
 
     private final class ControllerImpl implements BarrierHandlerState.Controller {
+        //多易教育: 回调方法，在AbstractAlignedBarrierHandlerState.triggerGlobalCheckpoint()中回调
+        // 用来执行ck的触发
         @Override
         public void triggerGlobalCheckpoint(CheckpointBarrier checkpointBarrier)
                 throws IOException {
+            //多易教育: 这里又调回了外面的 Handler类
             SingleCheckpointBarrierHandler.this.triggerCheckpoint(checkpointBarrier);
         }
 

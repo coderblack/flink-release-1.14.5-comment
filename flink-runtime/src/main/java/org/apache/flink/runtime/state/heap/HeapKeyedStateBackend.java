@@ -305,13 +305,14 @@ public class HeapKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
             @Nonnull final CheckpointStreamFactory streamFactory,
             @Nonnull CheckpointOptions checkpointOptions)
             throws Exception {
-
+        //多易教育: 构造快照策略runner
         SnapshotStrategyRunner<KeyedStateHandle, ?> snapshotStrategyRunner =
                 new SnapshotStrategyRunner<>(
                         "Heap backend snapshot",
                         checkpointStrategy,
                         cancelStreamRegistry,
                         snapshotExecutionType);
+        //多易教育: 调用runner执行snapshot
         return snapshotStrategyRunner.snapshot(
                 checkpointId, timestamp, streamFactory, checkpointOptions);
     }

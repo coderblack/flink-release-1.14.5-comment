@@ -192,9 +192,11 @@ public class StreamGraphGenerator {
         tmp.put(TwoInputTransformation.class, new TwoInputTransformationTranslator<>());
         tmp.put(MultipleInputTransformation.class, new MultiInputTransformationTranslator<>());
         tmp.put(KeyedMultipleInputTransformation.class, new MultiInputTransformationTranslator<>());
+        //多易教育: 新架构source的转译器
         tmp.put(SourceTransformation.class, new SourceTransformationTranslator<>());
         tmp.put(SinkTransformation.class, new SinkTransformationTranslator<>());
         tmp.put(LegacySinkTransformation.class, new LegacySinkTransformationTranslator<>());
+        //多易教育: 传统source的转译器
         tmp.put(LegacySourceTransformation.class, new LegacySourceTransformationTranslator<>());
         tmp.put(UnionTransformation.class, new UnionTransformationTranslator<>());
         tmp.put(PartitionTransformation.class, new PartitionTransformationTranslator<>());

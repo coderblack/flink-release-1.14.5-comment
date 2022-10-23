@@ -203,6 +203,9 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
      * StreamTaskActionExecutor.SynchronizedStreamTaskActionExecutor
      * SynchronizedStreamTaskActionExecutor} to provide lock to {@link SourceStreamTask}.
      */
+    //多易教育: checkpoint的触发任务就是在此executor中执行,具体来说是在performCheckpoint()方法中
+    // 这里的 StreamTask.executor  和 MailboxProcessor.executor 是同一个，
+    //   在processor构造中： this.mailboxProcessor = new MailboxProcessor(this::processInput, mailbox, actionExecutor);
     private final StreamTaskActionExecutor actionExecutor;
 
     /** The input processor. Initialized in {@link #init()} method. */
@@ -381,6 +384,8 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         this.environment = environment;
         this.configuration = new StreamConfig(environment.getTaskConfiguration());
         this.recordWriter = createRecordWriterDelegate(configuration, environment);
+
+        //多易教育: checkpoint任务就是在此executor中执行
         this.actionExecutor = Preconditions.checkNotNull(actionExecutor);
         // 多易教育:  new MailboxProcessor(controller -> { this.processInput(controller);},mailbox,actionExecutor);
         //  传入的defaultAction就是StreamTask的processInput
@@ -504,7 +509,8 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
      * @throws Exception on any problems in the action.
      */
     protected void processInput(MailboxDefaultAction.Controller controller) throws Exception {
-        //多易教育: 处理输入数据，返回状态
+        //多易教育: 关键处理逻辑
+        // 处理输入数据，返回状态
         DataInputStatus status = inputProcessor.processInput();
         switch (status) {
             case MORE_AVAILABLE:
@@ -1127,11 +1133,14 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     //  Checkpoint and Restore
     // ------------------------------------------------------------------------
 
+    //多易教育: 异步触发checkpoint，通过向mailbox注入mail来实现
+    // 本ck方法通常由source类算子来重写，为jobmanager的checkpointCoordinator来触发ck 和 barrier注入
     @Override
     public CompletableFuture<Boolean> triggerCheckpointAsync(
             CheckpointMetaData checkpointMetaData, CheckpointOptions checkpointOptions) {
 
         CompletableFuture<Boolean> result = new CompletableFuture<>();
+        //多易教育: 向mailbox注入一个mail
         mainMailboxExecutor.execute(
                 () -> {
                     try {
@@ -1139,12 +1148,17 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                                 Arrays.stream(getEnvironment().getAllInputGates())
                                         .allMatch(InputGate::isFinished);
 
+                        //多易教育: 如果已经没有未完成的输入
                         if (noUnfinishedInputGates) {
                             result.complete(
+                                    //多易教育: mail的核心逻辑是调用 triggerCheckpointAsyncInMailbox()方法
                                     triggerCheckpointAsyncInMailbox(
                                             checkpointMetaData, checkpointOptions));
-                        } else {
+                        }
+                        //多易教育: 如果还有未完成的输入
+                        else {
                             result.complete(
+                                    //多易教育: mail的核心逻辑是调用 triggerUnfinishedChannelsCheckpoint()方法
                                     triggerUnfinishedChannelsCheckpoint(
                                             checkpointMetaData, checkpointOptions));
                         }
@@ -1160,6 +1174,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         return result;
     }
 
+    //多易教育: 由mailbox触发后的具体的checkpoint执行逻辑
     private boolean triggerCheckpointAsyncInMailbox(
             CheckpointMetaData checkpointMetaData, CheckpointOptions checkpointOptions)
             throws Exception {
@@ -1181,6 +1196,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
             subtaskCheckpointCoordinator.initInputsCheckpoint(
                     checkpointMetaData.getCheckpointId(), checkpointOptions);
 
+            //多易教育: 执行checkpoint
             boolean success =
                     performCheckpoint(checkpointMetaData, checkpointOptions, checkpointMetrics);
             if (!success) {
@@ -1268,6 +1284,27 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         return Optional.empty();
     }
 
+    //多易教育:-----------------------------------------------------------------------------------
+    // 本方法是：由barrier触发checkpoint的执行逻辑
+    // 通常是下游task触发ck的入口
+    // 它是一个回调方法，会绕一大圈才能调过来
+    // 整体流程如下：
+    //  1. 在StreamTask的invoke中执行了 runMailboxLoop();
+    //  2. runMailboxLoop()中调用了 mailboxProcessor.runMailboxLoop();
+    //  3. mailboxProcessor.runMailboxLoop() 中，调用了 mailboxDefaultAction.runDefaultAction
+    //  4. runDefaultAction就是StreamTask的 processInput()，因此又回到了本类
+    //  5. processInput() 中会调用  inputProcessor.processInput(); <如 StreamOneInputProcessor>
+    //  6. input.emitNext(output); <AbstractStreamTaskNetworkInput.emitNext(output)> 中 调用了 CheckpointedInputGate.pollNext()
+    //  7. CheckpointedInputGate.pollNext()中，如果拉取到的是一个barrier，则又调用了 CheckpointBarrierHandler.processBarrier()
+    //            CheckpointBarrierHandler有两个重要实现： SingleCheckpointBarrierHandler和CheckpointBarrierTacker
+    //  8. SingleCheckpointBarrierHandler.processBarrier()中又调用了  AbstractAlignedBarrierHandlerState.barrierReceived()
+    //            待到barrier收齐后，又调用了它自己的 triggerGlobalCheckpoint()
+    //  9. triggerGlobalCheckpoint()中，又调回了 SingleCheckpointBarrierHandler类的triggerGlobalCheckpoint()
+    //  10. 接着又调用了SingleCheckpointBarrierHandler类的 triggerCheckpoint(checkpointBarrier);
+    //  11. 接着又调用了 SingleCheckpointBarrierHandler类的notifyCheckpoint(trigger);
+    //  12. 接着，又调用了 toNotifyOnCheckpoint.triggerCheckpointOnBarrier； 其中 toNotifyOnCheckpoint 就是 CheckpointTask（如StreamTask）
+    //  13. 因而，终于回到了这里！！！
+    // -------------------------------------------------------------------------------------------------------------
     @Override
     public void triggerCheckpointOnBarrier(
             CheckpointMetaData checkpointMetaData,
@@ -1277,6 +1314,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
         FlinkSecurityManager.monitorUserSystemExitForCurrentThread();
         try {
+            //多易教育: 执行checkpoint
             if (performCheckpoint(checkpointMetaData, checkpointOptions, checkpointMetrics)) {
                 if (isCurrentSavepointWithoutDrain(checkpointMetaData.getCheckpointId())) {
                     runSynchronousSavepointMailboxLoop();
@@ -1347,7 +1385,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                                 && this.finalCheckpointMinId == null) {
                             this.finalCheckpointMinId = checkpointMetaData.getCheckpointId();
                         }
-
+                        //多易教育: checkpoint的具体执行，是由 SubtaskCheckpointCoordinator负责
                         subtaskCheckpointCoordinator.checkpointState(
                                 checkpointMetaData,
                                 checkpointOptions,

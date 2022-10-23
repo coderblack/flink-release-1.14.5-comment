@@ -292,14 +292,18 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
 
         // Step (1): Prepare the checkpoint, allow operators to do some pre-barrier work.
         //           The pre-barrier work should be nothing or minimal in the common case.
+        //多易教育: Step(1): 准备ck，让operator执行一些 pre-barrier 工作
+        // pre-barrier工作通常来说或者没有或者很小
         operatorChain.prepareSnapshotPreBarrier(metadata.getCheckpointId());
 
         // Step (2): Send the checkpoint barrier downstream
+        //多易教育: Step(2)：广播发送barrier给下游
         operatorChain.broadcastEvent(
                 new CheckpointBarrier(metadata.getCheckpointId(), metadata.getTimestamp(), options),
                 options.isUnalignedCheckpoint());
 
         // Step (3): Prepare to spill the in-flight buffers for input and output
+        //多易教育: Step(3): 对input和output，准备溢出 in-flight buffers
         if (options.isUnalignedCheckpoint()) {
             // output data already written while broadcasting event
             channelStateWriter.finishOutput(metadata.getCheckpointId());
@@ -308,12 +312,14 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
         // Step (4): Take the state snapshot. This should be largely asynchronous, to not impact
         // progress of the
         // streaming topology
-
+        //多易教育: Step(4)：执行snapshot；这个动作应该是一个“大”异步动作，以免影响流处理逻辑的正常进度
         Map<OperatorID, OperatorSnapshotFutures> snapshotFutures =
                 new HashMap<>(operatorChain.getNumberOfOperators());
         try {
+            //多易教育: 执行snapshot流程的“同步”部分（主要是准备checkpoint的相关资源）
             if (takeSnapshotSync(
                     snapshotFutures, metadata, metrics, options, operatorChain, isRunning)) {
+                //多易教育: 如果“同步部分”执行成功，则执行checkpoint的“异步部分”（写出state数据到ck存储）
                 finishAndReportAsync(
                         snapshotFutures,
                         metadata,
@@ -592,16 +598,18 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
         long checkpointId = checkpointMetaData.getCheckpointId();
         long started = System.nanoTime();
 
+        //多易教育: 如果是非对齐的ck，则先获得channelState的结果
         ChannelStateWriteResult channelStateWriteResult =
                 checkpointOptions.isUnalignedCheckpoint()
                         ? channelStateWriter.getAndRemoveWriteResult(checkpointId)
                         : ChannelStateWriteResult.EMPTY;
-
+        //多易教育: 获得ck存储位置
         CheckpointStreamFactory storage =
                 checkpointStorage.resolveCheckpointStorageLocation(
                         checkpointId, checkpointOptions.getTargetLocation());
 
         try {
+            //多易教育: 执行snapshot
             operatorChain.snapshotState(
                     operatorSnapshotsInProgress,
                     checkpointMetaData,
