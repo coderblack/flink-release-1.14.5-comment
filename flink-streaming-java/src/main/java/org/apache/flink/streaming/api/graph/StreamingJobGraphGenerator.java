@@ -301,6 +301,7 @@ public class StreamingJobGraphGenerator {
         }
     }
 
+    //多易教育: 判断是否存在用户自定义分区器
     private boolean hasCustomPartitioner(StreamNode node) {
         return node.getOutEdges().stream()
                 .anyMatch(edge -> edge.getPartitioner() instanceof CustomPartitionerWrapper);
@@ -469,7 +470,9 @@ public class StreamingJobGraphGenerator {
         }
     }
 
-    //多易教育: 生成chain的核心逻辑方法
+    //多易教育:--------------------
+    // 生成chain的核心逻辑方法
+    // --------------------------
     private List<StreamEdge> createChain(
             final Integer currentNodeId,
             final int chainIndex,
@@ -534,10 +537,10 @@ public class StreamingJobGraphGenerator {
                             chainableOutputs,
                             Optional.ofNullable(chainEntryPoints.get(currentNodeId))));
 
-            //多易教育: 生成chain的最小资源，chainedMinResources是一个全局的成员
+            //多易教育: 生成chain的最小资源描述，chainedMinResources是一个全局的成员
             chainedMinResources.put(
                     currentNodeId, createChainedMinResources(currentNodeId, chainableOutputs));
-            //多易教育: 生成chain的优选资源，chainedPreferredResources是一个全局的成员
+            //多易教育: 生成chain的优选资源描述，chainedPreferredResources是一个全局的成员
             chainedPreferredResources.put(
                     currentNodeId,
                     createChainedPreferredResources(currentNodeId, chainableOutputs));
@@ -726,11 +729,13 @@ public class StreamingJobGraphGenerator {
         jobVertex.setResources(
                 chainedMinResources.get(streamNodeId), chainedPreferredResources.get(streamNodeId));
 
+        //多易教育: jobVertex中携带的task类直接取自StreamNode的task类
         jobVertex.setInvokableClass(streamNode.getJobVertexClass());
 
         int parallelism = streamNode.getParallelism();
 
         if (parallelism > 0) {
+            //多易教育: jobVertex的并行度直接沿用StreamNode的并行度
             jobVertex.setParallelism(parallelism);
         } else {
             parallelism = jobVertex.getParallelism();

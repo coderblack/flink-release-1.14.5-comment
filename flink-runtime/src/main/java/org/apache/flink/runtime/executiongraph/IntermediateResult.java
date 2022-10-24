@@ -37,10 +37,13 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 public class IntermediateResult {
 
+    //多易教育: 所对应的JobGraph中的中间数据集ID
     private final IntermediateDataSetID id;
 
+    //多易教育: 生产者，不是对应并行实例，而是对应整个JobVertex
     private final ExecutionJobVertex producer;
 
+    //多易教育: 分区数对应jobVertex的并行度
     private final IntermediateResultPartition[] partitions;
 
     /**
@@ -51,6 +54,7 @@ public class IntermediateResult {
     private final HashMap<IntermediateResultPartitionID, Integer> partitionLookupHelper =
             new HashMap<>();
 
+    //多易教育: 中间数据结果集的并行生产者个数，对应的是jobVertex的并行度
     private final int numParallelProducers;
 
     private int partitionsAssigned;

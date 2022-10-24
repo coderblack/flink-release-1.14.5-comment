@@ -35,9 +35,15 @@ import static org.apache.flink.util.Preconditions.checkState;
 /** Class that manages all the connections between tasks. */
 public class EdgeManager {
 
+    //多易教育: 分区消费者（这里的消费者指的是ExecutionVertex）
+    // 生产者视角：
+    //   一个输出结果分区，对应着一组消费者 ExecutionVertices
     private final Map<IntermediateResultPartitionID, List<ConsumerVertexGroup>> partitionConsumers =
             new HashMap<>();
 
+    //多易教育: 分区消费者（这里的消费者指的是ExecutionVertex）
+    // 消费者视角：
+    //   一个 ExecutionVertex（消费者），对应着多个要消费的分区组（每个组对应JobVertex的一条入边），每一个组中有一个或多个分区（一条入边中有多个并行生产者subTask）
     private final Map<ExecutionVertexID, List<ConsumedPartitionGroup>> vertexConsumedPartitions =
             new HashMap<>();
 

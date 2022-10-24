@@ -260,6 +260,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
     private final ExecutionDeploymentListener executionDeploymentListener;
     private final ExecutionStateUpdateListener executionStateUpdateListener;
 
+    //多易教育: 管理所有task之间的连接
     private final EdgeManager edgeManager;
 
     private final Map<ExecutionVertexID, ExecutionVertex> executionVerticesById;  //多易教育: 所有的点的ID索引
@@ -755,8 +756,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
     // --------------------------------------------------------------------------------------------
     //  Actions
     // --------------------------------------------------------------------------------------------
-    //多易教育: 这里需要重点梳理，attach究竟做什么事？
-    // q&a:  看起来是传入的JobVertex后，进而生成topology（部署拓扑逻辑？）
+    //多易教育: 将拓扑排序好的JobVertices，封装成ExecutionJobVertices并填充各类信息到ExecutionGraph
     @Override
     public void attachJobGraph(List<JobVertex> topologicallySorted) throws JobException {
 
@@ -781,8 +781,9 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                     parallelismStore.getParallelismInfo(jobVertex.getID());
 
             // create the execution job vertex and attach it to the graph
+            // 多易教育:  将每个JobVertex转成 ExecutionJobVertex
             ExecutionJobVertex ejv =
-                    new ExecutionJobVertex(  // 多易教育:  将每个JobVertex转成 ExecutionJobVertex
+                    new ExecutionJobVertex(
                             this,
                             jobVertex,
                             maxPriorAttemptsHistoryLength,
@@ -790,9 +791,10 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                             createTimestamp,
                             parallelismInfo,
                             initialAttemptCounts.getAttemptCounts(jobVertex.getID()));
-            //多易教育: 为ejv设置入边
+            //多易教育: 将当前 executionJobVertex 连接到它的前向节点
             ejv.connectToPredecessors(this.intermediateResults);
 
+            //多易教育: 在tasks集合中放入当前生成好的这个 executionJobVertex；如果集合中已存在则抛出异常
             ExecutionJobVertex previousTask = this.tasks.putIfAbsent(jobVertex.getID(), ejv);
             if (previousTask != null) {
                 throw new JobException(
@@ -801,7 +803,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                                 jobVertex.getID(), ejv, previousTask));
             }
 
-            //多易教育: 将ejv的所有出边，添加到graph的边集合中
+            //多易教育: 将ejv的所有生产结果集，添加到 graph的 输出中间数据结果集合中
             for (IntermediateResult res : ejv.getProducedDataSets()) {
                 IntermediateResult previousDataSet =
                         this.intermediateResults.putIfAbsent(res.getId(), res);
@@ -812,8 +814,9 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                                     res.getId(), res, previousDataSet));
                 }
             }
-            //多易教育: 将创建好的executionVertex添加到点集合
+            //多易教育: 将创建好的 executionJobVertex 添加到点有序集合中
             this.verticesInCreationOrder.add(ejv);
+            // 更新graph的总vertex并行度数
             this.numVerticesTotal += ejv.getParallelism();
         }
         //多易教育: 将点和中间结果注册到ID索引map中

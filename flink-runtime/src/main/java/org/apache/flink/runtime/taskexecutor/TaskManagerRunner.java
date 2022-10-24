@@ -95,6 +95,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * This class is the executable entry point for the task manager in yarn or standalone mode. It
  * constructs the related components (network, I/O manager, memory manager, RPC service, HA service)
  * and starts them.
+ * 多易教育: 本类是taskManager的可执行入口（yarn或者standalone模式下）
+ *  它构造并启动所需的各种组件（网络栈，I/O管理器，内存管理器，RPC服务，HA服务）
  */
 public class TaskManagerRunner implements FatalErrorHandler {
 
@@ -132,22 +134,26 @@ public class TaskManagerRunner implements FatalErrorHandler {
 
     private boolean shutdown;
 
+    //多易教育: 本构造并不是直接入口
+    // 直接入口在本类的main方法，其中会调用本构造，并传入serviceFactory
     public TaskManagerRunner(
             Configuration configuration,
             PluginManager pluginManager,
             TaskExecutorServiceFactory taskExecutorServiceFactory)
             throws Exception {
         this.configuration = checkNotNull(configuration);
-
+        //多易教育: 使用Java SPI机制加载rpcSystem（AkkaRpcSystem）
         rpcSystem = RpcSystem.load(configuration);
 
         timeout = Time.fromDuration(configuration.get(AkkaOptions.ASK_TIMEOUT_DURATION));
 
+        //多易教育: 线程池，size取cpu合数
         this.executor =
                 java.util.concurrent.Executors.newScheduledThreadPool(
                         Hardware.getNumberCPUCores(),
                         new ExecutorThreadFactory("taskmanager-future"));
 
+        //多易教育: 高可用服务，将在taskManagerRunner的executor线程池中运行
         highAvailabilityServices =
                 HighAvailabilityServicesUtils.createHighAvailabilityServices(
                         configuration,
@@ -158,12 +164,14 @@ public class TaskManagerRunner implements FatalErrorHandler {
 
         JMXService.startInstance(configuration.getString(JMXServerOptions.JMX_SERVER_PORT));
 
+        //多易教育: RpcUtils.createRemoteRpcService
         rpcService = createRpcService(configuration, highAvailabilityServices, rpcSystem);
 
         this.resourceId =
                 getTaskManagerResourceID(
                         configuration, rpcService.getAddress(), rpcService.getPort());
 
+        //多易教育: 心跳服务创建
         HeartbeatServices heartbeatServices = HeartbeatServices.fromConfiguration(configuration);
 
         metricRegistry =
@@ -173,6 +181,7 @@ public class TaskManagerRunner implements FatalErrorHandler {
                                 rpcSystem.getMaximumMessageSizeInBytes(configuration)),
                         ReporterSetup.fromConfiguration(configuration, pluginManager));
 
+        //多易教育: 度量查询服务
         final RpcService metricQueryServiceRpcService =
                 MetricUtils.startRemoteMetricsRpcService(
                         configuration, rpcService.getAddress(), rpcSystem);
@@ -186,6 +195,8 @@ public class TaskManagerRunner implements FatalErrorHandler {
                 ExternalResourceUtils.createStaticExternalResourceInfoProviderFromConfig(
                         configuration, pluginManager);
 
+        //多易教育: 用各服务组件，封装成一个taskExecutor(它是一个Endpoint）并进而封装成service
+        // 此处的factory，实质就是本类的一个静态方法：TaskManagerRunner::createTaskExecutorService
         taskExecutorService =
                 taskExecutorServiceFactory.createTaskExecutor(
                         this.configuration,
@@ -225,9 +236,12 @@ public class TaskManagerRunner implements FatalErrorHandler {
 
     // --------------------------------------------------------------------------------------------
     //  Lifecycle management
+    //  多易教育: 生命周期管理方法
     // --------------------------------------------------------------------------------------------
-
+    //多易教育: 启动各服务
     public void start() throws Exception {
+        //多易教育: 其实就是启动其中的 taskExecutor.start()
+        // taskExecutor是一个Endpoint，因此就是： rpcServer.start();
         taskExecutorService.start();
     }
 
@@ -348,7 +362,7 @@ public class TaskManagerRunner implements FatalErrorHandler {
     // --------------------------------------------------------------------------------------------
     //  Static entry point
     // --------------------------------------------------------------------------------------------
-
+    //多易教育: 进程静态入口
     public static void main(String[] args) throws Exception {
         // startup checks and logging
         EnvironmentInformation.logEnvironmentInfo(LOG, "TaskManager", args);
@@ -371,16 +385,20 @@ public class TaskManagerRunner implements FatalErrorHandler {
                 args, TaskManagerRunner.class.getSimpleName());
     }
 
+    //多易教育: 构造一个TaskManagerRunner的静态入口方法
     public static int runTaskManager(Configuration configuration, PluginManager pluginManager)
             throws Exception {
         final TaskManagerRunner taskManagerRunner;
 
         try {
+            //多易教育: 构造 taskManagerRunner 对象
             taskManagerRunner =
                     new TaskManagerRunner(
                             configuration,
                             pluginManager,
+                            //多易教育: TaskExecutorServiceFactory,工厂的实质逻辑就是本类静态方法createTaskExecutorService
                             TaskManagerRunner::createTaskExecutorService);
+            //多易教育: 启动runner
             taskManagerRunner.start();
         } catch (Exception exception) {
             throw new FlinkException("Failed to start the TaskManagerRunner.", exception);
@@ -425,6 +443,7 @@ public class TaskManagerRunner implements FatalErrorHandler {
 
             exitCode =
                     SecurityUtils.getInstalledContext()
+                            //多易教育: 启动taskManager
                             .runSecured(() -> runTaskManager(configuration, pluginManager));
         } catch (Throwable t) {
             throwable = ExceptionUtils.stripException(t, UndeclaredThrowableException.class);

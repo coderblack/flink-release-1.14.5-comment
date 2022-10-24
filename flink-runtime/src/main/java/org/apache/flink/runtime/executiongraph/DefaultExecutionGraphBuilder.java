@@ -152,7 +152,10 @@ public class DefaultExecutionGraphBuilder {
 
         // set the basic properties
 
-        try { // 多易教育:  {"jid":"ada8863af820a6c104c18c0443eb438e","name":"Flink Streaming Job","type":"STREAMING","nodes":[{"id":"90bea66de1c231edf33913ecd54406c1","parallelism":1,"operator":"","operator_strategy":"","description":"Keyed Aggregation -&gt; Sink: Print to Std. Out","inputs":[{"num":0,"id":"cbc357ccb763df2852fee8c4fc7d55f2","ship_strategy":"HASH","exchange":"pipelined_bounded"}],"optimizer_properties":{}},{"id":"cbc357ccb763df2852fee8c4fc7d55f2","parallelism":1,"operator":"","operator_strategy":"","description":"Source: Socket Stream -&gt; Flat Map","optimizer_properties":{}}]}
+        try {
+            // 多易教育:
+            //  debug信息：
+            //  {"jid":"ada8863af820a6c104c18c0443eb438e","name":"Flink Streaming Job","type":"STREAMING","nodes":[{"id":"90bea66de1c231edf33913ecd54406c1","parallelism":1,"operator":"","operator_strategy":"","description":"Keyed Aggregation -&gt; Sink: Print to Std. Out","inputs":[{"num":0,"id":"cbc357ccb763df2852fee8c4fc7d55f2","ship_strategy":"HASH","exchange":"pipelined_bounded"}],"optimizer_properties":{}},{"id":"cbc357ccb763df2852fee8c4fc7d55f2","parallelism":1,"operator":"","operator_strategy":"","description":"Source: Socket Stream -&gt; Flat Map","optimizer_properties":{}}]}
             executionGraph.setJsonPlan(JsonPlanGenerator.generatePlan(jobGraph));
         } catch (Throwable t) {
             log.warn("Cannot create JSON plan for job", t);
@@ -193,7 +196,10 @@ public class DefaultExecutionGraphBuilder {
                 (System.nanoTime() - initMasterStart) / 1_000_000);
 
         // topologically sort the job vertices and attach the graph to the existing one
-        //多易教育: 对所有JobVertex从source节点开始做拓扑排序，并粘附这个graph上（吐槽：这里的注释英文水平烂的一笔）
+        //多易教育: 对所有JobVertex从source节点开始做拓扑排序
+        //  拓扑排序的核心逻辑就是： 即保证如果存在 A -> B 的有向边，那么在排序后的列表中 A 节点一定在 B 节点之前
+        // 并粘附这个ExecutionGraph上
+        // （吐槽：这里的注释英文水平烂的一笔）
         List<JobVertex> sortedTopology = jobGraph.getVerticesSortedTopologicallyFromSources();
         if (log.isDebugEnabled()) {
             log.debug(

@@ -67,12 +67,23 @@ public class ExecutionVertex
 
     // --------------------------------------------------------------------------------------------
 
+    //多易教育: 所属的JobVertex
     private final ExecutionJobVertex jobVertex;
 
+    //多易教育: 对应的输出结果数据分区
+    // （一个execution vertex需要为下游的 多个execution vertex输出数据，
+    // 每一个下游execution vertex对应此处的一个partition）
+    // ----------------------------------------------------------------
+    // 注：  IntermediateResultPartitionID有两个标识组成： 数据集标识：分区号
+    //    一个 IntermediateResultPartition 只会属于 一个 IntermediateResult，
+    //    而一个 IntermediateResult 则拥有多个 partition，
+    //    每一个 subTask 在一个 IntermediateResult中只对应一个 partition
     private final Map<IntermediateResultPartitionID, IntermediateResultPartition> resultPartitions;
 
+    //多易教育: 所对应的subTask的索引号
     private final int subTaskIndex;
 
+    //多易教育: 本vertex的标识id
     private final ExecutionVertexID executionVertexId;
 
     private final EvictingBoundedList<ArchivedExecution> priorExecutions;
@@ -80,11 +91,14 @@ public class ExecutionVertex
     private final Time timeout;
 
     /** The name in the format "myTask (2/7)", cached to avoid frequent string concatenations. */
+    //多易教育: 对应subTask的名称（形如： xTask(2/7）
     private final String taskNameWithSubtask;
 
     /** The current or latest execution attempt of this vertex's task. */
+    //多易教育: 代表当前或最新的一次执行
     private Execution currentExecution; // this field must never be null
 
+    //多易教育: 输入切片
     private final ArrayList<InputSplit> inputSplits;
 
     // --------------------------------------------------------------------------------------------
@@ -121,6 +135,10 @@ public class ExecutionVertex
 
         this.resultPartitions = new LinkedHashMap<>(producedDataSets.length, 1);
 
+        //多易教育: 所属的jobVertex有多少个输出数据集（出边数），
+        // 则本executionVertex在每个输出数据集中负责对应一个partition
+        // partitionId都为本execution vertex对应的subTask index
+        //  注：与下游的并行度并没有关系（有点奇怪）
         for (IntermediateResult result : producedDataSets) {
             IntermediateResultPartition irp =
                     new IntermediateResultPartition(

@@ -87,22 +87,30 @@ public class ExecutionJobVertex
 
     private final InternalExecutionGraphAccessor graph;
 
+    //多易教育: 本节点所对应的JobGraph中的JobVertex
     private final JobVertex jobVertex;
 
+    //多易教育: 本节点所对应的多个并行实例（对应subTask）
     private final ExecutionVertex[] taskVertices;
 
+    //多易教育: 本节点的输出中间数据
     private final IntermediateResult[] producedDataSets;
 
+    //多易教育: 本节点的输入中间数据（上游的输出结果，里面携带上游的resultPartition信息）
     private final List<IntermediateResult> inputs;
 
     private final VertexParallelismInformation parallelismInfo;
 
+    //多易教育: 本节点所属槽位共享组
     private final SlotSharingGroup slotSharingGroup;
 
+    //多易教育: 本节点所属的位置协同组
     @Nullable private final CoLocationGroup coLocationGroup;
 
+    //多易教育: 输入切片
     private final InputSplit[] inputSplits;
 
+    //多易教育: 资源描述
     private final ResourceProfile resourceProfile;
 
     /**
@@ -115,6 +123,7 @@ public class ExecutionJobVertex
 
     private final Collection<OperatorCoordinatorHolder> operatorCoordinators;
 
+    //多易教育: 输入切片分配器
     private InputSplitAssigner splitAssigner;
 
     @VisibleForTesting
@@ -151,7 +160,7 @@ public class ExecutionJobVertex
                 ResourceProfile.fromResourceSpec(jobVertex.getMinResources(), MemorySize.ZERO);
 
         this.taskVertices = new ExecutionVertex[this.parallelismInfo.getParallelism()];
-
+        //多易教育: 输入中间数据集个数与JobVertex对应的上游JobVertex个数对应（并不是与并行度ExecutionVertex对应）
         this.inputs = new ArrayList<>(jobVertex.getInputs().size());
 
         // take the sharing group
@@ -159,6 +168,7 @@ public class ExecutionJobVertex
         this.coLocationGroup = jobVertex.getCoLocationGroup();
 
         // create the intermediate results
+        //多易教育: 设置输出数据集
         this.producedDataSets =
                 new IntermediateResult[jobVertex.getNumberOfProducedIntermediateDataSets()];
 
@@ -174,6 +184,7 @@ public class ExecutionJobVertex
         }
 
         // create all task vertices
+        //多易教育: 按照并行度数量，构建task vertices
         for (int i = 0; i < this.parallelismInfo.getParallelism(); i++) {
             ExecutionVertex vertex =
                     new ExecutionVertex(
