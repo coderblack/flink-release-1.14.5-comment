@@ -37,19 +37,24 @@ public interface FullSnapshotResources<K> extends SnapshotResources {
     /**
      * Returns the list of {@link StateMetaInfoSnapshot meta info snapshots} for this state
      * snapshot.
+     * 多易教育: 返回此状态快照的元数据列表，StateMetaInfoSnapshot记录每个状态对应快照元数据信息，
+     *  比如state name、  backend 类型、序列化器等。
      */
     List<StateMetaInfoSnapshot> getMetaInfoSnapshots();
 
     /**
      * Returns a {@link KeyValueStateIterator} for iterating over all key-value states for this
      * snapshot resources.
+     * 多易教育： 创建用于遍历当前快照的迭代器
      */
     KeyValueStateIterator createKVStateIterator() throws IOException;
 
     /** Returns the {@link KeyGroupRange} of this snapshot. */
+    //多易教育: 当前快照对应的KeyGroupRange
     KeyGroupRange getKeyGroupRange();
 
     /** Returns key {@link TypeSerializer}. */
+    //多易教育: key序列化器
     TypeSerializer<K> getKeySerializer();
 
     /** Returns the {@link StreamCompressionDecorator} that should be used for writing. */

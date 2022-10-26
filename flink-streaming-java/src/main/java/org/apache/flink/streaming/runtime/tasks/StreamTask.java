@@ -726,12 +726,12 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         isRunning = true;
     }
 
-    private CompletableFuture<Void> restoreGates() throws Exception {
+    private CompletableFuture<Void> restoreGates() throws Exception {   //多易教育: 算子初始化
         SequentialChannelStateReader reader =
                 getEnvironment().getTaskStateManager().getSequentialChannelStateReader();
         reader.readOutputData(
                 getEnvironment().getAllWriters(), !configuration.isGraphContainingLoops());
-
+        //多易教育: 算子链初始化状态并open
         operatorChain.initializeStateAndOpenOperators(createStreamTaskStateInitializer());
 
         IndexedInputGate[] inputGates = getEnvironment().getAllInputGates();
@@ -1313,10 +1313,16 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
             throws IOException {
 
         FlinkSecurityManager.monitorUserSystemExitForCurrentThread();
+
+        // TODO BY dps@51doit.cn : 测试线程模型（从测试结果上看，此处的执行线程就是对应subTask的执行线程）
+        System.out.println("StreamTask 的 triggerCheckpointOnBarrier方法中：" + Thread.currentThread().getName());
+
+
         try {
             //多易教育: 执行checkpoint
             if (performCheckpoint(checkpointMetaData, checkpointOptions, checkpointMetrics)) {
                 if (isCurrentSavepointWithoutDrain(checkpointMetaData.getCheckpointId())) {
+                    //多易教育: 此处有操作mailbox
                     runSynchronousSavepointMailboxLoop();
                 }
             }

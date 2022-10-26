@@ -20,11 +20,12 @@ import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTime
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
 
-public class WordCount {
+public class WordCountThreadTest {
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.enableCheckpointing(60000, CheckpointingMode.EXACTLY_ONCE);
+        env.enableCheckpointing(30000, CheckpointingMode.EXACTLY_ONCE);
         env.getCheckpointConfig().setCheckpointStorage("file:///home/hunter/ck");
+        env.setParallelism(1);
 
         DataStreamSource<String> s1 = env.socketTextStream("localhost", 9999);
 
@@ -36,10 +37,13 @@ public class WordCount {
                         p1 = getRuntimeContext().getListState(new ListStateDescriptor<Person>(
                                 "p1",
                                 Person.class));
+                        System.out.println("flatMapFunction的open方法：" + Thread.currentThread().getName());
                     }
 
                     @Override
                     public void flatMap(String value, Collector<String> out) throws Exception {
+
+                        System.out.println("flatMapFunction的flatMap方法：" + Thread.currentThread().getName());
 
                         for(int i=0;i<10;i++){
                             p1.add(new Person("a","b",18));
@@ -51,7 +55,7 @@ public class WordCount {
                         }
                     }
                 })
-                .setParallelism(2);
+                .setParallelism(1);
 
         SingleOutputStreamOperator<Tuple2<String, Integer>> pair = words.map(s -> Tuple2.of(s, 1))
                 .setParallelism(1)
@@ -64,7 +68,7 @@ public class WordCount {
 
                     @Override
                     public void open(Configuration parameters) throws Exception {
-
+                        System.out.println("RichMapFunction的open方法：" + Thread.currentThread().getName());
                         words1 = getRuntimeContext().getListState(new ListStateDescriptor<Person>(
                                 "words",
                                 Person.class));
@@ -72,16 +76,19 @@ public class WordCount {
 
                     @Override
                     public Tuple2<String, Integer> map(Tuple2<String, Integer> value) throws Exception {
+
+                        System.out.println("RichMapFunction的map方法：" + Thread.currentThread().getName());
+
                         for(int i=0;i<1000;i++) {
                             words1.add(new Person(value.f0, value.f0, value.f1));
                         }
 
                         return value;
                     }
-                }).setParallelism(4)
+                }).setParallelism(1)
                 .keyBy(tp -> tp.f0)
                 .window(TumblingProcessingTimeWindows.of(Time.seconds(10)))
-                .sum(1).setParallelism(3)
+                .sum(1).setParallelism(1)
                 .print().setParallelism(1);
 
         env.execute();

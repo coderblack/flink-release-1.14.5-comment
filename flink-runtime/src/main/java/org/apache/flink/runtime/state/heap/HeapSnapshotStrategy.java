@@ -118,17 +118,17 @@ class HeapSnapshotStrategy<K>
 
         final SupplierWithException<CheckpointStreamWithResultProvider, Exception>
                 checkpointStreamSupplier =
-                        localRecoveryConfig.isLocalRecoveryEnabled()
+                        localRecoveryConfig.isLocalRecoveryEnabled() //多易教育: 是否使用本地恢复
                                         && !checkpointOptions.getCheckpointType().isSavepoint()
                                 ? () ->
-                                        createDuplicatingStream(
+                                        createDuplicatingStream(  //多易教育: 本地恢复并且当前不是savepoint，创建复制流
                                                 checkpointId,
                                                 CheckpointedStateScope.EXCLUSIVE,
                                                 streamFactory,
                                                 localRecoveryConfig
                                                         .getLocalStateDirectoryProvider())
                                 : () ->
-                                        createSimpleStream(
+                                        createSimpleStream( //多易教育: 非本地恢复，或者是savepoint，创建简单流
                                                 CheckpointedStateScope.EXCLUSIVE, streamFactory);
 
         //多易教育: 匿名实现，实现了SnapshotResultSupplier的get()方法
@@ -141,14 +141,14 @@ class HeapSnapshotStrategy<K>
                     checkpointStreamSupplier.get();
 
             snapshotCloseableRegistry.registerCloseable(streamWithResultProvider);
-
+            //多易教育: 输出数据流 , debug信息 => basePath = "file:/home/hunter/ck/99.../chk-3
             final CheckpointStreamFactory.CheckpointStateOutputStream localStream =
                     streamWithResultProvider.getCheckpointOutputStream();
-
+            //多易教育: 使用KeyedBackendSerializationProxy写cp数据
             final DataOutputViewStreamWrapper outView =
                     new DataOutputViewStreamWrapper(localStream);
             serializationProxy.write(outView);
-
+            //多易教育: keyGroupRange:{startKeyGroup=0,endKeyGroup=31}
             final long[] keyGroupRangeOffsets = new long[keyGroupRange.getNumberOfKeyGroups()];
 
             for (int keyGroupPos = 0;

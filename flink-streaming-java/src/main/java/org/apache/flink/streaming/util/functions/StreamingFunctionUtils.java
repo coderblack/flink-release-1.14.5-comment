@@ -87,6 +87,7 @@ public final class StreamingFunctionUtils {
         return false;
     }
 
+    //多易教育: 算子function中状态的快照功能逻辑方法
     public static void snapshotFunctionState(
             StateSnapshotContext context, OperatorStateBackend backend, Function userFunction)
             throws Exception {
@@ -113,7 +114,9 @@ public final class StreamingFunctionUtils {
     private static boolean trySnapshotFunctionState(
             StateSnapshotContext context, OperatorStateBackend backend, Function userFunction)
             throws Exception {
-
+        //多易教育: 将用户算子函数显式化为 CheckpointedFunction
+        // 然后调用 用户算子函数userFunction.snapshotState
+        // q&a: CheckpointedFunction，难道这里只是对算子状态的快照逻辑？？？
         if (userFunction instanceof CheckpointedFunction) {
             ((CheckpointedFunction) userFunction).snapshotState(context);
 

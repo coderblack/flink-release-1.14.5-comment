@@ -101,13 +101,15 @@ public class RegularOperatorChain<OUT, OP extends StreamOperator<OUT>>
         }
     }
 
+    //多易教育: 对chain中的每个算子，逐一初始化算子状态，并open算子
+    // 初始化算子状态时，会为算子构造一个 StreamOperatorStateHandler
     @Override
     public void initializeStateAndOpenOperators(
             StreamTaskStateInitializer streamTaskStateInitializer) throws Exception {
         for (StreamOperatorWrapper<?, ?> operatorWrapper : getAllOperators(true)) {
             StreamOperator<?> operator = operatorWrapper.getStreamOperator();
             operator.initializeState(streamTaskStateInitializer);
-            operator.open();
+            operator.open(); //多易教育: 调用算子函数的open
         }
     }
 

@@ -43,7 +43,7 @@ public interface SnapshotStrategy<S extends StateObject, SR extends SnapshotReso
     /**
      * Performs the synchronous part of the snapshot. It returns resources which can be later on
      * used in the asynchronous part.
-     *
+     * 多易教育：执行snapshot的同步部分；返回后续异步部分所需的资源
      * @param checkpointId The ID of the checkpoint.
      * @return Resources needed to finish the snapshot.
      */
@@ -53,7 +53,7 @@ public interface SnapshotStrategy<S extends StateObject, SR extends SnapshotReso
      * Operation that writes a snapshot into a stream that is provided by the given {@link
      * CheckpointStreamFactory} and returns a @{@link SupplierWithException} that gives a state
      * handle to the snapshot.
-     *
+     * 多易教育：写snapshot到给定的checkpointStreamFactory提供的输出流；并返回SupplierWithException提供snapshot的状态句柄
      * @param checkpointId The ID of the checkpoint.
      * @param timestamp The timestamp of the checkpoint.
      * @param streamFactory The factory that we can use for writing our state to streams.
@@ -68,9 +68,9 @@ public interface SnapshotStrategy<S extends StateObject, SR extends SnapshotReso
             @Nonnull CheckpointOptions checkpointOptions);
 
     /**
-     * A supplier for a {@link SnapshotResult} with an access to a {@link CloseableRegistry} for io
+     * A supplier for a {@link SnapshotResult} with access to a {@link CloseableRegistry} for io
      * tasks that need to be closed when cancelling the async part of the checkpoint.
-     *
+     * 多易教育：snapshot的结果提供器；用于执行异步部分的supplier
      * @param <S> type of the returned state object that represents the result of the snapshot *
      *     operation.
      */
@@ -78,7 +78,7 @@ public interface SnapshotStrategy<S extends StateObject, SR extends SnapshotReso
     interface SnapshotResultSupplier<S extends StateObject> {
         /**
          * Performs the asynchronous part of a checkpoint and returns the snapshot result.
-         *
+         * 多易教育：执行checkpoint的异步部分并返回snapshot结果
          * @param snapshotCloseableRegistry A registry for io tasks to close on cancel.
          * @return A snapshot result
          */

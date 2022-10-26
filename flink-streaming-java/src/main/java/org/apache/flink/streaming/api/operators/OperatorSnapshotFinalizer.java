@@ -49,7 +49,19 @@ public class OperatorSnapshotFinalizer {
 
     public OperatorSnapshotFinalizer(@Nonnull OperatorSnapshotFutures snapshotFutures)
             throws ExecutionException, InterruptedException {
-
+        //多易教育: 这里run的是OperatorSnapshotFutures 中的各种 RunnableFuture（如，keyedStateManagedFuture,keyedStateRawFuture等，就是对算子所使用的的各种状态进行快照处理）
+        // 而这些 RunnableFuture，是 对 StreamOperator中 snapshotState()逻辑的封装（以异步执行这些逻辑）
+        // 在AbstractStreamOperator中由snapshot()的实现   //  在AbstractUdfStreamOperator类中，也有 snapshotState()的实现，逻辑还不一样，有点诡异
+        //   => 它里面调用了 stateHandler.snapshotState() , handler是 StreamOperatorStateHandler类
+        //   => 进而调用 streamOperator.snapshotState(snapshotContext);
+        //   => 只传入了context参数，那么实际上调用的是 AbstractUdfStreamOperator类的 snapshotState(snapshotContext)
+        //   => 它里面用了 StreamingFunctionUtils#snapshotFunctionState()来执行snapshot
+        //   => StreamingFunctionUtils.snapshotFunctionState,则执行正式的快照逻辑
+        //      => 1. 先判断userFunction是否是CheckpointedFunction，
+        //               如是，则调用了 userFunction.snapshotState() 对用户自定义的一些逻辑进行处理；
+        //               如不是则userFunction压根没有这个方法
+        //      => 2. 然后开始执行 算子状态、监控状态的 快照流程
+        //   => userFunction.snapshotState() <  调用的是
         SnapshotResult<KeyedStateHandle> keyedManaged =
                 FutureUtils.runIfNotDoneAndGet(snapshotFutures.getKeyedStateManagedFuture());
 

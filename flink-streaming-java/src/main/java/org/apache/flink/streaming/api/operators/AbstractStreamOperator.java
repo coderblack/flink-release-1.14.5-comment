@@ -278,12 +278,14 @@ public abstract class AbstractStreamOperator<OUT>
                                 runtimeContext.getTaskManagerRuntimeInfo().getConfiguration(),
                                 runtimeContext.getUserCodeClassLoader()),
                         isUsingCustomRawKeyedState());
-
+        //多易教育: 从这里看来，一个StreamOperator 应该就拥有一个 StreamOperatorStateHandler
         stateHandler =
                 new StreamOperatorStateHandler(
                         context, getExecutionConfig(), streamTaskCloseableRegistry);
         timeServiceManager = context.internalTimerServiceManager();
         stateHandler.initializeOperatorState(this);
+        //多易教育: 向runtimeContext中设置键控状态的store
+        // （上面Handler的构造中没有传入store方式，则通过重载构造填入一个默认的： DefaultKeyedStateStore）
         runtimeContext.setKeyedStateStore(stateHandler.getKeyedStateStore().orElse(null));
     }
 
@@ -338,6 +340,11 @@ public abstract class AbstractStreamOperator<OUT>
         // this is purely for subclasses to override
     }
 
+    //多易教育:-----------------------------
+    // operator算子的snapshotState入口方法
+    // 该方法是final方法，不可被子类重写
+    // 说明该方法的逻辑（状态快照）在任何具体子类中都无差别，是通用的固定的逻辑
+    // -----------------------------------
     @Override
     public final OperatorSnapshotFutures snapshotState(
             long checkpointId,
@@ -345,6 +352,7 @@ public abstract class AbstractStreamOperator<OUT>
             CheckpointOptions checkpointOptions,
             CheckpointStreamFactory factory)
             throws Exception {
+        //多易教育: 调用operator所拥有的stateHandler（StreamOperatorStateHandler）来执行
         return stateHandler.snapshotState(
                 this,
                 Optional.ofNullable(timeServiceManager),
@@ -359,7 +367,8 @@ public abstract class AbstractStreamOperator<OUT>
     /**
      * Stream operators with state, which want to participate in a snapshot need to override this
      * hook method.
-     *
+     * 多易教育: 因为上面的snapshotState()方法不可被重写，
+     *  为了让子类对snapshotState过程的个性化的参与需求有实现方式，因而提供了这个可以被重写的方法
      * @param context context that provides information and means required for taking a snapshot
      */
     @Override
@@ -436,6 +445,13 @@ public abstract class AbstractStreamOperator<OUT>
 
     @VisibleForTesting
     public <K> KeyedStateBackend<K> getKeyedStateBackend() {
+
+        // TODO BY dps@51doit.cn :
+        //  为了在这里快速测试出 stateHandler 是 :
+        //   一个算子拥有一个 ?还是一个chain拥有一个 ?
+        //   还是一个slot拥有一个 ? 还是一个task manager拥有一个 ?
+        //   从 WordCount测试程序来看，这里打印出了3个(WordCount中由window算子用到了状态，3并行度）
+        System.out.println("AbstractStreamOperator，"+this.getOperatorName()+"，中的getKedStateBackend,所使用的stateHandler对象hash：" + stateHandler.hashCode());
         return stateHandler.getKeyedStateBackend();
     }
 

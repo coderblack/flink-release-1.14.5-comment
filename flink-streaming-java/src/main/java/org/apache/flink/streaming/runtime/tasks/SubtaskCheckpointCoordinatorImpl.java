@@ -249,6 +249,9 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
             Supplier<Boolean> isRunning)
             throws Exception {
 
+        // TODO BY dps@51doit.cn : 测试线程模型  （从测试结果上看，此处的执行线程就是对应subTask的执行线程）
+        System.out.println("在 SubtaskCheckpointCoordinatorImpl#checkpointState方法中： " + Thread.currentThread().getName());
+
         checkNotNull(options);
         checkNotNull(metrics);
 
@@ -313,6 +316,7 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
         // progress of the
         // streaming topology
         //多易教育: Step(4)：执行snapshot；这个动作应该是一个“大”异步动作，以免影响流处理逻辑的正常进度
+        // 先构造一个hashmap来存放多个获取snapshot结果的future，数量与chain中的算子个数相同
         Map<OperatorID, OperatorSnapshotFutures> snapshotFutures =
                 new HashMap<>(operatorChain.getNumberOfOperators());
         try {
@@ -609,7 +613,7 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
                         checkpointId, checkpointOptions.getTargetLocation());
 
         try {
-            //多易教育: 执行snapshot
+            //多易教育: 对算子链，执行snapshot
             operatorChain.snapshotState(
                     operatorSnapshotsInProgress,
                     checkpointMetaData,

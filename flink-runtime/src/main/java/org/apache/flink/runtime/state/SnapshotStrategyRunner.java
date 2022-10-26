@@ -76,6 +76,7 @@ public final class SnapshotStrategyRunner<T extends StateObject, SR extends Snap
         long startTime = System.currentTimeMillis();
         SR snapshotResources = snapshotStrategy.syncPrepareResources(checkpointId);
         logCompletedInternal(LOG_SYNC_COMPLETED_TEMPLATE, streamFactory, startTime);
+        //多易教育: 构造SnapshotResultSupplier，supplier有一个核心get方法在 赋值逻辑<snapshotStrategy.asyncSnapshot()>中匿名实现
         SnapshotStrategy.SnapshotResultSupplier<T> asyncSnapshot =
                 snapshotStrategy.asyncSnapshot(
                         snapshotResources,
@@ -89,6 +90,10 @@ public final class SnapshotStrategyRunner<T extends StateObject, SR extends Snap
                 new AsyncSnapshotCallable<SnapshotResult<T>>() {
                     @Override
                     protected SnapshotResult<T> callInternal() throws Exception {
+                        //多易教育:snapshot最终输出逻辑------------------------
+                        // 此处调用的就是上面构造的 SnapshotResultSupplier的get方法
+                        // 而这个supplier是在 HeapSnapShotStrategy#asyncSnapshot()方法中匿名实现的
+                        // -----------------------------------------------------------
                         return asyncSnapshot.get(snapshotCloseableRegistry);
                     }
 
@@ -105,14 +110,14 @@ public final class SnapshotStrategyRunner<T extends StateObject, SR extends Snap
                                 LOG_ASYNC_COMPLETED_TEMPLATE, streamFactory, startTime);
                     }
                 }.toAsyncSnapshotFutureTask(cancelStreamRegistry);
-
+        //多易教育: 如果是同步ck策略，则马上执行
         if (executionType == SnapshotExecutionType.SYNCHRONOUS) {
             //多易教育: 执行异步快照的task逻辑
             // 这里是调用的FutureTask.run()，因而是在一个单独的线程中异步执行的
             // 如果触发ck的源头是每个operatorChain中各自触发，那么意味着每个chain其实都是各自开启线程来进行snapshot的
             asyncSnapshotTask.run();
         }
-
+        //多易教育: 如果不是同步策略，则返回给调用层取异步执行
         return asyncSnapshotTask;
     }
 

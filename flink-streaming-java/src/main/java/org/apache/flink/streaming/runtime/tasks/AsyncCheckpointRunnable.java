@@ -104,6 +104,9 @@ final class AsyncCheckpointRunnable implements Runnable, Closeable {
 
     @Override
     public void run() {
+        // TODO BY dps@51doit.cn : 测试线程模型,（从测试结果上看，此处的执行线程就是对应subTask的执行线程）
+        System.out.println("在 AsyncCheckpointRunnable#run 方法中： " + Thread.currentThread().getName());
+
         final long asyncStartNanos = System.nanoTime();
         final long asyncStartDelayMillis = (asyncStartNanos - asyncConstructionNanos) / 1_000_000L;
         LOG.debug(
@@ -121,6 +124,7 @@ final class AsyncCheckpointRunnable implements Runnable, Closeable {
                                     TaskStateSnapshot.FINISHED_ON_RESTORE,
                                     TaskStateSnapshot.FINISHED_ON_RESTORE,
                                     0L)
+                            //多易教育: 在这里执行真正的snapshot
                             : finalizeNonFinishedSnapshots();
 
             final long asyncEndNanos = System.nanoTime();
@@ -160,13 +164,15 @@ final class AsyncCheckpointRunnable implements Runnable, Closeable {
         }
     }
 
-    private SnapshotsFinalizeResult finalizeNonFinishedSnapshots() throws Exception {
+    private SnapshotsFinalizeResult finalizeNonFinishedSnapshots() throws Exception { //多易教育: 真正执行snapshot的方法
         TaskStateSnapshot jobManagerTaskOperatorSubtaskStates =
                 new TaskStateSnapshot(operatorSnapshotsInProgress.size(), isTaskFinished);
         TaskStateSnapshot localTaskOperatorSubtaskStates =
                 new TaskStateSnapshot(operatorSnapshotsInProgress.size(), isTaskFinished);
 
         long bytesPersistedDuringAlignment = 0;
+
+        //多易教育: 遍历算子链中的每一个算子，执行状态snapshot
         for (Map.Entry<OperatorID, OperatorSnapshotFutures> entry :
                 operatorSnapshotsInProgress.entrySet()) {
 
@@ -174,9 +180,11 @@ final class AsyncCheckpointRunnable implements Runnable, Closeable {
             OperatorSnapshotFutures snapshotInProgress = entry.getValue();
 
             // finalize the async part of all by executing all snapshot runnables
+            //多易教育: 执行状态快照（snapshot）
             OperatorSnapshotFinalizer finalizedSnapshots =
                     new OperatorSnapshotFinalizer(snapshotInProgress);
 
+            //多易教育: 填充上报结果信息
             jobManagerTaskOperatorSubtaskStates.putSubtaskStateByOperatorID(
                     operatorID, finalizedSnapshots.getJobManagerOwnedState());
 
@@ -195,6 +203,7 @@ final class AsyncCheckpointRunnable implements Runnable, Closeable {
                             .getStateSize();
         }
 
+        //多易教育: 封装快照最终执行结果返回
         return new SnapshotsFinalizeResult(
                 jobManagerTaskOperatorSubtaskStates,
                 localTaskOperatorSubtaskStates,

@@ -21,11 +21,8 @@ public class WordCountSimple {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
         DataStreamSource<String> s1 = env.socketTextStream("localhost", 9999);
-
         s1.print().setParallelism(4);
-
-        s1.map(s->s).setParallelism(2)
-                .print().setParallelism(2);
+        s1.map(s->s).setParallelism(2).print().setParallelism(2);
 
         env.execute();
 
