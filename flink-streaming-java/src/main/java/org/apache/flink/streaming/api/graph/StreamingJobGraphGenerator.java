@@ -1369,7 +1369,7 @@ public class StreamingJobGraphGenerator {
         //  --- configure the master-side checkpoint hooks ---
 
         final ArrayList<MasterTriggerRestoreHook.Factory> hooks = new ArrayList<>();
-
+        //多易教育: 如果用户自定义函数实现了MasterTriggerRestoreHook接口，则提取到hooks列表中
         for (StreamNode node : streamGraph.getStreamNodes()) {
             if (node.getOperatorFactory() instanceof UdfStreamOperatorFactory) {
                 Function f =
@@ -1385,6 +1385,7 @@ public class StreamingJobGraphGenerator {
 
         // because the hooks can have user-defined code, they need to be stored as
         // eagerly serialized values
+        //多易教育: 对hook对象进行序列化（hook中有用户自定义代码）
         final SerializedValue<MasterTriggerRestoreHook.Factory[]> serializedHooks;
         if (hooks.isEmpty()) {
             serializedHooks = null;
@@ -1400,6 +1401,7 @@ public class StreamingJobGraphGenerator {
 
         // because the state backend can have user-defined code, it needs to be stored as
         // eagerly serialized value
+        //多易教育: 对state backend对象进行序列化（state backend中可能有用户自定义代码，这里有点疑惑）
         final SerializedValue<StateBackend> serializedStateBackend;
         if (streamGraph.getStateBackend() == null) {
             serializedStateBackend = null;
@@ -1414,6 +1416,7 @@ public class StreamingJobGraphGenerator {
 
         // because the checkpoint storage can have user-defined code, it needs to be stored as
         // eagerly serialized value
+        //多易教育: checkpointStorage对象序列化（也是因为可能有用户自定义代码）
         final SerializedValue<CheckpointStorage> serializedCheckpointStorage;
         if (streamGraph.getCheckpointStorage() == null) {
             serializedCheckpointStorage = null;
@@ -1427,31 +1430,31 @@ public class StreamingJobGraphGenerator {
         }
 
         //  --- done, put it all together ---
-
+        //多易教育: 将所有配置整合到一起
         JobCheckpointingSettings settings =
                 new JobCheckpointingSettings(
                         CheckpointCoordinatorConfiguration.builder()
-                                .setCheckpointInterval(interval)
-                                .setCheckpointTimeout(cfg.getCheckpointTimeout())
-                                .setMinPauseBetweenCheckpoints(cfg.getMinPauseBetweenCheckpoints())
-                                .setMaxConcurrentCheckpoints(cfg.getMaxConcurrentCheckpoints())
-                                .setCheckpointRetentionPolicy(retentionAfterTermination)
+                                .setCheckpointInterval(interval)  //多易教育: cp间隔
+                                .setCheckpointTimeout(cfg.getCheckpointTimeout())  //多易教育: cp超时时间
+                                .setMinPauseBetweenCheckpoints(cfg.getMinPauseBetweenCheckpoints())  //多易教育: cp之间的最小暂停
+                                .setMaxConcurrentCheckpoints(cfg.getMaxConcurrentCheckpoints()) //多易教育: cp最大并行数
+                                .setCheckpointRetentionPolicy(retentionAfterTermination) //多易教育: cp留存策略
                                 .setExactlyOnce(
-                                        getCheckpointingMode(cfg) == CheckpointingMode.EXACTLY_ONCE)
+                                        getCheckpointingMode(cfg) == CheckpointingMode.EXACTLY_ONCE)  //多易教育: 是否eos
                                 .setTolerableCheckpointFailureNumber(
-                                        cfg.getTolerableCheckpointFailureNumber())
-                                .setUnalignedCheckpointsEnabled(cfg.isUnalignedCheckpointsEnabled())
+                                        cfg.getTolerableCheckpointFailureNumber())  //多易教育: cp失败容忍数
+                                .setUnalignedCheckpointsEnabled(cfg.isUnalignedCheckpointsEnabled()) //多易教育: 是否启用非对齐
                                 .setCheckpointIdOfIgnoredInFlightData(
                                         cfg.getCheckpointIdOfIgnoredInFlightData())
                                 .setAlignedCheckpointTimeout(
-                                        cfg.getAlignedCheckpointTimeout().toMillis())
+                                        cfg.getAlignedCheckpointTimeout().toMillis())  //多易教育: 对其的超时时间
                                 .setEnableCheckpointsAfterTasksFinish(
-                                        streamGraph.isEnableCheckpointsAfterTasksFinish())
+                                        streamGraph.isEnableCheckpointsAfterTasksFinish())  //多易教育: task完成时是否执行cp
                                 .build(),
                         serializedStateBackend,
-                        streamGraph.isChangelogStateBackendEnabled(),
-                        serializedCheckpointStorage,
-                        serializedHooks);
+                        streamGraph.isChangelogStateBackendEnabled(),  //多易教育: 是否启用change log backend
+                        serializedCheckpointStorage,  //多易教育: cp存储
+                        serializedHooks);  //多易教育: cp钩子列表
 
         jobGraph.setSnapshotSettings(settings);
     }

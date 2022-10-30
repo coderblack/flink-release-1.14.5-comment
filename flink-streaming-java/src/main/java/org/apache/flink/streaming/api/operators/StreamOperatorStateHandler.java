@@ -218,7 +218,7 @@ public class StreamOperatorStateHandler {
                 }
             }
             //多易教育: -----------------------------
-            // 调用算子operator的snapshotState
+            // 调用算子operator的snapshotState (让用户函数自定义参与snapshot的过程）
             // （只传入了  context 参数，所以调用的是 AbstractStreamOperator的 public void snapshotState(StateSnapshotContext context) {}，里面什么都没有，由子类自己去重写
             //  而AbstractUdfStreamOperator中对该方法有重写 ,里面调用了StreamingFunctionUtils的snapshot方法 ,
             //  utils中则调用了 （CheckpointedFunction）userFunction.snapshot()， 而如果userFunction不是CheckpointedFunction，则啥也没做
@@ -259,7 +259,7 @@ public class StreamOperatorStateHandler {
                 else {
                     //多易教育: 直接调用keyedStateBackend的snapshot
                     // 调用链：
-                    //   -> backend.snapshot （如 HeapKeyedStateBackend）
+                    //   -> backend.snapshot（如 HeapKeyedStateBackend）
                     //   -> snapshotStrategyRunner.snapshot
                     //   -> HeapSnapshotStrategy.asyncSnapshot 得到 匿名实现的 SnapshotResultSupplier#get() ，定义了最终snapshot执行逻辑
                     //   -> snapshotStrategyRunner 将上步得到的supplier封装为 asyncSnapshotTask:FutureTask<SnapshotResult<T>>
