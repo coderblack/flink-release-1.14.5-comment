@@ -434,7 +434,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                         new DispatcherThreadFactory(
                                 Thread.currentThread().getThreadGroup(), "Checkpoint Timer"));
 
-        // create the coordinator that triggers and commits checkpoints and holds the state
+        // create the coordinator that zhengtriggers and commits checkpoints and holds the state
         //多易教育: cp协调器：
         // 核心组件，工作在Jobmanager进程中
         // 用于协调分布式快照和状态的触发与完成提交，持有cp状态，
