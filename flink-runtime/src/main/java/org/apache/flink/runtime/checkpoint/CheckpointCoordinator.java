@@ -364,7 +364,7 @@ public class CheckpointCoordinator {
 
         synchronized (lock) {
             if (!masterHooks.containsKey(id)) {
-                masterHooks.put(id, hook);
+                masterHooks.put(id, hook);  //多易教育: 相同标识id的钩子，只会保留第一个
                 return true;
             } else {
                 return false;
@@ -517,6 +517,7 @@ public class CheckpointCoordinator {
         return request.onCompletionPromise;
     }
 
+    //多易教育: 触发cp的真正核心逻辑
     private void startTriggeringCheckpoint(CheckpointTriggerRequest request) {
         try {
             synchronized (lock) {
@@ -550,7 +551,7 @@ public class CheckpointCoordinator {
                                     executor)
                             .thenApplyAsync(
                                     (checkpointInfo) ->
-                                            createPendingCheckpoint(
+                                            createPendingCheckpoint(  //多易教育: 生成pending中的cp
                                                     timestamp,
                                                     request.props,
                                                     checkpointInfo.f0,
@@ -565,7 +566,7 @@ public class CheckpointCoordinator {
                                     pendingCheckpoint -> {
                                         try {
                                             CheckpointStorageLocation checkpointStorageLocation =
-                                                    initializeCheckpointLocation(
+                                                    initializeCheckpointLocation( //多易教育: 初始化cp存储位置
                                                             pendingCheckpoint.getCheckpointID(),
                                                             request.props,
                                                             request.externalSavepointLocation);
@@ -583,6 +584,7 @@ public class CheckpointCoordinator {
                                             pendingCheckpoint.setCheckpointTargetLocation(
                                                     checkpointInfo.f1);
                                         }
+                                        //多易教育: 触发和等待各算子coordinator的回应
                                         return OperatorCoordinatorCheckpoints
                                                 .triggerAndAcknowledgeAllCoordinatorCheckpointsWithCompletion(
                                                         coordinatorsToCheckpoint,
@@ -1733,7 +1735,7 @@ public class CheckpointCoordinator {
     // --------------------------------------------------------------------------------------------
     //  Periodic scheduling of checkpoints
     // --------------------------------------------------------------------------------------------
-
+    //多易教育: 由注册的job状态监听器来回调，启动周期性cp调度
     public void startCheckpointScheduler() {
         synchronized (lock) {
             if (shutdown) {
@@ -1747,7 +1749,7 @@ public class CheckpointCoordinator {
             stopCheckpointScheduler();
 
             periodicScheduling = true;
-            currentPeriodicTrigger = scheduleTriggerWithDelay(getRandomInitDelay());
+            currentPeriodicTrigger = scheduleTriggerWithDelay(getRandomInitDelay());  //多易教育: 定时调度的第一次延时时间是随机的
         }
     }
 
@@ -1863,7 +1865,7 @@ public class CheckpointCoordinator {
     }
 
     // ------------------------------------------------------------------------
-
+    //多易教育: executor（timer）调度器中，定期执行的runnable
     private final class ScheduledTrigger implements Runnable {
 
         @Override

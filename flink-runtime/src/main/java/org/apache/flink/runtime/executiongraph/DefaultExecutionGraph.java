@@ -409,15 +409,15 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
         //多易教育: checkpoint失败策略管理器
         CheckpointFailureManager failureManager =
                 new CheckpointFailureManager(
-                        chkConfig.getTolerableCheckpointFailureNumber(),
-                        new CheckpointFailureManager.FailJobCallback() {
+                        chkConfig.getTolerableCheckpointFailureNumber(), //多易教育: 最大容忍失败次数
+                        new CheckpointFailureManager.FailJobCallback() { //多易教育: 失败回调
                             @Override
-                            public void failJob(Throwable cause) {
+                            public void failJob(Throwable cause) {  //多易教育: 处理job级别失败的回调
                                 getJobMasterMainThreadExecutor().execute(() -> failGlobal(cause));
                             }
 
                             @Override
-                            public void failJobDueToTaskFailure(
+                            public void failJobDueToTaskFailure(  //多易教育: 处理task级别失败导致job失败的回调
                                     Throwable cause, ExecutionAttemptID failingTask) {
                                 getJobMasterMainThreadExecutor()
                                         .execute(
@@ -434,7 +434,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                         new DispatcherThreadFactory(
                                 Thread.currentThread().getThreadGroup(), "Checkpoint Timer"));
 
-        // create the coordinator that triggers and commits checkpoints and holds the state
+        // create the coordinator that zhengtriggers and commits checkpoints and holds the state
         //多易教育: cp协调器：
         // 核心组件，工作在Jobmanager进程中
         // 用于协调分布式快照和状态的触发与完成提交，持有cp状态，
@@ -464,6 +464,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                         new ExecutionAttemptMappingProvider(getAllExecutionVertices()));
 
         // register the master hooks on the checkpoint coordinator
+        //多易教育: 注册master端cp钩子到coordinator
         for (MasterTriggerRestoreHook<?> hook : masterHooks) {
             if (!checkpointCoordinator.addMasterHook(hook)) {
                 LOG.warn(
@@ -477,8 +478,8 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
         if (checkpointCoordinator.isPeriodicCheckpointingConfigured()) {
             // the periodic checkpoint scheduler is activated and deactivated as a result of
             // job status changes (running -> on, all other states -> off)
-            //多易教育: 注册job状态监听器（传入激活与去激活器），
-            // CheckpointCoordinatorDeActivator 实际上是一个监听器，当作业状态转化成 JobStatus.RUNNING 时，CheckpointCoordinator 中的调度器启动
+            //多易教育: 如果配置的是周期性cp,则注册job状态监听器（传入激活与去激活器），
+            // 以便当作业状态发生变化时，对cp进行相应管理，如转化成 JobStatus.RUNNING 时，cp被调度激活
             registerJobStatusListener(checkpointCoordinator.createActivatorDeactivator());
         }
 

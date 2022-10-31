@@ -310,7 +310,7 @@ public class StreamGraphGenerator {
     // 生成StreamGraph的入口方法
     // --------------------------------
     public StreamGraph generate() {
-        // 多易教育: 先构造一个初始化对象
+        // 多易教育: 先构造一个初始化对象,传入各类参数（包括checkpoint配置参数）
         streamGraph = new StreamGraph(executionConfig, checkpointConfig, savepointRestoreSettings);
         //多易教育: 配置项 execution.checkpointing.checkpoints-after-tasks-finish.enabled
         streamGraph.setEnableCheckpointsAfterTasksFinish(
