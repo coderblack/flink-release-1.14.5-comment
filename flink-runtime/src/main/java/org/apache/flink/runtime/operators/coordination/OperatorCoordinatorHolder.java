@@ -373,7 +373,7 @@ public class OperatorCoordinatorHolder
 
     private void setupAllSubtaskGateways() {
         for (int i = 0; i < operatorParallelism; i++) {
-            setupSubtaskGateway(i);
+            setupSubtaskGateway(i); //
         }
     }
 
