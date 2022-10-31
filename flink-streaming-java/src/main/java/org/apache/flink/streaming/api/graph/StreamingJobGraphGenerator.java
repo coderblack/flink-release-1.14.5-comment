@@ -180,7 +180,7 @@ public class StreamingJobGraphGenerator {
     private JobGraph createJobGraph() {
         preValidate();
         jobGraph.setJobType(streamGraph.getJobType());
-
+        //多易教育: 如果cp配置允许近似本地恢复，则将jobGraph设置成可近似本地恢复
         jobGraph.enableApproximateLocalRecovery(
                 streamGraph.getCheckpointConfig().isApproximateLocalRecoveryEnabled());
 
@@ -1401,7 +1401,8 @@ public class StreamingJobGraphGenerator {
 
         // because the state backend can have user-defined code, it needs to be stored as
         // eagerly serialized value
-        //多易教育: 对state backend对象进行序列化（state backend中可能有用户自定义代码，这里有点疑惑）
+        //多易教育: 对state backend对象进行序列化
+        // q&a: state backend中可能有用户自定义代码，这里有点疑惑
         final SerializedValue<StateBackend> serializedStateBackend;
         if (streamGraph.getStateBackend() == null) {
             serializedStateBackend = null;

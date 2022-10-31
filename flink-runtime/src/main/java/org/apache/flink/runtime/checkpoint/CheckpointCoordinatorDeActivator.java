@@ -39,8 +39,9 @@ public class CheckpointCoordinatorDeActivator implements JobStatusListener {
     @Override
     public void jobStatusChanges(
             JobID jobId, JobStatus newJobStatus, long timestamp, Throwable error) {
-        if (newJobStatus == JobStatus.RUNNING) {
+        if (newJobStatus == JobStatus.RUNNING) {  //多易教育: 如果新状态是RUNNINIG
             // start the checkpoint scheduler
+            //多易教育: 调用coordinator的启动cp调度器
             coordinator.startCheckpointScheduler();
         } else {
             // anything else should stop the trigger for now

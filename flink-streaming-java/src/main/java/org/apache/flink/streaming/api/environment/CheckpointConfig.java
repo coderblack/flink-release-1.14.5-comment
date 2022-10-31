@@ -803,39 +803,51 @@ public class CheckpointConfig implements java.io.Serializable {
      */
     public void configure(ReadableConfig configuration) {
         configuration
+                //多易教育: cp模式， 默认为 exactly once
                 .getOptional(ExecutionCheckpointingOptions.CHECKPOINTING_MODE)
                 .ifPresent(this::setCheckpointingMode);
         configuration
+                //多易教育: cp间隔 ,默认为 null（相当于不启用cp）
                 .getOptional(ExecutionCheckpointingOptions.CHECKPOINTING_INTERVAL)
                 .ifPresent(i -> this.setCheckpointInterval(i.toMillis()));
         configuration
+                //多易教育: cp超时时长
                 .getOptional(ExecutionCheckpointingOptions.CHECKPOINTING_TIMEOUT)
                 .ifPresent(t -> this.setCheckpointTimeout(t.toMillis()));
         configuration
+                //多易教育: 最大并行cp
                 .getOptional(ExecutionCheckpointingOptions.MAX_CONCURRENT_CHECKPOINTS)
                 .ifPresent(this::setMaxConcurrentCheckpoints);
         configuration
+                //多易教育: cp最小间隔
                 .getOptional(ExecutionCheckpointingOptions.MIN_PAUSE_BETWEEN_CHECKPOINTS)
                 .ifPresent(m -> this.setMinPauseBetweenCheckpoints(m.toMillis()));
         configuration
+                //多易教育: 失败容忍数
                 .getOptional(ExecutionCheckpointingOptions.TOLERABLE_FAILURE_NUMBER)
                 .ifPresent(this::setTolerableCheckpointFailureNumber);
         configuration
+                //多易教育: job取消后保留cp省部级
                 .getOptional(ExecutionCheckpointingOptions.EXTERNALIZED_CHECKPOINT)
                 .ifPresent(this::setExternalizedCheckpointCleanup);
         configuration
+                //多易教育: 启用非对齐cp
                 .getOptional(ExecutionCheckpointingOptions.ENABLE_UNALIGNED)
                 .ifPresent(this::enableUnalignedCheckpoints);
         configuration
+                //多易教育: 忽略inFlight数据
                 .getOptional(ExecutionCheckpointingOptions.CHECKPOINT_ID_OF_IGNORED_IN_FLIGHT_DATA)
                 .ifPresent(this::setCheckpointIdOfIgnoredInFlightData);
         configuration
+                //多易教育: 对齐阻塞超时时长
                 .getOptional(ExecutionCheckpointingOptions.ALIGNED_CHECKPOINT_TIMEOUT)
                 .ifPresent(this::setAlignedCheckpointTimeout);
         configuration
+                //多易教育: 是否强制非对齐
                 .getOptional(ExecutionCheckpointingOptions.FORCE_UNALIGNED)
                 .ifPresent(this::setForceUnalignedCheckpoints);
         configuration
+                //多易教育: cp储存目录
                 .getOptional(CheckpointingOptions.CHECKPOINTS_DIRECTORY)
                 .ifPresent(this::setCheckpointStorage);
     }

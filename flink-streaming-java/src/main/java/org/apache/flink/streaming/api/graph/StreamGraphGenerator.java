@@ -345,7 +345,7 @@ public class StreamGraphGenerator {
         // fine-grained.shuffle-mode.all-blocking = true 且执行模式为 batch模式 ，时才有效
         setFineGrainedGlobalStreamExchangeMode(streamGraph);
 
-        //多易教育: 设置非对齐checkpoint配置
+        //多易教育: 对不支持非对齐checkpoint方式的边，设置禁用非对齐cp方式
         for (StreamNode node : streamGraph.getStreamNodes()) {
             if (node.getInEdges().stream().anyMatch(this::shouldDisableUnalignedCheckpointing)) {
                 for (StreamEdge edge : node.getInEdges()) {

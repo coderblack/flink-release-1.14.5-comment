@@ -100,8 +100,8 @@ public class DefaultCheckpointPlanCalculator implements CheckpointPlanCalculator
                         CheckpointPlan result =
                                 context.hasFinishedTasks()
                                         ? calculateAfterTasksFinished()
-                                        : calculateWithAllTasksRunning();
-
+                                        : calculateWithAllTasksRunning();  //多易教育: 计算cp计划
+                        //多易教育: 检查所有tasks是否都已启动
                         checkTasksStarted(result.getTasksToWaitFor());
 
                         return result;
@@ -164,12 +164,12 @@ public class DefaultCheckpointPlanCalculator implements CheckpointPlanCalculator
         List<Execution> tasksToWaitFor = createTaskToWaitFor(allTasks);
 
         return new DefaultCheckpointPlan(
-                Collections.unmodifiableList(executionsToTrigger),
-                Collections.unmodifiableList(tasksToWaitFor),
-                Collections.unmodifiableList(allTasks),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                allowCheckpointsAfterTasksFinished);
+                Collections.unmodifiableList(executionsToTrigger), //多易教育: tasksToTrigger
+                Collections.unmodifiableList(tasksToWaitFor),  //多易教育: tasksToWaitFor
+                Collections.unmodifiableList(allTasks),  //多易教育: tasksToCommitTo
+                Collections.emptyList(),  //多易教育: finishedTasks
+                Collections.emptyList(), //多易教育: fullyFinishedJobVertex
+                allowCheckpointsAfterTasksFinished);  //多易教育: mayHaveFinishedTasks
     }
 
     /**

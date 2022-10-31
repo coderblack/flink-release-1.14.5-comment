@@ -401,12 +401,12 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
 
         checkState(state == JobStatus.CREATED, "Job must be in CREATED state");
         checkState(checkpointCoordinator == null, "checkpointing already enabled");
-
+        //多易教育: 构建算子cp协调器上下文
         final Collection<OperatorCoordinatorCheckpointContext> operatorCoordinators =
                 buildOpCoordinatorCheckpointContexts();
 
         checkpointStatsTracker = checkNotNull(statsTracker, "CheckpointStatsTracker");
-        //多易教育: checkpoint失败策略管理器
+        //多易教育: 使用失败相关参数配置，构建checkpoint失败策略管理器
         CheckpointFailureManager failureManager =
                 new CheckpointFailureManager(
                         chkConfig.getTolerableCheckpointFailureNumber(), //多易教育: 最大容忍失败次数
@@ -428,15 +428,15 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                         });
 
         checkState(checkpointCoordinatorTimer == null);
-        //多易教育: 定期器线程
+        //多易教育: 周期性触发cp的定期器线程
         checkpointCoordinatorTimer =
                 Executors.newSingleThreadScheduledExecutor(
                         new DispatcherThreadFactory(
                                 Thread.currentThread().getThreadGroup(), "Checkpoint Timer"));
 
         // create the coordinator that zhengtriggers and commits checkpoints and holds the state
-        //多易教育: cp协调器：
-        // 核心组件，工作在Jobmanager进程中
+        //多易教育: 根据一系列参数，构建cp协调器：
+        // 核心组件checkpointCoordinator , 工作在Jobmanager进程中
         // 用于协调分布式快照和状态的触发与完成提交，持有cp状态，
         //   CheckpointCoordinator 向相关算子(全部 source 算子)发送触发 checkpoint 的消息，并收集每个算子上报的快照完成的 ack 消息，
         //   这些 ack 消息包含算子进行快照后的状态句柄，CheckpointCoordinator 则对这些状态句柄进行维护；
@@ -449,18 +449,19 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
         checkpointCoordinator =
                 new CheckpointCoordinator(
                         jobInformation.getJobId(),
-                        chkConfig,
-                        operatorCoordinators,
-                        checkpointIDCounter,
-                        checkpointStore,
-                        checkpointStorage,
+                        chkConfig,  //多易教育: cp协调器配置参数
+                        operatorCoordinators,   //多易教育: 算子协调器
+                        checkpointIDCounter,  //多易教育: cp ID自增器
+                        checkpointStore, //多易教育: CompletedCheckpoint实例的有界LIFO队列
+                        checkpointStorage,  //多易教育: cp状态数据存储
                         ioExecutor,
-                        checkpointsCleaner,
+                        checkpointsCleaner,  //多易教育: 负责cp数据清理
                         new ScheduledExecutorServiceAdapter(checkpointCoordinatorTimer),
                         SharedStateRegistry.DEFAULT_FACTORY,
-                        failureManager,
-                        createCheckpointPlanCalculator(
+                        failureManager,  //多易教育: 失败管理器
+                        createCheckpointPlanCalculator(  //多易教育: cp计划计算器（安排下一次cp中哪些task需要触发，哪些需要应答等）
                                 chkConfig.isEnableCheckpointsAfterTasksFinish()),
+                        //多易教育: 为所有运行中的execution维护的  ExecutionAttemptID -> ExecutionVertex 的映射
                         new ExecutionAttemptMappingProvider(getAllExecutionVertices()));
 
         // register the master hooks on the checkpoint coordinator

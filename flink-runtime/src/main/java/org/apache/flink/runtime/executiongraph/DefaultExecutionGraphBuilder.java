@@ -218,12 +218,14 @@ public class DefaultExecutionGraphBuilder {
         }
 
         // configure the state checkpointing
+        //多易教育: checkpoint 配置
         if (isCheckpointingEnabled(jobGraph)) {
+            //多易教育: 先从jobGraph中取到cp配置参数对象
             JobCheckpointingSettings snapshotSettings = jobGraph.getCheckpointingSettings();
 
             // Maximum number of remembered checkpoints
             int historySize = jobManagerConfig.getInteger(WebOptions.CHECKPOINTS_HISTORY_SIZE);
-
+            //多易教育: cp统计信息汇总跟踪器
             CheckpointStatsTracker checkpointStatsTracker =
                     new CheckpointStatsTracker(
                             historySize,
@@ -262,6 +264,7 @@ public class DefaultExecutionGraphBuilder {
             }
 
             // load the checkpoint storage from the application settings
+            //多易教育: 加载应用配置（JobGraph中的配置）中的cp存储配置
             final CheckpointStorage applicationConfiguredStorage;
             final SerializedValue<CheckpointStorage> serializedAppConfiguredStorage =
                     snapshotSettings.getDefaultCheckpointStorage();
@@ -296,7 +299,7 @@ public class DefaultExecutionGraphBuilder {
             }
 
             // instantiate the user-defined checkpoint hooks
-
+            //多易教育: 初始化用户自定义的cp钩子
             final SerializedValue<MasterTriggerRestoreHook.Factory[]> serializedHooks =
                     snapshotSettings.getMasterHooks();
             final List<MasterTriggerRestoreHook<?>> hooks;
@@ -325,7 +328,7 @@ public class DefaultExecutionGraphBuilder {
                     thread.setContextClassLoader(originalClassLoader);
                 }
             }
-
+            //多易教育: 将checkpointCoordinator配置参数融入executionGraph
             final CheckpointCoordinatorConfiguration chkConfig =
                     snapshotSettings.getCheckpointCoordinatorConfiguration();
 

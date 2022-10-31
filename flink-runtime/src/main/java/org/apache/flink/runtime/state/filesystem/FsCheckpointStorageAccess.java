@@ -115,6 +115,7 @@ public class FsCheckpointStorageAccess extends AbstractFsCheckpointStorageAccess
         baseLocationsInitialized = true;
     }
 
+    //多易教育: 初始化（创建）基于filesystem的cp存储目录（ck目录，shared目录，taskOwned目录）
     @Override
     public CheckpointStorageLocation initializeLocationForCheckpoint(long checkpointId)
             throws IOException {

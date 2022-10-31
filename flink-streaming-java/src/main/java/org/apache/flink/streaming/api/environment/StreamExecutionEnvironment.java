@@ -971,6 +971,7 @@ public class StreamExecutionEnvironment {
                                         flag));
 
         config.configure(configuration, classLoader);
+        //多易教育: 进行cp参数初始化配置
         checkpointCfg.configure(configuration);
     }
 
@@ -1911,6 +1912,7 @@ public class StreamExecutionEnvironment {
      */
     public JobExecutionResult execute(String jobName) throws Exception {
         Preconditions.checkNotNull(jobName, "Streaming Job name should not be null.");
+        //多易教育: 构造StreamGraph
         final StreamGraph streamGraph = getStreamGraph();
         streamGraph.setJobName(jobName);
         return execute(streamGraph);
@@ -2105,7 +2107,7 @@ public class StreamExecutionEnvironment {
             throw new IllegalStateException(
                     "No operators defined in streaming topology. Cannot execute.");
         }
-
+        //多易教育: 从env中传入各种配置，包括ExecutionConfig,CheckpointConfig,ReadableConfig
         return new StreamGraphGenerator(transformations, config, checkpointCfg, configuration)
                 .setStateBackend(defaultStateBackend)
                 .setChangelogStateBackendEnabled(changelogStateBackendEnabled)

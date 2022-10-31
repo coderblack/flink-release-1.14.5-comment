@@ -511,8 +511,10 @@ public class CheckpointCoordinator {
                             "Only synchronous savepoints are allowed to advance the watermark to MAX."));
         }
 
+        //多易教育: 封装cp触发请求
         CheckpointTriggerRequest request =
                 new CheckpointTriggerRequest(props, externalSavepointLocation, isPeriodic);
+        //多易教育: 筛选需要执行的请求并执行正式触发逻辑  this::startTriggeringCheckpoint
         chooseRequestToExecute(request).ifPresent(this::startTriggeringCheckpoint);
         return request.onCompletionPromise;
     }
@@ -529,13 +531,14 @@ public class CheckpointCoordinator {
             isTriggering = true;
 
             final long timestamp = System.currentTimeMillis();
-
+            //多易教育: 计算cp计划：挑选出哪些是需要触发的task，哪些是需要commit的task，哪些是需要应答的task
             CompletableFuture<CheckpointPlan> checkpointPlanFuture =
                     checkpointPlanCalculator.calculateCheckpointPlan();
 
             final CompletableFuture<PendingCheckpoint> pendingCheckpointCompletableFuture =
                     checkpointPlanFuture
                             .thenApplyAsync(
+                                    // 多易教育：为计算好的计划生成及绑定checkpointID
                                     plan -> {
                                         try {
                                             // this must happen outside the coordinator-wide lock,
@@ -550,8 +553,9 @@ public class CheckpointCoordinator {
                                     },
                                     executor)
                             .thenApplyAsync(
+                                    //多易教育: 生成pendingCheckpoint（挂起中的cp，表示待执行的cp）
                                     (checkpointInfo) ->
-                                            createPendingCheckpoint(  //多易教育: 生成pending中的cp
+                                            createPendingCheckpoint(
                                                     timestamp,
                                                     request.props,
                                                     checkpointInfo.f0,
@@ -565,11 +569,14 @@ public class CheckpointCoordinator {
                             .thenApplyAsync(
                                     pendingCheckpoint -> {
                                         try {
+                                            //多易教育: 初始化cp存储位置（最后会调用到FsCheckpointStorageAccess.initializeLocationForCheckpoint(cpID)）
+                                            // 创建checkpoint根路径下的各种子目录（如ck目录，taskOwned目录，shared目录），并返回各种描述引用信息
                                             CheckpointStorageLocation checkpointStorageLocation =
-                                                    initializeCheckpointLocation( //多易教育: 初始化cp存储位置
+                                                    initializeCheckpointLocation(
                                                             pendingCheckpoint.getCheckpointID(),
                                                             request.props,
                                                             request.externalSavepointLocation);
+                                            //多易教育: 返回pendingCheckpoint和存储位置信息的元祖绑定
                                             return Tuple2.of(
                                                     pendingCheckpoint, checkpointStorageLocation);
                                         } catch (Throwable e) {
@@ -581,6 +588,7 @@ public class CheckpointCoordinator {
                                     (checkpointInfo) -> {
                                         PendingCheckpoint pendingCheckpoint = checkpointInfo.f0;
                                         synchronized (lock) {
+                                            //多易教育: 将cp存储描述信息，直接设置到pendingCheckpoint对象中
                                             pendingCheckpoint.setCheckpointTargetLocation(
                                                     checkpointInfo.f1);
                                         }
@@ -632,6 +640,7 @@ public class CheckpointCoordinator {
                                                 onTriggerFailure(checkpoint, throwable);
                                             }
                                         } else {
+                                            //多易教育: 如果上述步骤中没有发生异常，则正式触发cp请求
                                             triggerCheckpointRequest(
                                                     request, timestamp, checkpoint);
                                         }
@@ -1809,10 +1818,12 @@ public class CheckpointCoordinator {
         }
     }
 
+    //多易教育: 生成首次cp定时触发调度的首次延迟时间：在 [cp最小间隔，checkpointInterval+1)之间取一个随机数
     private long getRandomInitDelay() {
         return ThreadLocalRandom.current().nextLong(minPauseBetweenCheckpoints, baseInterval + 1L);
     }
 
+    // 多易教育：启动定时调度
     private ScheduledFuture<?> scheduleTriggerWithDelay(long initDelay) {
         return timer.scheduleAtFixedRate(
                 new ScheduledTrigger(), initDelay, baseInterval, TimeUnit.MILLISECONDS);
