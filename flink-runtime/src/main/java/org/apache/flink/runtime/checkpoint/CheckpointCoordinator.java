@@ -1869,6 +1869,8 @@ public class CheckpointCoordinator {
         @Override
         public void run() {
             try {
+                //多易教育: jobmanager中定期触发cp的入口，由定时器来调用
+                // isPeriodic 表示 checkpoint 是否是周期性触发的，对于 savepoint 来说，isPeriodic=false
                 triggerCheckpoint(true);
             } catch (Exception e) {
                 LOG.error("Exception while triggering checkpoint for job {}.", job, e);

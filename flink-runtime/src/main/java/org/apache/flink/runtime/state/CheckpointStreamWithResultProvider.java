@@ -154,6 +154,7 @@ public interface CheckpointStreamWithResultProvider extends Closeable {
             @Nonnull CheckpointStreamFactory primaryStreamFactory)
             throws IOException {
 
+        //多易教育: 通过不同的工厂类来封装不同的输出流 (FsCheckpointStreamFactory/MemCheckpointStreamFactory等）
         CheckpointStreamFactory.CheckpointStateOutputStream primaryOut =
                 primaryStreamFactory.createCheckpointStateOutputStream(checkpointedStateScope);
 
