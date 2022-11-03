@@ -45,8 +45,6 @@ final class OperatorCoordinatorCheckpoints {
     public static CompletableFuture<CoordinatorSnapshot> triggerCoordinatorCheckpoint(
             final OperatorCoordinatorCheckpointContext coordinatorContext, final long checkpointId)
             throws Exception {
-        //多易教育：flag
-        System.out.println("cp测试标记1-4： triggerCoordinatorCheckpoint内部");
         final CompletableFuture<byte[]> checkpointFuture = new CompletableFuture<>();
         coordinatorContext.checkpointCoordinator(checkpointId, checkpointFuture);
 
@@ -82,8 +80,6 @@ final class OperatorCoordinatorCheckpoints {
             final PendingCheckpoint checkpoint,
             final Executor acknowledgeExecutor)
             throws Exception {
-        //多易教育：flag
-        System.out.println("cp测试标记1-2： triggerAndAcknowledgeAllCoordinatorCheckpoints内部");
         //多易教育: 触发cp
         final CompletableFuture<AllCoordinatorSnapshots> snapshots =
                 triggerAllCoordinatorCheckpoints(coordinators, checkpoint.getCheckpointId());
@@ -105,8 +101,6 @@ final class OperatorCoordinatorCheckpoints {
                     final PendingCheckpoint checkpoint,
                     final Executor acknowledgeExecutor)
                     throws CompletionException {
-        //多易教育：flag
-        System.out.println("cp测试标记1-1： triggerAndAcknowledgeAllCoordinatorCheckpointsWithCompletion内部");
         try {
             return triggerAndAcknowledgeAllCoordinatorCheckpoints(
                     coordinators, checkpoint, acknowledgeExecutor);
