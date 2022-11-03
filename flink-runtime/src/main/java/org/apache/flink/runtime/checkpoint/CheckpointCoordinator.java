@@ -520,9 +520,20 @@ public class CheckpointCoordinator {
     }
 
     //多易教育: 触发cp的真正核心逻辑
+    //多易教育:
+    // cp测试标记1： triggerAndAcknowledgeAllCoordinatorCheckpointsWithCompletion
+    // cp测试标记1-1： triggerAndAcknowledgeAllCoordinatorCheckpointsWithCompletion内部
+    // cp测试标记1-2： triggerAndAcknowledgeAllCoordinatorCheckpoints内部
+    // cp测试标记1-3： triggerAllCoordinatorCheckpoints内部
+    // cp测试标记2：snapshotMasterState
+    // 标记2-1：snapshotMasterState内部
+    // cp测试标记3：triggerCheckpointRequest
+    // 标记3-1：triggerCheckpointRequest内部
+    // 标记3-2：triggerTasks 内部
     private void startTriggeringCheckpoint(CheckpointTriggerRequest request) {
         try {
             synchronized (lock) {
+                //多易教育: 进行一些的预检查,保证CheckpointCoordinator实例内的资源锁定，以保护检查点更新。
                 preCheckGlobalState(request.isPeriodic);
             }
 
@@ -531,14 +542,14 @@ public class CheckpointCoordinator {
             isTriggering = true;
 
             final long timestamp = System.currentTimeMillis();
-            //多易教育: 计算cp计划：挑选出哪些是需要触发的task，哪些是需要commit的task，哪些是需要应答的task
+            //多易教育: 1.计算cp计划：挑选出哪些是需要触发的task，哪些是需要commit的task，哪些是需要应答的task
             CompletableFuture<CheckpointPlan> checkpointPlanFuture =
                     checkpointPlanCalculator.calculateCheckpointPlan();
 
             final CompletableFuture<PendingCheckpoint> pendingCheckpointCompletableFuture =
                     checkpointPlanFuture
                             .thenApplyAsync(
-                                    // 多易教育：为计算好的计划生成及绑定checkpointID
+                                    // 多易教育：将CheckpointPlan转成Tuple2<CheckpointPlan,CheckpointID>（2.为计算好的计划生成及绑定checkpointID）
                                     plan -> {
                                         try {
                                             // this must happen outside the coordinator-wide lock,
@@ -553,7 +564,9 @@ public class CheckpointCoordinator {
                                     },
                                     executor)
                             .thenApplyAsync(
-                                    //多易教育: 生成pendingCheckpoint（挂起中的cp，表示待执行的cp）
+                                    //多易教育: 3. 将上一步骤的Tuple2，转成PendingCheckpoint（挂起中的cp，表示待执行的cp）
+                                    // pendingCheckpoint是已经启动但尚未被确认的checkpoint,
+                                    // 一旦所有任务都确认了它，它就变成了 CompletedCheckpoint
                                     (checkpointInfo) ->
                                             createPendingCheckpoint(
                                                     timestamp,
@@ -567,9 +580,9 @@ public class CheckpointCoordinator {
             final CompletableFuture<?> coordinatorCheckpointsComplete =
                     pendingCheckpointCompletableFuture
                             .thenApplyAsync(
-                                    pendingCheckpoint -> {
+                                    pendingCheckpoint -> { //多易教育: 将PendingCheckpoint转成Tuple2<PendingCheckpoint,CheckpointStorageLocation>
                                         try {
-                                            //多易教育: 初始化cp存储位置（最后会调用到FsCheckpointStorageAccess.initializeLocationForCheckpoint(cpID)）
+                                            //多易教育: 3. 初始化cp存储位置（最后会调用到FsCheckpointStorageAccess.initializeLocationForCheckpoint(cpID)）
                                             // 创建checkpoint根路径下的各种子目录（如ck目录，taskOwned目录，shared目录），并返回各种描述引用信息
                                             CheckpointStorageLocation checkpointStorageLocation =
                                                     initializeCheckpointLocation(
@@ -585,17 +598,19 @@ public class CheckpointCoordinator {
                                     },
                                     executor)
                             .thenComposeAsync(
-                                    (checkpointInfo) -> {
+                                    (checkpointInfo) -> {  //多易教育: 将上一步的结果Tuple2<pendingCp,Location>，传给本步骤
                                         PendingCheckpoint pendingCheckpoint = checkpointInfo.f0;
                                         synchronized (lock) {
                                             //多易教育: 将cp存储描述信息，直接设置到pendingCheckpoint对象中
                                             pendingCheckpoint.setCheckpointTargetLocation(
                                                     checkpointInfo.f1);
                                         }
-                                        //多易教育: 触发和等待各算子coordinator的回应
+                                        //多易教育: 触发并确认所有CoordinatorCheckpoints
+                                        // 这里并不是普通task的checkpoint触发，而是新架构source中的coordinator的状态cp触发
+                                        // 如果graph中不存在新架构source的task，则这里的 “待触发coordinators“为空，啥也不做
                                         return OperatorCoordinatorCheckpoints
                                                 .triggerAndAcknowledgeAllCoordinatorCheckpointsWithCompletion(
-                                                        coordinatorsToCheckpoint,
+                                                        coordinatorsToCheckpoint,   //多易教育: 待触发的coordinators
                                                         pendingCheckpoint,
                                                         timer);
                                     },
@@ -605,11 +620,14 @@ public class CheckpointCoordinator {
             // has completed.
             // This is to ensure the tasks are checkpointed after the OperatorCoordinators in case
             // ExternallyInducedSource is used.
+            //多易教育: coordinator checkpoints检查点完成之后，需要调用master的钩子函数
+            // MasterHook用于生成或恢复checkpoint之前通知外部系统
             final CompletableFuture<?> masterStatesComplete =
                     coordinatorCheckpointsComplete.thenComposeAsync(
                             ignored -> {
                                 // If the code reaches here, the pending checkpoint is guaranteed to
                                 // be not null.
+                                // 多易教育: 代码执行到此，可以确保 pending checkpoint不为空
                                 // We use FutureUtils.getWithoutException() to make compiler happy
                                 // with checked
                                 // exceptions in the signature.
@@ -640,7 +658,7 @@ public class CheckpointCoordinator {
                                                 onTriggerFailure(checkpoint, throwable);
                                             }
                                         } else {
-                                            //多易教育: 如果上述步骤中没有发生异常，则正式触发cp请求
+                                            //多易教育: 如果上述步骤中没有发生异常，则正式触发cp请求：rpc调用taskExecutor，触发cp
                                             triggerCheckpointRequest(
                                                     request, timestamp, checkpoint);
                                         }
@@ -674,6 +692,7 @@ public class CheckpointCoordinator {
                             CheckpointFailureReason.TRIGGER_CHECKPOINT_FAILURE,
                             checkpoint.getFailureCause()));
         } else {
+            //多易教育: 触发source tasks开始cp执行流程
             triggerTasks(request, timestamp, checkpoint)
                     .exceptionally(
                             failure -> {
@@ -701,7 +720,7 @@ public class CheckpointCoordinator {
                                         });
                                 return null;
                             });
-
+            //多易教育: cp完成后，通知coordinators做barrier注入完成后的处理
             coordinatorsToCheckpoint.forEach(
                     (ctx) -> ctx.afterSourceBarrierInjection(checkpoint.getCheckpointID()));
             // It is possible that the tasks has finished
