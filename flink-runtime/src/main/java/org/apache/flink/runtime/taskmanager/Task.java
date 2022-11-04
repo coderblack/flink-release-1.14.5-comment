@@ -1324,15 +1324,17 @@ public class Task
             final CheckpointOptions checkpointOptions) {
 
         final TaskInvokable invokable = this.invokable;
+        //多易教育: 构造checkpoint元数据对象
         final CheckpointMetaData checkpointMetaData =
                 new CheckpointMetaData(
                         checkpointID, checkpointTimestamp, System.currentTimeMillis());
 
         if (executionState == ExecutionState.RUNNING) {
+            //多易教育: 执行cp触发的task，必须是 CheckpointableTask
             checkState(invokable instanceof CheckpointableTask, "invokable is not checkpointable");
             try {
                 ((CheckpointableTask) invokable)
-                        .triggerCheckpointAsync(checkpointMetaData, checkpointOptions)
+                        .triggerCheckpointAsync(checkpointMetaData, checkpointOptions)  //多易教育: 触发cp ,这里通常是调用到StreamTask的实现方法
                         .handle(
                                 (triggerResult, exception) -> {
                                     if (exception != null || !triggerResult) {

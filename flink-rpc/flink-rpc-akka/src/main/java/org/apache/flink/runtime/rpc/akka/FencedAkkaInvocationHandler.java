@@ -82,7 +82,7 @@ public class FencedAkkaInvocationHandler<F extends Serializable> extends AkkaInv
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         Class<?> declaringClass = method.getDeclaringClass();
-
+        //多易教育: MainThreadExecutable.runAsync
         if (declaringClass.equals(FencedMainThreadExecutable.class)
                 || declaringClass.equals(FencedRpcGateway.class)) {
             return method.invoke(this, args);

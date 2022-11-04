@@ -416,7 +416,7 @@ public abstract class RpcEndpoint implements RpcGateway, AutoCloseableAsync {
 
         @Override
         public void execute(@Nonnull Runnable command) {
-            gateway.runAsync(command);
+            gateway.runAsync(command);//多易教育: gateway=>akka://flink/user/rpc/jobmanager_3,hostname=localhost
         }
 
         @Override

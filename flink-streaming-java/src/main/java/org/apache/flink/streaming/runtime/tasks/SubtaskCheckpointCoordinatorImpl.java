@@ -275,10 +275,13 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
 
         // Step (0): Record the last triggered checkpointId and abort the sync phase of checkpoint
         // if necessary.
+        //多易教育: step(0) : 本次cpID，记录到最近ID ；
         lastCheckpointId = metadata.getCheckpointId();
+        //多易教育: 检查状态
         if (checkAndClearAbortedStatus(metadata.getCheckpointId())) {
             // broadcast cancel checkpoint marker to avoid downstream back-pressure due to
             // checkpoint barrier align.
+            //多易教育: 如果是需要取消的cp，则广播cancel标记信息给下游，以免下游因为cp对齐产生的背压
             operatorChain.broadcastEvent(new CancelCheckpointMarker(metadata.getCheckpointId()));
             LOG.info(
                     "Checkpoint {} has been notified as aborted, would not trigger any checkpoint.",

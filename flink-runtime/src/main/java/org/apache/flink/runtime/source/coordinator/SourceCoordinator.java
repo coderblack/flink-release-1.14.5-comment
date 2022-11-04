@@ -104,7 +104,7 @@ public class SourceCoordinator<SplitT extends SourceSplit, EnumChkT>
     }
 
     @Override
-    public void start() throws Exception {
+    public void start() throws Exception {  //多易教育: start()是在SchedulerBase.startScheduling()中发起的
         LOG.info("Starting split enumerator for source {}.", operatorName);
 
         // we mark this as started first, so that we can later distinguish the cases where
@@ -133,7 +133,7 @@ public class SourceCoordinator<SplitT extends SourceSplit, EnumChkT>
         // The start sequence is the first task in the coordinator executor.
         // We rely on the single-threaded coordinator executor to guarantee
         // the other methods are invoked after the enumerator has started.
-        runInEventLoop(() -> enumerator.start(), "starting the SplitEnumerator.");
+        runInEventLoop(() -> enumerator.start(), "starting the SplitEnumerator.");  //多易教育: 使用单线程来保障其他方法的调用一定在enumerator启动之后
     }
 
     @Override
@@ -240,7 +240,11 @@ public class SourceCoordinator<SplitT extends SourceSplit, EnumChkT>
                             operatorName,
                             checkpointId);
                     try {
+                        //多易教育: 前置处理，将uncheckpointedAssignments加入,assignmentsByCheckpointId的hashmap
+                        // assignmentsByCheckpointId.put(checkpointId, uncheckpointedAssignments);
                         context.onCheckpoint(checkpointId);
+                        //多易教育: 根据cpID,调用enumerator的snapshot方法，得到要快照的数据
+                        // 然后，toBytes()序列化cp数据，并返回序列化后的字节数组
                         result.complete(toBytes(checkpointId));
                     } catch (Throwable e) {
                         ExceptionUtils.rethrowIfFatalErrorOrOOM(e);
@@ -379,9 +383,10 @@ public class SourceCoordinator<SplitT extends SourceSplit, EnumChkT>
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 DataOutputStream out = new DataOutputViewStreamWrapper(baos)) {
 
-            writeCoordinatorSerdeVersion(out);
+            writeCoordinatorSerdeVersion(out);  //多易教育: 写出版本号1
             out.writeInt(enumeratorCheckpointSerializer.getVersion());
             byte[] serialziedEnumChkpt =
+                    //多易教育: KafkaSourceEnumState:assignedPartitions=HashSet[TopicPartition,demo-0]
                     enumeratorCheckpointSerializer.serialize(enumeratorCheckpoint);
             out.writeInt(serialziedEnumChkpt.length);
             out.write(serialziedEnumChkpt);

@@ -210,8 +210,8 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
                 new ExecutionGraphHandler(executionGraph, log, ioExecutor, this.mainThreadExecutor);
 
         this.operatorCoordinatorHandler = // 多易教育:  DefaultOperatorCoordinatorHandler
-                new DefaultOperatorCoordinatorHandler(executionGraph, this::handleGlobalFailure);
-        operatorCoordinatorHandler.initializeOperatorCoordinators(this.mainThreadExecutor);
+                new DefaultOperatorCoordinatorHandler(executionGraph, this::handleGlobalFailure); //多易教育: coordinatorHandler中持有了全局失败处理器
+        operatorCoordinatorHandler.initializeOperatorCoordinators(this.mainThreadExecutor); //多易教育: 初始化各Coordinator，传入endpoint的主线程调度器
 
         this.exceptionHistory =
                 new BoundedFIFOQueue<>(
@@ -586,7 +586,7 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
     public final void startScheduling() {
         mainThreadExecutor.assertRunningInMainThread();
         registerJobMetrics();
-        operatorCoordinatorHandler.startAllOperatorCoordinators();
+        operatorCoordinatorHandler.startAllOperatorCoordinators();  //多易教育: 启动所有的operatorCoordinator
         //多易教育: Job调度内部方法
         startSchedulingInternal();
     }

@@ -81,7 +81,7 @@ public abstract class AbstractUdfStreamOperator<OUT, F extends Function>
         FunctionUtils.setFunctionRuntimeContext(userFunction, getRuntimeContext());
     }
 
-    //多易教育: 算子执行 checkpoint 状态快照（snapshot）的方法
+    //多易教育: 执行算子个性化 checkpoint 状态快照（snapshot）的方法
     @Override
     public void snapshotState(StateSnapshotContext context) throws Exception {
         super.snapshotState(context);  //多易教育: 父类(AbstractStreamOperator）中啥也没做

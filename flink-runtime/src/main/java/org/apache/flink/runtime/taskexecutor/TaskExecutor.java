@@ -931,7 +931,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     // ----------------------------------------------------------------------
     // Checkpointing RPCs
     // ----------------------------------------------------------------------
-
+    //多易教育: 由RpcTaskManagerGateWay，通过rpc来调用
     @Override
     public CompletableFuture<Acknowledge> triggerCheckpoint(
             ExecutionAttemptID executionAttemptID,
@@ -950,9 +950,9 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             throw new IllegalArgumentException(
                     "Only synchronous savepoints are allowed to advance the watermark to MAX.");
         }
-
+        //多易教育: 通过 executionAttemptID 获取到对应的task
         final Task task = taskSlotTable.getTask(executionAttemptID);
-
+        //多易教育: 再调用task的 triggerCheckpointBarrier 来执行cp，注入barrier
         if (task != null) {
             task.triggerCheckpointBarrier(checkpointId, checkpointTimestamp, checkpointOptions);
 

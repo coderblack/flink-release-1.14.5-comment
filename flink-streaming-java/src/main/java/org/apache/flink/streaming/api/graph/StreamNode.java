@@ -366,7 +366,7 @@ public class StreamNode {
 
     public Optional<OperatorCoordinator.Provider> getCoordinatorProvider(
             String operatorName, OperatorID operatorID) {
-        if (operatorFactory instanceof CoordinatedOperatorFactory) {
+        if (operatorFactory instanceof CoordinatedOperatorFactory) { //多易教育: SourceOperatorFactory <= KafkaSource
             return Optional.of(
                     ((CoordinatedOperatorFactory) operatorFactory)
                             .getCoordinatorProvider(operatorName, operatorID));

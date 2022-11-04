@@ -95,7 +95,7 @@ public class RpcTaskManagerGateway implements TaskManagerGateway {
         taskExecutorGateway.abortCheckpoint(
                 executionAttemptID, checkpointId, latestCompletedCheckpointId, timestamp);
     }
-
+    //多易教育: 由jobManager端的checkpointCoordinator通过taskManagerGateway进行rpc调用，触发各task端的checkpoint
     @Override
     public CompletableFuture<Acknowledge> triggerCheckpoint(
             ExecutionAttemptID executionAttemptID,
@@ -103,6 +103,7 @@ public class RpcTaskManagerGateway implements TaskManagerGateway {
             long checkpointId,
             long timestamp,
             CheckpointOptions checkpointOptions) {
+        //多易教育: rpc调用TaskExecutor
         return taskExecutorGateway.triggerCheckpoint(
                 executionAttemptID, checkpointId, timestamp, checkpointOptions);
     }

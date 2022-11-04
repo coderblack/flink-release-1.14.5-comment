@@ -235,7 +235,8 @@ public class RegularOperatorChain<OUT, OP extends StreamOperator<OUT>>
             Supplier<Boolean> isRunning)
             throws Exception {
         try {
-            //多易教育: 调用算子operator的snapshotState,算子内会用 StreamOperatorStateHandler.snapshotState()
+            //多易教育: 调用算子operator的snapshotState,
+            // 算子内会用 StreamOperatorStateHandler.snapshotState()
             return op.snapshotState(
                     checkpointMetaData.getCheckpointId(),
                     checkpointMetaData.getTimestamp(),

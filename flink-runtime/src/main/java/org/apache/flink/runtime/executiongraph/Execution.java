@@ -862,10 +862,10 @@ public class Execution
         }
 
         final LogicalSlot slot = assignedResource;
-
+        //多易教育: 根据槽位获取到所在taskManager的gateway
         if (slot != null) {
             final TaskManagerGateway taskManagerGateway = slot.getTaskManagerGateway();
-
+            //多易教育: 通过rpc请求，触发cp
             return taskManagerGateway.triggerCheckpoint(
                     attemptId, getVertex().getJobId(), checkpointId, timestamp, checkpointOptions);
         }

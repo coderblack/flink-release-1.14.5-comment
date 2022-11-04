@@ -607,9 +607,13 @@ public class CheckpointCoordinator {
                                         }
                                         //多易教育: 触发并确认所有CoordinatorCheckpoints
                                         // 这里并不是普通task的checkpoint触发，而是新架构source中的coordinator的状态cp触发
+                                        // 里面做的主要行为是：
+                                        //     对每个coordinator触发snapshot得到快照，并序列化
+                                        //     然后把序列化数据放入了算子所对应的OperatorState.coordinatorState中去
+                                        // q&a:  注意：这里并没有进行持久化
                                         // 如果graph中不存在新架构source的task，则这里的 “待触发coordinators“为空，啥也不做
                                         return OperatorCoordinatorCheckpoints
-                                                .triggerAndAcknowledgeAllCoordinatorCheckpointsWithCompletion(
+                                                .triggerAndAcknowledgeAllCoordinatorCheckpointsWithCompletion( //多易教育: 底层走的是rpc通信：请求的jobMaster
                                                         coordinatorsToCheckpoint,   //多易教育: 待触发的coordinators
                                                         pendingCheckpoint,
                                                         timer);
@@ -658,7 +662,8 @@ public class CheckpointCoordinator {
                                                 onTriggerFailure(checkpoint, throwable);
                                             }
                                         } else {
-                                            //多易教育: 如果上述步骤中没有发生异常，则正式触发cp请求：rpc调用taskExecutor，触发cp
+                                            //多易教育: 如果上述各步骤中没有发生异常，则正式对各task触发cp请求：
+                                            //   通过rpc调用taskExecutor，触发cp
                                             triggerCheckpointRequest(
                                                     request, timestamp, checkpoint);
                                         }
@@ -720,7 +725,7 @@ public class CheckpointCoordinator {
                                         });
                                 return null;
                             });
-            //多易教育: cp完成后，通知coordinators做barrier注入完成后的处理
+            //多易教育: cp完成后，通知coordinators做 barrier注入完成后的处理
             coordinatorsToCheckpoint.forEach(
                     (ctx) -> ctx.afterSourceBarrierInjection(checkpoint.getCheckpointID()));
             // It is possible that the tasks has finished

@@ -1148,7 +1148,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                                 Arrays.stream(getEnvironment().getAllInputGates())
                                         .allMatch(InputGate::isFinished);
 
-                        //多易教育: 如果已经没有未完成的输入
+                        //多易教育: 如果不存在未完成的输入
                         if (noUnfinishedInputGates) {
                             result.complete(
                                     //多易教育: mail的核心逻辑是调用 triggerCheckpointAsyncInMailbox()方法
@@ -1391,7 +1391,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                                 && this.finalCheckpointMinId == null) {
                             this.finalCheckpointMinId = checkpointMetaData.getCheckpointId();
                         }
-                        //多易教育: checkpoint的具体执行，是由 SubtaskCheckpointCoordinator负责
+                        //多易教育: checkpoint的具体执行，是由 SubtaskCheckpointCoordinator 负责
                         subtaskCheckpointCoordinator.checkpointState(
                                 checkpointMetaData,
                                 checkpointOptions,

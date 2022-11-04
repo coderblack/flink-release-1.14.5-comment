@@ -530,7 +530,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
             buildOpCoordinatorCheckpointContexts() {
         final ArrayList<OperatorCoordinatorCheckpointContext> contexts = new ArrayList<>();
         for (final ExecutionJobVertex vertex : verticesInCreationOrder) {
-            contexts.addAll(vertex.getOperatorCoordinators());
+            contexts.addAll(vertex.getOperatorCoordinators());//多易教育: OperatorCoordinatorHolder[RecreateOnRestOperatorCoordinator[SourceCoordinatorProvider]]
         }
         contexts.trimToSize();
         return contexts;

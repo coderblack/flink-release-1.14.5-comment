@@ -46,8 +46,10 @@ final class OperatorCoordinatorCheckpoints {
             final OperatorCoordinatorCheckpointContext coordinatorContext, final long checkpointId)
             throws Exception {
         final CompletableFuture<byte[]> checkpointFuture = new CompletableFuture<>();
+        //多易教育: 调用OperatorCoordinatorHolder来执行checkpointCoordinator()，并传入一个future来获取异步执行结果
+        // 底层所返回的future结果是coordinator的snapshot后的状态的序列化字节数组
         coordinatorContext.checkpointCoordinator(checkpointId, checkpointFuture);
-
+        //多易教育: 将返回的状态序列化字节数组，转成 CoordinatorSnapshot 对象封装
         return checkpointFuture.thenApply(
                 (state) ->
                         new CoordinatorSnapshot(
@@ -60,18 +62,18 @@ final class OperatorCoordinatorCheckpoints {
             final Collection<OperatorCoordinatorCheckpointContext> coordinators,
             final long checkpointId)
             throws Exception {
-        //多易教育：flag
-        System.out.println("cp测试标记1-3： triggerAllCoordinatorCheckpoints内部");
         final Collection<CompletableFuture<CoordinatorSnapshot>> individualSnapshots =
                 new ArrayList<>(coordinators.size());
 
         for (final OperatorCoordinatorCheckpointContext coordinator : coordinators) {
-            //多易教育: 逐个遍历，触发cp
+            //多易教育: 逐个遍历，触发异步cp，并得到future（
+            // Future的内涵是一个 CoordinatorSnapshot，而CoordinatorSnapshot中则含有底层所返回的coordinator状态snapshot数据序列化字节）
             final CompletableFuture<CoordinatorSnapshot> checkpointFuture =
                     triggerCoordinatorCheckpoint(coordinator, checkpointId);
+            //多易教育: 将单个coordinator的cp结果future放入 集合
             individualSnapshots.add(checkpointFuture);
         }
-
+        //多易教育: 最后，将单个snapshot数据future的集合，构建成一个整体封装对象的future返回
         return FutureUtils.combineAll(individualSnapshots).thenApply(AllCoordinatorSnapshots::new);
     }
 
@@ -80,10 +82,13 @@ final class OperatorCoordinatorCheckpoints {
             final PendingCheckpoint checkpoint,
             final Executor acknowledgeExecutor)
             throws Exception {
-        //多易教育: 触发cp
+        //多易教育: 触发cp，
+        // 这里的底层其实是对各个coordinator进行逐一snapshot，并序列化snapshot的数据，
+        // 并将各snapshot数据的future，转成一个整体的Future<AllCoordinatorSnapshots> 返回
         final CompletableFuture<AllCoordinatorSnapshots> snapshots =
                 triggerAllCoordinatorCheckpoints(coordinators, checkpoint.getCheckpointId());
-        //多易教育: 回应cp
+        //多易教育: 确认所有coordinator的snapshot状态
+        //   即，当上面步骤成功完成后，则将各snapshot的结果，逐个遍历，放入对应的OperatorId对应的 OperatorState.coordinatorState中去
         return snapshots.thenAcceptAsync(
                 (allSnapshots) -> {
                     try {

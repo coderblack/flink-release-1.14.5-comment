@@ -227,6 +227,14 @@ public class OperatorCoordinatorHolder
         // checkpoint coordinator time thread.
         // we can remove the delegation once the checkpoint coordinator runs fully in the
         // scheduler's main thread executor
+        //多易教育: 实现为： gateway.runAsync(command);而gateway是jobMaster，所以最终调用的就是jobMaster的runAsync(command)
+        // 当然，中间会先经过发送者的AkkaInvocationHandler来发送请求
+        // 然后，在接受者（JobMaster）那边会由 AkkaRpcActor来接收请求 :
+        //    => protected void handleRpcMessage(Object message)
+        //    => handleRunAsync((RunAsync) message)
+        //    => runWithContextClassLoader(() -> runAsync.getRunnable().run(), flinkClassLoader)
+        //    => runWithContextClassLoader{runnable.run()} ,
+        //    从而，最终就是在 JobMaster这个RpcEndpoint中，执行了下面传入的runnable.run : checkpointCoordinatorInternal(checkpointId, result)
         mainThreadExecutor.execute(() -> checkpointCoordinatorInternal(checkpointId, result));
     }
 
@@ -278,13 +286,15 @@ public class OperatorCoordinatorHolder
         mainThreadExecutor.assertRunningInMainThread();
 
         final CompletableFuture<byte[]> coordinatorCheckpoint = new CompletableFuture<>();
-
+        //多易教育: 注册异步结果的回调逻辑
         FutureUtils.assertNoException(
                 coordinatorCheckpoint.handleAsync(
                         (success, failure) -> {
                             if (failure != null) {
                                 result.completeExceptionally(failure);
                             } else if (eventValve.tryShutValve(checkpointId)) {
+                                //多易教育: 当成功完成cp后（其实就是对coordinator进行snapshot，并序列化snapshot的数据，并放入Future的返回值success），
+                                // 然后在这里，将future结果填充到上一层的调用者： result中
                                 completeCheckpointOnceEventsAreDone(checkpointId, result, success);
                             } else {
                                 // if we cannot shut the valve, this means the checkpoint
@@ -299,7 +309,9 @@ public class OperatorCoordinatorHolder
                         mainThreadExecutor));
 
         try {
-            eventValve.markForCheckpoint(checkpointId);
+            eventValve.markForCheckpoint(checkpointId); //多易教育: 标记
+            //多易教育: 调用coordinator来执行cp，这里就会进入具体coordinator实现了,
+            // 比如 SourceCoordinator.checkpointCoordinator(),它们都会使用eventLoop线程模型来处理任务:  runInEventLoop(runnable)
             coordinator.checkpointCoordinator(checkpointId, coordinatorCheckpoint);
         } catch (Throwable t) {
             ExceptionUtils.rethrowIfFatalErrorOrOOM(t);
