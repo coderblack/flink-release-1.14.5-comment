@@ -150,7 +150,21 @@ public abstract class AbstractStreamOperator<OUT>
     // ------------------------------------------------------------------------
     //  Life Cycle
     // ------------------------------------------------------------------------
-
+    //多易教育: 调用栈
+    // setup:159, AbstractStreamOperator (org.apache.flink.streaming.api.operators)
+    // setup:80, AbstractUdfStreamOperator (org.apache.flink.streaming.api.operators)
+    // createStreamOperator:78, SimpleOperatorFactory (org.apache.flink.streaming.api.operators)
+    // createOperator:81, StreamOperatorFactoryUtil (org.apache.flink.streaming.api.operators)
+    // <init>:198, OperatorChain (org.apache.flink.streaming.runtime.tasks)
+    // <init>:63, RegularOperatorChain (org.apache.flink.streaming.runtime.tasks)
+    // restoreInternal:692, StreamTask (org.apache.flink.streaming.runtime.tasks)
+    // restore:678, StreamTask (org.apache.flink.streaming.runtime.tasks)
+    // run:-1, 2069853845 (org.apache.flink.runtime.taskmanager.Task$$Lambda$904)
+    // runWithSystemExitMonitoring:965, Task (org.apache.flink.runtime.taskmanager)
+    // restoreAndInvoke:934, Task (org.apache.flink.runtime.taskmanager)
+    // doRun:773, Task (org.apache.flink.runtime.taskmanager)
+    // run:582, Task (org.apache.flink.runtime.taskmanager)
+    // run:829, Thread (java.lang)
     @Override
     public void setup(
             StreamTask<?, ?> containingTask,
