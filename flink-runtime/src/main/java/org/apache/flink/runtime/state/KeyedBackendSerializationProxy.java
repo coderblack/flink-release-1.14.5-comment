@@ -117,6 +117,7 @@ public class KeyedBackendSerializationProxy<K> extends VersionedIOReadableWritab
 
     @Override
     public void write(DataOutputView out) throws IOException {
+        //多易教育: 调用 VersionedIOReadableWritable来写出一个版本号
         super.write(out);
 
         // write the compression format used to write each key-group

@@ -141,16 +141,22 @@ class HeapSnapshotStrategy<K>
                     checkpointStreamSupplier.get();
 
             snapshotCloseableRegistry.registerCloseable(streamWithResultProvider);
-            //多易教育: 输出数据流 , debug信息 => basePath = "file:/home/hunter/ck/99.../chk-3
+            //多易教育: 获取输出流 , debug信息 => basePath = "file:/home/hunter/ck/99.../chk-3
             final CheckpointStreamFactory.CheckpointStateOutputStream localStream =
                     streamWithResultProvider.getCheckpointOutputStream();
-            //多易教育: 使用KeyedBackendSerializationProxy写cp数据
+
+            //多易教育: 装饰者模式，以加入一些公共的附加逻辑
             final DataOutputViewStreamWrapper outView =
                     new DataOutputViewStreamWrapper(localStream);
+            //多易教育: 写出key的序列化类class信息，及元数据
             serializationProxy.write(outView);
+
+            //多易教育： ------------------
+            // 写出各keyGroup的state数据内容
+            // --------------------------
+
             //多易教育: keyGroupRange:{startKeyGroup=0,endKeyGroup=31}
             final long[] keyGroupRangeOffsets = new long[keyGroupRange.getNumberOfKeyGroups()];
-
             for (int keyGroupPos = 0;
                     keyGroupPos < keyGroupRange.getNumberOfKeyGroups();
                     ++keyGroupPos) {

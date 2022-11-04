@@ -1391,7 +1391,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                                 && this.finalCheckpointMinId == null) {
                             this.finalCheckpointMinId = checkpointMetaData.getCheckpointId();
                         }
-                        //多易教育: checkpoint的具体执行，是由 SubtaskCheckpointCoordinator 负责
+                        //多易教育: checkpoint的具体执行，是由 SubtaskCheckpointCoordinatorImpl 负责
                         subtaskCheckpointCoordinator.checkpointState(
                                 checkpointMetaData,
                                 checkpointOptions,

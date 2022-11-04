@@ -249,6 +249,8 @@ public class KeyGroupPartitioner<T> {
 
             // write mappings
             for (int i = startOffset; i < endOffset; ++i) {
+                //多易教育: elementWriterFunction是对应各种数据类型的序列化输出函数，
+                // 比如Date类型的数据，可以调用到： DateSerializer.serialize(Date record, DataOutputView target)
                 elementWriterFunction.writeElement(partitionedElements[i], dov);
             }
         }

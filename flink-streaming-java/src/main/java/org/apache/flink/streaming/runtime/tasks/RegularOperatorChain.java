@@ -181,7 +181,7 @@ public class RegularOperatorChain<OUT, OP extends StreamOperator<OUT>>
             ChannelStateWriter.ChannelStateWriteResult channelStateWriteResult,
             CheckpointStreamFactory storage)
             throws Exception {
-        //多易教育: 对算子链中的每一个算子，执行状态snapshot
+        //多易教育: 遍历算子链中的每一个算子，逐个执行状态snapshot
         for (StreamOperatorWrapper<?, ?> operatorWrapper : getAllOperators(true)) {
             if (!operatorWrapper.isClosed()) {
                 operatorSnapshotsInProgress.put(
@@ -206,10 +206,11 @@ public class RegularOperatorChain<OUT, OP extends StreamOperator<OUT>>
             ChannelStateWriter.ChannelStateWriteResult channelStateWriteResult,
             CheckpointStreamFactory storage)
             throws Exception {
-        //多易教育: 执行checkpoint
+        //多易教育: 触发operator执行cp，获得进度信息future
         OperatorSnapshotFutures snapshotInProgress =
                 checkpointStreamOperator(
                         op, checkpointMetaData, checkpointOptions, storage, isRunning);
+        //多易教育: 如果是头部算子，还需要对inputChannel的缓存数据进行处理
         if (op == getMainOperator()) {
             snapshotInProgress.setInputChannelStateFuture(
                     channelStateWriteResult
@@ -217,6 +218,7 @@ public class RegularOperatorChain<OUT, OP extends StreamOperator<OUT>>
                             .thenApply(StateObjectCollection::new)
                             .thenApply(SnapshotResult::of));
         }
+        //多易教育: 如果是尾部算子，还需要对输出数据进行处理
         if (op == getTailOperator()) {
             snapshotInProgress.setResultSubpartitionStateFuture(
                     channelStateWriteResult
@@ -236,7 +238,8 @@ public class RegularOperatorChain<OUT, OP extends StreamOperator<OUT>>
             throws Exception {
         try {
             //多易教育: 调用算子operator的snapshotState,
-            // 算子内会用 StreamOperatorStateHandler.snapshotState()
+            // 算子内会用 StreamOperatorStateHandler.snapshotState(context)，
+            // 其中，有一步骤会顺便执行用户函数中的snapshotState方法
             return op.snapshotState(
                     checkpointMetaData.getCheckpointId(),
                     checkpointMetaData.getTimestamp(),

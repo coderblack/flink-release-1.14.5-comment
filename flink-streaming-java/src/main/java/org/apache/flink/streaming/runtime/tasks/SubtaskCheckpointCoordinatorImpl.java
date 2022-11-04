@@ -616,7 +616,9 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
                         checkpointId, checkpointOptions.getTargetLocation());
 
         try {
-            //多易教育: 对算子链，执行snapshot
+            //多易教育: 对算子链，执行snapshot, 实现： RegularOperatorChain.snapshotState()
+            // 其中会顺便调用到用户函数中实现的snapshot方法
+            // （但它只是给用户去对state数据做一些安排，并不是让用户去实现整个state数据的持久化）
             operatorChain.snapshotState(
                     operatorSnapshotsInProgress,
                     checkpointMetaData,
