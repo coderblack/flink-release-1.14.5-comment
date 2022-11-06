@@ -107,7 +107,7 @@ public final class DefaultSlotPoolServiceSchedulerFactory
             FatalErrorHandler fatalErrorHandler,
             JobStatusListener jobStatusListener)
             throws Exception {
-        // 真讨厌啊，好深，吐槽这些方法的命名啊，都是创建实例
+        // 多易教育： 真讨厌啊，好深，吐槽这些方法的命名啊，都是创建实例
         return schedulerNGFactory.createInstance(
                 log,
                 jobGraph,

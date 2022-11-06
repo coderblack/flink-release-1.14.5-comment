@@ -475,6 +475,7 @@ public class StreamingFileSink<IN> extends RichSinkFunction<IN>
 
     @Override
     public void notifyCheckpointComplete(long checkpointId) throws Exception {
+        //多易教育: cp全局成功应答后，进行commit提交
         this.helper.commitUpToCheckpoint(checkpointId);
     }
 

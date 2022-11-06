@@ -1340,6 +1340,7 @@ public class CheckpointCoordinator {
         }
     }
 
+    //多易教育: 向所有需要回应确认信息的，tasks，coordinators 发送cp确认消息
     private void sendAcknowledgeMessages(
             List<ExecutionVertex> tasksToCommit, long checkpointId, long timestamp) {
         // commit tasks

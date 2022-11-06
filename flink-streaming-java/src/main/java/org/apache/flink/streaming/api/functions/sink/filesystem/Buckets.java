@@ -228,12 +228,13 @@ public class Buckets<IN, BucketID> {
         while (activeBucketIt.hasNext()) {
             final Bucket<IN, BucketID> bucket = activeBucketIt.next().getValue();
             bucket.onSuccessfulCompletionOfCheckpoint(checkpointId);
-
             if (!bucket.isActive()) {
                 // We've dealt with all the pending files and the writer for this bucket is not
                 // currently open.
                 // Therefore this bucket is currently inactive and we can remove it from our state.
+                //多易教育: bucket已经不再活跃，则从活跃bucket列表中移除该bucket
                 activeBucketIt.remove();
+                //多易教育: 并通知监听器 BucketLifeCycleListener, 将它加入Writer的committablePartitions列表中
                 notifyBucketInactive(bucket);
             }
         }

@@ -320,12 +320,12 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
         this.jobManagerJobMetricGroup = jobMetricGroupFactory.create(jobGraph);
         this.jobStatusListener = new JobManagerJobStatusListener();
         // 多易教育:  创建调度器
-        // 调用的是： slotPoolServiceSchedulerFactory.createScheduler
-        // 进而调用： schedulerNGFactory.createInstance
-        // 进而调用： DefaultSchedulerFactory.createInstance 其中，会构造：executionGraphFactory = new DefaultExecutionGraphFactory
-        // 并，构造 DefaultScheduler = new DefaultScheduler
-        // 构造函数中,通过父类构造： SchedulerBase() ,在父类构造方法中，会构建executionGraph :=> this.executionGraph =createAndRestoreExecutionGraph
-        // 并获取 schedulingTopology :=>  this.schedulingTopology = executionGraph.getSchedulingTopology()
+        //  调用的是： slotPoolServiceSchedulerFactory.createScheduler
+        //  进而调用： schedulerNGFactory.createInstance
+        //  进而调用： DefaultSchedulerFactory.createInstance 其中，会构造：executionGraphFactory = new DefaultExecutionGraphFactory
+        //  并，构造 DefaultScheduler = new DefaultScheduler
+        //  构造函数中,通过父类构造： SchedulerBase() ,在父类构造方法中，会构建executionGraph :=> this.executionGraph =createAndRestoreExecutionGraph
+        //  并获取 schedulingTopology :=>  this.schedulingTopology = executionGraph.getSchedulingTopology()
         this.schedulerNG =
                 createScheduler(
                         slotPoolServiceSchedulerFactory,
@@ -349,7 +349,7 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
             JobManagerJobMetricGroup jobManagerJobMetricGroup,
             JobStatusListener jobStatusListener)
             throws Exception {
-        // 创建调度器
+        // 多易教育： 创建调度器
         final SchedulerNG scheduler =
                 slotPoolServiceSchedulerFactory.createScheduler(
                         log,
@@ -636,7 +636,7 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
 
         final TaskManagerLocation taskManagerLocation = taskManager.f0;
         final TaskExecutorGateway taskExecutorGateway = taskManager.f1;
-
+        //多易教育: 将taskExecutor网关和fencingToken，封装为taskManager网关
         final RpcTaskManagerGateway rpcTaskManagerGateway =
                 new RpcTaskManagerGateway(taskExecutorGateway, getFencingToken());
 

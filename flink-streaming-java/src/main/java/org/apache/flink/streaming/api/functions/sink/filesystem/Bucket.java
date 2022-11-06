@@ -325,11 +325,17 @@ public class Bucket<IN, BucketID> {
 
             for (InProgressFileWriter.PendingFileRecoverable pendingFileRecoverable :
                     entry.getValue()) {
+                //多易教育: 提交pendingFile成为finalFile
+                // （底层就是一个 fileSystem.rename(tempFilePath, targetFilePath) ）
                 bucketWriter.recoverPendingFile(pendingFileRecoverable).commit();
             }
+
+            //多易教育: 如果上面的提交（重命名）成功，然后到这里fail掉
+            // 则 task重启后, 岂不是会造成重复提交？
+            // 是的，重复提交也无所谓，因为： 之前被重命名后，临时文件已经不存在了
             it.remove();
         }
-
+        //多易教育: 清理本次cp的inProgressFile
         cleanupInProgressFileRecoverables(checkpointId);
     }
 

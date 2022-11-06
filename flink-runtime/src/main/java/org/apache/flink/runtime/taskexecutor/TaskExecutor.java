@@ -558,9 +558,11 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     // ----------------------------------------------------------------------
     // Task lifecycle RPCs
     // ----------------------------------------------------------------------
-
+    // 多易教育:   提交task的rpc接口方法
+    // JobMaster端的SchedulerNG负责生成调度计划，为每一个任务实例生成Execution对象
+    // 然后通过Execution.deploy()方法，方法中会通过TaskExecutor网关，来向TaskExecutor提交task
     @Override
-    public CompletableFuture<Acknowledge> submitTask(  // 多易教育:   提交task
+    public CompletableFuture<Acknowledge> submitTask(
             TaskDeploymentDescriptor tdd, JobMasterId jobMasterId, Time timeout) {
 
         try {
@@ -580,7 +582,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                                         log.debug(message);
                                         return new TaskSubmissionException(message);
                                     });
-
+            //多易教育: 对比本地根据jobId查询到的JobMasterId和提交task所带过来的JobMasterId是否一致
             if (!Objects.equals(jobManagerConnection.getJobMasterId(), jobMasterId)) {
                 final String message =
                         "Rejecting the task submission because the job manager leader id "
@@ -592,7 +594,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                 log.debug(message);
                 throw new TaskSubmissionException(message);
             }
-
+            //多易教育: 在taskSlotTable中标记slot为活跃状态
             if (!taskSlotTable.tryMarkSlotActive(jobId, tdd.getAllocationId())) {
                 final String message =
                         "No task slot allocated for job ID "
@@ -606,6 +608,9 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
             // re-integrate offloaded data:
             try {
+                //多易教育: 从blob服务上，加载“离线加载数据”集成到taskDeploymentDescriptor中
+                // 包含JobInformation（ job配置，jar的路径等job共享信息 ）
+                // 和 taskInformation（ taskName,invokableClassName,taskConfiguration,subTask数等 ）
                 tdd.loadBigData(blobCacheService.getPermanentBlobService());
             } catch (IOException | ClassNotFoundException e) {
                 throw new TaskSubmissionException(
@@ -970,6 +975,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         }
     }
 
+    //多易教育: 从源头checkpointCoordinator经过rpcTaskManagerGateway，传递过来的cp确认信息rpc接口
     @Override
     public CompletableFuture<Acknowledge> confirmCheckpoint(
             ExecutionAttemptID executionAttemptID, long checkpointId, long checkpointTimestamp) {

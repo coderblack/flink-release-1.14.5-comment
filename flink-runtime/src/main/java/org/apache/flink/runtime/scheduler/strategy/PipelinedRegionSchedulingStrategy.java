@@ -208,7 +208,7 @@ public class PipelinedRegionSchedulingStrategy implements SchedulingStrategy {
     @Override
     public void onPartitionConsumable(final IntermediateResultPartitionID resultPartitionId) {}
 
-    private void maybeScheduleRegions(final Set<SchedulingPipelinedRegion> regions) {
+    private void maybeScheduleRegions(final Set<SchedulingPipelinedRegion> regions) {  //多易教育: regions 是source regions
         final List<SchedulingPipelinedRegion> regionsSorted =
                 SchedulingStrategyUtils.sortPipelinedRegionsInTopologicalOrder(
                         schedulingTopology, regions);

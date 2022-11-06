@@ -139,16 +139,19 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
 
     protected final ExecutionVertexVersioner executionVertexVersioner;
 
-    private final KvStateHandler kvStateHandler;
+    private final KvStateHandler kvStateHandler;  //多易教育: 用于queryable state的处理器
 
+    //多易教育: 提供cp确认、cp拒绝、算子协调器cp事件处理
     private final ExecutionGraphHandler executionGraphHandler;
 
+    //多易教育: 新架构算子协调器的处理器，提供各协调器的启动、初始化、事件发送等功能
     private final OperatorCoordinatorHandler operatorCoordinatorHandler;
 
     private final ComponentMainThreadExecutor mainThreadExecutor;
 
     private final BoundedFIFOQueue<RootExceptionHistoryEntry> exceptionHistory;
 
+    //多易教育: executionGraph的创建工厂
     private final ExecutionGraphFactory executionGraphFactory;
 
     public SchedulerBase(
@@ -211,7 +214,9 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
 
         this.operatorCoordinatorHandler = // 多易教育:  DefaultOperatorCoordinatorHandler
                 new DefaultOperatorCoordinatorHandler(executionGraph, this::handleGlobalFailure); //多易教育: coordinatorHandler中持有了全局失败处理器
-        operatorCoordinatorHandler.initializeOperatorCoordinators(this.mainThreadExecutor); //多易教育: 初始化各Coordinator，传入endpoint的主线程调度器
+        //多易教育: 初始化各Coordinator，传入endpoint的主线程调度器
+        // 说明算子coordinator是在jobMaster的主线程中工作
+        operatorCoordinatorHandler.initializeOperatorCoordinators(this.mainThreadExecutor);
 
         this.exceptionHistory =
                 new BoundedFIFOQueue<>(
@@ -350,6 +355,10 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
 
         newExecutionGraph.setInternalTaskFailuresListener(
                 new UpdateSchedulerNgOnInternalFailuresListener(this));
+        //多易教育: 注册job状态变更监听器(就是在listeners列表中添加一个监听器）
+        // 整个工程中，JobStatusListener就两个实现，一个是在JobMaster类中一个内部类（如下），另一个就是CheckpointCoordinatorDeActivator
+        // 这里传入的listener，最起始是在JobMaster的构造中:
+        //    this.jobStatusListener = new JobManagerJobStatusListener();
         newExecutionGraph.registerJobStatusListener(jobStatusListener);
         newExecutionGraph.start(mainThreadExecutor);  // 多易教育:  mainThreadExecutor:RpcEndpoint$MainThreadExecutor
 

@@ -399,7 +399,7 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
 
         final Map<ExecutionVertexID, ExecutionVertexVersion> requiredVersionByVertex =
                 executionVertexVersioner.recordVertexModifications(verticesToDeploy);
-
+        //多易教育: 将每个vertices的状态转为： ExecutionState.SCHEDULED
         transitionToScheduled(verticesToDeploy);
 
         final List<SlotExecutionVertexAssignment> slotExecutionVertexAssignments =
@@ -467,7 +467,7 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
     // 多易教育:  本方法，调用deployAll(deploymentHandles)，进而会发起submitTask的流程
     private void waitForAllSlotsAndDeploy(final List<DeploymentHandle> deploymentHandles) {
         FutureUtils.assertNoException(
-                assignAllResourcesAndRegisterProducedPartitions(deploymentHandles)
+                assignAllResourcesAndRegisterProducedPartitions(deploymentHandles)  //多易教育: 返回的是资源分配结果Future
                         .handle(deployAll(deploymentHandles)));  // 多易教育:  deployAll=>开始调度
     }
 
@@ -501,11 +501,13 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
         return (ignored, throwable) -> {
             propagateIfNonNull(throwable);
             for (final DeploymentHandle deploymentHandle : deploymentHandles) {
+                //多易教育: 获取分配的logicalSlot
                 final SlotExecutionVertexAssignment slotExecutionVertexAssignment =
                         deploymentHandle.getSlotExecutionVertexAssignment();
                 final CompletableFuture<LogicalSlot> slotAssigned =
                         slotExecutionVertexAssignment.getLogicalSlotFuture();
                 checkState(slotAssigned.isDone());
+
                 // 多易教育:  这里调用的deployOrHandleError(deploymentHandle)，就会发起submitTask的流程
                 FutureUtils.assertNoException(
                         slotAssigned.handle(deployOrHandleError(deploymentHandle))); // 多易教育:  部署或错误处理
