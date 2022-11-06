@@ -92,6 +92,7 @@ class HeapSnapshotStrategy<K>
                 totalKeyGroups);
     }
 
+    //多易教育: 调用者为 ： SnapshotStrategyRunner#snapshot
     @Override
     public SnapshotResultSupplier<KeyedStateHandle> asyncSnapshot(
             HeapSnapshotResources<K> syncPartResource,

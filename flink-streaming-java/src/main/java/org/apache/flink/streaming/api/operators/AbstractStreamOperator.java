@@ -358,6 +358,7 @@ public abstract class AbstractStreamOperator<OUT>
     // operator算子的snapshotState入口方法
     // 该方法是final方法，不可被子类重写
     // 说明该方法的逻辑（状态快照）在任何具体子类中都无差别，是通用的固定的逻辑
+    //
     // -----------------------------------
     @Override
     public final OperatorSnapshotFutures snapshotState(

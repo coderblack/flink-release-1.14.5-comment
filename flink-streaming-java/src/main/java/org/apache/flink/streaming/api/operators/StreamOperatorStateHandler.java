@@ -147,6 +147,7 @@ public class StreamOperatorStateHandler {
     }
 
     //多易教育: 状态快照的执行逻辑，返回的是 Future（用于异步执行）
+    // 调用者为： AbstractStreamOperator#snapshotState
     public OperatorSnapshotFutures snapshotState(
             CheckpointedStreamOperator streamOperator,
             Optional<InternalTimeServiceManager<?>> timeServiceManager,

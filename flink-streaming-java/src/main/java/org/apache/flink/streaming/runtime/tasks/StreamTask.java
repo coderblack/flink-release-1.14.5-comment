@@ -1134,7 +1134,11 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     // ------------------------------------------------------------------------
 
     //多易教育: 异步触发checkpoint，通过向mailbox注入mail来实现
-    // 本ck方法通常由source类算子来重写，为jobmanager的checkpointCoordinator来触发ck 和 barrier注入
+    // 本cp方法在source类Task（如：SourceStreamTask，SourceOperatorStreamTask）中会被重写，以加入一点分支判断逻辑，
+    // 再用super来调回这里
+    // 本方法（triggerCheckpointAsync）通常是 source task的cp入口方法，
+    // 它与 （triggerCheckpointOnBarrier）不同，这是被barrier所触发时的方法
+    // 调用者为： Task#triggerCheckpointBarrier
     @Override
     public CompletableFuture<Boolean> triggerCheckpointAsync(
             CheckpointMetaData checkpointMetaData, CheckpointOptions checkpointOptions) {
@@ -1175,6 +1179,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     }
 
     //多易教育: 由mailbox触发后的具体的checkpoint执行逻辑
+    // mailbox中的mail是上面的方法所注入的： triggerCheckpointAsync()
     private boolean triggerCheckpointAsyncInMailbox(
             CheckpointMetaData checkpointMetaData, CheckpointOptions checkpointOptions)
             throws Exception {
@@ -1189,14 +1194,16 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
             // No alignment if we inject a checkpoint
             CheckpointMetricsBuilder checkpointMetrics =
                     new CheckpointMetricsBuilder()
-                            .setAlignmentDurationNanos(0L)
+                            .setAlignmentDurationNanos(0L)  //多易教育: 注入barrier不需要对齐
                             .setBytesProcessedDuringAlignment(0L)
                             .setCheckpointStartDelayNanos(latestAsyncCheckpointStartDelayNanos);
 
             subtaskCheckpointCoordinator.initInputsCheckpoint(
                     checkpointMetaData.getCheckpointId(), checkpointOptions);
 
-            //多易教育: 执行checkpoint
+            //多易教育: 执行自checkpoint
+            // 底层是调用 subtaskCheckpointCoordinator 来真正执行
+            //  流程步骤很多：做些准备工作，往下游发送barrier ……
             boolean success =
                     performCheckpoint(checkpointMetaData, checkpointOptions, checkpointMetrics);
             if (!success) {
@@ -1296,7 +1303,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     //  5. processInput() 中会调用  inputProcessor.processInput(); <如 StreamOneInputProcessor>
     //  6. input.emitNext(output); <AbstractStreamTaskNetworkInput.emitNext(output)> 中 调用了 CheckpointedInputGate.pollNext()
     //  7. CheckpointedInputGate.pollNext()中，如果拉取到的是一个barrier，则又调用了 CheckpointBarrierHandler.processBarrier()
-    //            CheckpointBarrierHandler有两个重要实现： SingleCheckpointBarrierHandler和CheckpointBarrierTacker
+    //            CheckpointBarrierHandler有两个重要实现： SingleCheckpointBarrierHandler（非对齐）和CheckpointBarrierTacker(精确一次，对齐）
     //  8. SingleCheckpointBarrierHandler.processBarrier()中又调用了  AbstractAlignedBarrierHandlerState.barrierReceived()
     //            待到barrier收齐后，又调用了它自己的 triggerGlobalCheckpoint()
     //  9. triggerGlobalCheckpoint()中，又调回了 SingleCheckpointBarrierHandler类的triggerGlobalCheckpoint()
@@ -1314,12 +1321,9 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
         FlinkSecurityManager.monitorUserSystemExitForCurrentThread();
 
-        // TODO BY dps@51doit.cn : 测试线程模型（从测试结果上看，此处的执行线程就是对应subTask的执行线程）
-        System.out.println("StreamTask 的 triggerCheckpointOnBarrier方法中：" + Thread.currentThread().getName());
-
-
         try {
-            //多易教育: 执行checkpoint
+            //多易教育: 执行checkpoint（这里跟初始注入barrier的source task cp时调用的方法一致了）
+            // CheckpointMetaData，是在前置流程中(CheckpointBarrierHandler#notifyCheckpoint)根据checkpointId等构造好的
             if (performCheckpoint(checkpointMetaData, checkpointOptions, checkpointMetrics)) {
                 if (isCurrentSavepointWithoutDrain(checkpointMetaData.getCheckpointId())) {
                     //多易教育: 此处有操作mailbox
@@ -1355,7 +1359,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         }
         subtaskCheckpointCoordinator.abortCheckpointOnBarrier(checkpointId, cause, operatorChain);
     }
-
+    //多易教育: 开始执行cp （不管是上游source task，还是下游task，本方法是共同的cp执行逻辑）
     private boolean performCheckpoint(
             CheckpointMetaData checkpointMetaData,
             CheckpointOptions checkpointOptions,

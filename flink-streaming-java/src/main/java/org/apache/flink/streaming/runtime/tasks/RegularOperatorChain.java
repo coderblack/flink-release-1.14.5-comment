@@ -172,6 +172,7 @@ public class RegularOperatorChain<OUT, OP extends StreamOperator<OUT>>
         ExceptionUtils.tryRethrowException(previousException);
     }
 
+    //多易教育: 调用者  SubtaskCheckpointCoordinatorImpl#takeSnapshotSync
     @Override
     public void snapshotState(
             Map<OperatorID, OperatorSnapshotFutures> operatorSnapshotsInProgress,
@@ -198,6 +199,7 @@ public class RegularOperatorChain<OUT, OP extends StreamOperator<OUT>>
         }
     }
 
+    //多易教育: 内部方法，调用者：本类#snapshotState
     private OperatorSnapshotFutures buildOperatorSnapshotFutures(
             CheckpointMetaData checkpointMetaData,
             CheckpointOptions checkpointOptions,
@@ -229,6 +231,7 @@ public class RegularOperatorChain<OUT, OP extends StreamOperator<OUT>>
         return snapshotInProgress;
     }
 
+    //多易教育: 调用者在上面
     private static OperatorSnapshotFutures checkpointStreamOperator(
             StreamOperator<?> op,
             CheckpointMetaData checkpointMetaData,
@@ -239,7 +242,7 @@ public class RegularOperatorChain<OUT, OP extends StreamOperator<OUT>>
         try {
             //多易教育: 调用算子operator的snapshotState,
             // 算子内会用 StreamOperatorStateHandler.snapshotState(context)，
-            // 其中，有一步骤会顺便执行用户函数中的snapshotState方法
+            // 而handler中，会有snapshot的完整步骤，包含执行用户函数中的snapshotState方法的步骤
             return op.snapshotState(
                     checkpointMetaData.getCheckpointId(),
                     checkpointMetaData.getTimestamp(),

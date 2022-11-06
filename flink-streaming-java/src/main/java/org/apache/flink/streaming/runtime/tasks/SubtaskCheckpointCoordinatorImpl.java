@@ -239,6 +239,7 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
         return channelStateWriter;
     }
 
+    //多易教育: 调用者 StreamTask#performCheckpoint
     @Override
     public void checkpointState(
             CheckpointMetaData metadata,
@@ -248,9 +249,6 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
             boolean isTaskFinished,
             Supplier<Boolean> isRunning)
             throws Exception {
-
-        // TODO BY dps@51doit.cn : 测试线程模型  （从测试结果上看，此处的执行线程就是对应subTask的执行线程）
-        System.out.println("在 SubtaskCheckpointCoordinatorImpl#checkpointState方法中： " + Thread.currentThread().getName());
 
         checkNotNull(options);
         checkNotNull(metrics);

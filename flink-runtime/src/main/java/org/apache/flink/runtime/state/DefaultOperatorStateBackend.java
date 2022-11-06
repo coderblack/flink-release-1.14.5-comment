@@ -219,6 +219,7 @@ public class DefaultOperatorStateBackend implements OperatorStateBackend {
     // -------------------------------------------------------------------------------------------
     //  Snapshot
     // -------------------------------------------------------------------------------------------
+    //多易教育: 调用者为 StreamOperatorStateHandler#snapshotState
     @Nonnull
     @Override
     public RunnableFuture<SnapshotResult<OperatorStateHandle>> snapshot(

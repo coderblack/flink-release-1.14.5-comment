@@ -702,7 +702,7 @@ public class Task
 
             TaskKvStateRegistry kvStateRegistry =
                     kvStateService.createKvStateTaskRegistry(jobId, getJobVertexId());
-
+            //多易教育: 每个task在开始运行时，都会创建一个自己的runtimeEnv对象
             Environment env =
                     new RuntimeEnvironment(
                             jobId,
@@ -769,7 +769,7 @@ public class Task
 
             // make sure the user code classloader is accessible thread-locally
             executingThread.setContextClassLoader(userCodeClassLoader.asClassLoader());
-
+            //多易教育: 执行task所包含的算子逻辑
             restoreAndInvoke(invokable);
 
             // make sure, we enter the catch block if the task leaves the invoke() method due
@@ -1318,6 +1318,7 @@ public class Task
      * @param checkpointTimestamp The timestamp associated with the checkpoint.
      * @param checkpointOptions Options for performing this checkpoint.
      */
+    //多易教育: 调用者为 TaskExecutor#triggerCheckpointBarrier
     public void triggerCheckpointBarrier(
             final long checkpointID,
             final long checkpointTimestamp,

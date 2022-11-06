@@ -278,14 +278,14 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
         }
     }
 
-    //多易教育: 用于触发ck的回调方法,在内部内ControllerImpl中调用
+    //多易教育: 用于触发cp的回调方法,在内部内ControllerImpl中调用
     private void triggerCheckpoint(CheckpointBarrier trigger) throws IOException {
         LOG.debug(
                 "{}: Triggering checkpoint {} on the barrier announcement at {}.",
                 taskName,
                 trigger.getId(),
                 trigger.getTimestamp());
-        //多易教育: 通知ck，传入barrier
+        //多易教育: 通知cp，传入barrier
         notifyCheckpoint(trigger);
     }
 

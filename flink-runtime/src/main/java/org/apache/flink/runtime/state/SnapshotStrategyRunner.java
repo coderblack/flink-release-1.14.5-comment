@@ -66,6 +66,7 @@ public final class SnapshotStrategyRunner<T extends StateObject, SR extends Snap
         this.executionType = executionType;
     }
 
+    //多易教育: 状态快照，调用者为 DefaultOperatorStateBackend#snapshot
     @Nonnull
     public final RunnableFuture<SnapshotResult<T>> snapshot(
             long checkpointId,
@@ -85,7 +86,7 @@ public final class SnapshotStrategyRunner<T extends StateObject, SR extends Snap
                         streamFactory,
                         checkpointOptions);
 
-        //多易教育: 生成异步快照的task逻辑
+        //多易教育: 封装异步快照的执行逻辑
         FutureTask<SnapshotResult<T>> asyncSnapshotTask =
                 new AsyncSnapshotCallable<SnapshotResult<T>>() {
                     @Override
