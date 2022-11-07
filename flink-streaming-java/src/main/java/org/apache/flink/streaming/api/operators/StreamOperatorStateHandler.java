@@ -146,8 +146,8 @@ public class StreamOperatorStateHandler {
         }
     }
 
-    //多易教育: 状态快照的执行逻辑，返回的是 Future（用于异步执行）
-    // 调用者为： AbstractStreamOperator#snapshotState
+    //多易教育: 状态快照的执行逻辑，返回的是  OperatorSnapshotFutures（用于checkpoint异步执行环节）
+    // 调用者为： AbstractStreamOperator#snapshotState()
     public OperatorSnapshotFutures snapshotState(
             CheckpointedStreamOperator streamOperator,
             Optional<InternalTimeServiceManager<?>> timeServiceManager,
@@ -235,14 +235,18 @@ public class StreamOperatorStateHandler {
             // 这里开始真正的snapshot了
             // --------------------------------------------
             // 1. 如果存在算子状态的使用， operatorStateBackend不为空
+            // 则封装算子状态snapshot的具体逻辑为异步RunnableFuture并丢入 snapshotInProgress
             if (null != operatorStateBackend) {
                 snapshotInProgress.setOperatorStateManagedFuture(
-                        //多易教育: 这里是一个RunnableFuture，封装的执行逻辑是：调用 operatorStateBackend 的snapshot
+                        //多易教育: 这里是返回了 RunnableFuture，并放入 snapshotInProgress : OperatorSnapshotFutures
+                        // 调用 operatorStateBackend 的snapshot 来得到
+                        // 方法的内部逻辑中，就是封装具体snapshot的执行逻辑为RunnableFuture返回（如果checkpoint是同步策略，则直接把逻辑执行了）
                         operatorStateBackend.snapshot(
                                 checkpointId, timestamp, factory, checkpointOptions));
             }
 
             //多易教育: 2. 如果存在键控状态的使用，keyedStateBackend不为空
+            // 则封装监控状态snapshot的具体逻辑为异步RunnableFuture并丢入 snapshotInprogress
             if (null != keyedStateBackend) {
                 //多易教育: a. 如果ck类型是 savepoint
                 if (checkpointOptions.getCheckpointType().isSavepoint()) {

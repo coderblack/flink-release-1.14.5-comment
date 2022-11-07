@@ -203,9 +203,19 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
      * StreamTaskActionExecutor.SynchronizedStreamTaskActionExecutor
      * SynchronizedStreamTaskActionExecutor} to provide lock to {@link SourceStreamTask}.
      */
-    //多易教育: checkpoint的触发任务就是在此executor中执行,具体来说是在performCheckpoint()方法中
+    //多易教育: ------------------------------------------------------------
+    // 所有在mailbox之外运行的动作（比如由另一个线程执行的），都必须通过这个actionExecutor来执行，
+    // 以确保我们不会发生破坏checkpoint一致性的并行方法调用
+    // 在StreamTask的构造中，会创建actionExecutor，而这个玩意根本不是啥线程池，就是runnable.run()的调用封装
+    // ----------------------------------------------------------------
+    // checkpoint的触发任务就是在此 actionExecutor 中执行,具体来说是在 performCheckpoint() 方法中
     // 这里的 StreamTask.executor  和 MailboxProcessor.executor 是同一个，
     //   在processor构造中： this.mailboxProcessor = new MailboxProcessor(this::processInput, mailbox, actionExecutor);
+    // 因而，在StreamTask（应该叫Invokable更合适）中，并不会另行创建出额外的线程来执行动作
+    // （ 全都是在 Task线程 中执行；
+    //    当然，有一个例外，就是 timeService ,而这个timeService是由一个专门的线程来运行 详见 StreamTask#createTimerService()
+    //   ），
+    // 而Task线程对象，倒确实还持有着TaskExecutor的rpcService中的InternalScheduledExecutor的引用（用于执行各种异步回调）
     private final StreamTaskActionExecutor actionExecutor;
 
     /** The input processor. Initialized in {@link #init()} method. */
@@ -317,6 +327,13 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
      *
      * @param env The task environment for this task.
      */
+    //多易教育: 这里是Task中反射构造Invokable的入口
+    // Task#loadAndInstantiateInvokable(),
+    //   statelessCtor = invokableClass.getConstructor(Environment.class);
+    //   return statelessCtor.newInstance(environment);
+    // 后续的构造方法链中，依次会创建：
+    //    actionExecutor、TaskMailboxImpl、
+    //    timeService，subTaskCheckpointCoordinator 等组件
     protected StreamTask(Environment env) throws Exception {
         this(env, null);
     }
@@ -396,10 +413,16 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         //   mailbox是在上面的辅助构造中创建的，因而，每个subTask有一个自己的mailbox
         //   而传入的actionExecutor则是mailbox的主执行器，
         //    它在最上面的辅助构造中创建，而且这个executor并不是一个线程池，只是一个直接调用runnable.run()的简单封装
-        //    因而，在mainMailboxExecutor中执行的逻辑，其实就是在执行task.invoke()的线程中执行
+        //    因而，在mainMailboxExecutor中执行的逻辑，其实就是在执行task.invoke()的主线程中执行
         this.mailboxProcessor = new MailboxProcessor(this::processInput, mailbox, actionExecutor);
+        //多易教育: 这是一个工具类，并不是一个独立的线程池
+        // 它主要提供向mailbox中投递或获取邮件的功能，而且投递的邮件中都会传入actionExecutor来作为执行器
         this.mainMailboxExecutor = mailboxProcessor.getMainMailboxExecutor();
         this.asyncExceptionHandler = new StreamTaskAsyncExceptionHandler(environment);
+
+        //多易教育: 异步操作线程池，一个独立的线程池
+        // 它的典型应用就是在SubTaskCheckpointCoordinatorImpl的checkpointState()所调用的 finishAndReportAsync()中，用于执行checkpoint的异步步骤
+        //  asyncOperationsThreadPool.execute(asyncCheckpointRunnable);
         this.asyncOperationsThreadPool =
                 Executors.newCachedThreadPool(
                         new ExecutorThreadFactory("AsyncOperations", uncaughtExceptionHandler));
@@ -429,12 +452,15 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
         // if the clock is not already set, then assign a default TimeServiceProvider
         if (timerService == null) {
+            //多易教育: 这里创建的是一个ProcessingTimeService，它会在独立线程中运行，属于 TRIGGER_THREAD_GROUP 线程组
             this.timerService = createTimerService("Time Trigger for " + getName());
         } else {
             this.timerService = timerService;
         }
-
+        //多易教育: 这里创建的是一个ProcessingTimeService，它会在独立线程中运行，属于 TRIGGER_THREAD_GROUP 线程组
         this.systemTimerService = createTimerService("System Time Trigger for " + getName());
+
+        //多易教育: 这里会创建一个单线程调度器，来作为IO动作执行器
         this.channelIOExecutor =
                 Executors.newSingleThreadExecutor(
                         new ExecutorThreadFactory("channel-state-unspilling"));
@@ -706,6 +732,8 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                 .ifPresent(restoreId -> latestReportCheckpointId = restoreId);
 
         // task specific initialization
+        //多易教育: StreamTask的init()啥也没做
+        // 但是其子类（如OneInputStreamTask、TwoInputStreamTask中会重写，会在其中构建StreamOneInputProcessor等）
         init();
 
         // save the work of reloading state, etc, if the task is already canceled
@@ -1397,7 +1425,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                                     checkpointMetaData.getCheckpointId(),
                                     checkpointType.shouldDrain());
                         }
-
+                        //多易教育: 如果开启了部分task完成时触发checkpoint的参数： execution.checkpointing.checkpoints-after-tasks-finish.enabled = true
                         if (areCheckpointsWithFinishedTasksEnabled()
                                 && endOfDataReceived
                                 && this.finalCheckpointMinId == null) {

@@ -102,11 +102,12 @@ final class AsyncCheckpointRunnable implements Runnable, Closeable {
         this.isTaskRunning = isTaskRunning;
     }
 
+    //多易教育: ----------------------------
+    // checkpoint异步流程的线程方法
+    // checkpoint异步流程的真正执行逻辑所在
+    // ----------------------------
     @Override
     public void run() {
-        // TODO BY dps@51doit.cn : 测试线程模型,（从测试结果上看，此处的执行线程就是对应subTask的执行线程）
-        System.out.println("在 AsyncCheckpointRunnable#run 方法中： " + Thread.currentThread().getName());
-
         final long asyncStartNanos = System.nanoTime();
         final long asyncStartDelayMillis = (asyncStartNanos - asyncConstructionNanos) / 1_000_000L;
         LOG.debug(
@@ -176,11 +177,14 @@ final class AsyncCheckpointRunnable implements Runnable, Closeable {
         for (Map.Entry<OperatorID, OperatorSnapshotFutures> entry :
                 operatorSnapshotsInProgress.entrySet()) {
 
-            OperatorID operatorID = entry.getKey();
-            OperatorSnapshotFutures snapshotInProgress = entry.getValue();
+            OperatorID operatorID = entry.getKey();  //多易教育: 算子id
+            OperatorSnapshotFutures snapshotInProgress = entry.getValue();  //多易教育: 算子snapshotFuture容器
 
             // finalize the async part of all by executing all snapshot runnables
-            //多易教育: 执行状态快照（snapshot）
+            //多易教育: --------------------------------
+            // 完成 snapshotInProgress 中的各种 runnable
+            // 彻底完成checkpoint的 异步步骤流程
+            // ---------------------------------------
             OperatorSnapshotFinalizer finalizedSnapshots =
                     new OperatorSnapshotFinalizer(snapshotInProgress);
 

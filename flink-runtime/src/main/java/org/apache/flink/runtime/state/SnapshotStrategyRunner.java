@@ -67,6 +67,9 @@ public final class SnapshotStrategyRunner<T extends StateObject, SR extends Snap
     }
 
     //多易教育: 状态快照，调用者为 DefaultOperatorStateBackend#snapshot
+    //多易教育: 这个方法的执行，是处于checkpoint的同步流程环节中，
+    // 主要就是为了封装snapshot状态的执行逻辑为RunnableFuture异步逻辑并返回，将来由checkpoint的异步执行流程来执行
+    // 当然，如果checkpoint是同步策略，则在这个环节中就直接把snapshot的执行逻辑在这里同步执行了
     @Nonnull
     public final RunnableFuture<SnapshotResult<T>> snapshot(
             long checkpointId,
@@ -78,6 +81,12 @@ public final class SnapshotStrategyRunner<T extends StateObject, SR extends Snap
         SR snapshotResources = snapshotStrategy.syncPrepareResources(checkpointId);
         logCompletedInternal(LOG_SYNC_COMPLETED_TEMPLATE, streamFactory, startTime);
         //多易教育: 构造SnapshotResultSupplier，supplier有一个核心get方法在 赋值逻辑<snapshotStrategy.asyncSnapshot()>中匿名实现
+        //  这里不同的strategy子类有不同的实现，也符合不同stateBackend子类的snapshot有不同工作逻辑的设计 ，实现类如下：
+        //   HeapSnapshotStrategy
+        //   DefaultOperatorStateBackendSnapshotStrategy
+        //   RocksFullSnapshotStrategy
+        //   RocksIncrementSnapshotStrategy
+        //   SavepointSnapshotStrategy
         SnapshotStrategy.SnapshotResultSupplier<T> asyncSnapshot =
                 snapshotStrategy.asyncSnapshot(
                         snapshotResources,
@@ -86,7 +95,7 @@ public final class SnapshotStrategyRunner<T extends StateObject, SR extends Snap
                         streamFactory,
                         checkpointOptions);
 
-        //多易教育: 封装异步快照的执行逻辑
+        //多易教育: 封装异步快照的执行逻辑callable，而callable中callInternal核心逻辑，就是调用上面的supplier.get()方法
         FutureTask<SnapshotResult<T>> asyncSnapshotTask =
                 new AsyncSnapshotCallable<SnapshotResult<T>>() {
                     @Override
@@ -111,14 +120,14 @@ public final class SnapshotStrategyRunner<T extends StateObject, SR extends Snap
                                 LOG_ASYNC_COMPLETED_TEMPLATE, streamFactory, startTime);
                     }
                 }.toAsyncSnapshotFutureTask(cancelStreamRegistry);
-        //多易教育: 如果是同步ck策略，则马上执行
+        //多易教育: 如果是同步checkpoint策略，则马上执行
         if (executionType == SnapshotExecutionType.SYNCHRONOUS) {
             //多易教育: 执行异步快照的task逻辑
             // 这里是调用的FutureTask.run()，因而是在一个单独的线程中异步执行的
             // 如果触发ck的源头是每个operatorChain中各自触发，那么意味着每个chain其实都是各自开启线程来进行snapshot的
             asyncSnapshotTask.run();
         }
-        //多易教育: 如果不是同步策略，则返回给调用层取异步执行
+        //多易教育: 如果不是同步策略，则返回给调用层去进行后续的异步执行
         return asyncSnapshotTask;
     }
 

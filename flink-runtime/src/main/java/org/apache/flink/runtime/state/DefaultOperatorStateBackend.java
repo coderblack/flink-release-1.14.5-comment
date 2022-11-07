@@ -228,6 +228,7 @@ public class DefaultOperatorStateBackend implements OperatorStateBackend {
             @Nonnull CheckpointStreamFactory streamFactory,
             @Nonnull CheckpointOptions checkpointOptions)
             throws Exception {
+        //多易教育: 又调用了 snapshotStrategyRunner 来执行
         return snapshotStrategyRunner.snapshot(
                 checkpointId, timestamp, streamFactory, checkpointOptions);
     }

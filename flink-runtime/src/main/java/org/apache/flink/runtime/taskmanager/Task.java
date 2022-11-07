@@ -127,8 +127,8 @@ import static org.apache.flink.util.Preconditions.checkState;
  * to consume input data, produce its results (intermediate result partitions) and communicate with
  * the JobManager.
  *
- * task代表task manager上运行的一个并行subtask；task包装了一个flink的算子（可能是一个用户函数）并运行它，它提供
- * 的服务如：消费输入数据、生产它的处理结果（中间结果分区）、与jobmanager通信
+ * 多易教育：task代表task manager上运行的一个并行subtask；task包装了一个flink的算子（可能是一个用户函数）并运行它，
+ *  它提供的服务如：消费输入数据、生产它的处理结果（中间结果分区）、与jobmanager通信
  *
  * <p>The Flink operators (implemented as subclasses of {@link TaskInvokable} have only data
  * readers, writers, and certain event callbacks. The task connects those to the network stack and
@@ -139,11 +139,11 @@ import static org.apache.flink.util.Preconditions.checkState;
  * All the task knows are its own runnable code, the task's configuration, and the IDs of the
  * intermediate results to consume and produce (if any).
  *
- * task之间彼此互不感知,也不知道自己是第一次还是第N次执行；这些信息只有JobManager知晓；
- * 每个task只知道自己的runnable代码、task配置以及要消费或生产的intermediate results的ID
+ * 多易教育： task之间彼此互不感知,也不知道自己是第一次还是第N次执行；这些信息只有JobManager知晓；
+ *  每个task只知道自己的runnable代码、task配置以及要消费或生产的intermediate results的ID
  *
  * <p>Each Task is run by one dedicated thread.
- * 每个task都由一个专有线程来运行
+ * 多易教育： 每个task都由一个专有线程来运行
  */
 public class Task
         implements Runnable, TaskSlotPayload, TaskActions, PartitionProducerStateProvider {
@@ -264,8 +264,8 @@ public class Task
     private final PartitionProducerStateChecker partitionProducerStateChecker;
 
     /** Executor to run future callbacks. */
-    //多易教育: 用于运行 future callbacks 的 executor；
-    // 它来自于所属TaskExecutor的rpcService的InternalScheduledExecutor，它并不是task的主执行线程
+    //多易教育: 用于运行 future callbacks 的 executor(用于执行异步回调的线程调度器）
+    // 它来自于所属TaskExecutor的 rpcService的 InternalScheduledExecutor，它并不是task的主执行线程
     private final Executor executor;
 
     /** Future that is completed once {@link #run()} exits. */
@@ -311,6 +311,7 @@ public class Task
      * <b>IMPORTANT:</b> This constructor may not start any work that would need to be undone in the
      * case of a failing task deployment.
      */
+    //多易教育: 构造Task实例的调用者： TaskExecutor#submitTask
     public Task(
             JobInformation jobInformation,
             TaskInformation taskInformation,
@@ -318,8 +319,8 @@ public class Task
             AllocationID slotAllocationId,
             int subtaskIndex,
             int attemptNumber,
-            List<ResultPartitionDeploymentDescriptor> resultPartitionDeploymentDescriptors,
-            List<InputGateDeploymentDescriptor> inputGateDeploymentDescriptors,
+            List<ResultPartitionDeploymentDescriptor> resultPartitionDeploymentDescriptors,   //多易教育: 输出结果分区部署描述
+            List<InputGateDeploymentDescriptor> inputGateDeploymentDescriptors, //多易教育: 输入gate部署描述
             MemoryManager memManager,
             IOManager ioManager,
             ShuffleEnvironment<?, ?> shuffleEnvironment,
@@ -712,7 +713,8 @@ public class Task
 
             TaskKvStateRegistry kvStateRegistry =
                     kvStateService.createKvStateTaskRegistry(jobId, getJobVertexId());
-            //多易教育: 每个task在开始运行时，都会创建一个自己的runtimeEnv对象
+            //多易教育: 创建一个runtimeEnvironment，并会传入Invokable对象
+            // 也就是每一个 Invokable都会有一个自己的runtimeEnvironment，里面有job配置，task配置，executionId，inputGates等信息
             Environment env =
                     new RuntimeEnvironment(
                             jobId,
@@ -753,7 +755,7 @@ public class Task
             FlinkSecurityManager.monitorUserSystemExitForCurrentThread();
             try {
                 // now load and instantiate the task's invokable code
-                invokable =  // 多易教育:  OneInputStreamTask ...
+                invokable =  // 多易教育:  反射实例化invokable对象（如：OneInputStreamTask），并传入刚创建好的runtimeEnvironment
                         loadAndInstantiateInvokable(
                                 userCodeClassLoader.asClassLoader(), nameOfInvokableClass, env);
             } finally {
@@ -779,7 +781,9 @@ public class Task
 
             // make sure the user code classloader is accessible thread-locally
             executingThread.setContextClassLoader(userCodeClassLoader.asClassLoader());
-            //多易教育: 执行task所包含的算子逻辑
+            //多易教育: ------------------
+            // 执行task所包含的算子逻辑
+            // --------------------------
             restoreAndInvoke(invokable);
 
             // make sure, we enter the catch block if the task leaves the invoke() method due
@@ -940,7 +944,8 @@ public class Task
     }
 
     private void restoreAndInvoke(TaskInvokable finalInvokable) throws Exception {
-        try { // 多易教育:  执行task恢复
+        try {
+            // 多易教育:  执行task恢复
             runWithSystemExitMonitoring(finalInvokable::restore);
 
             if (!transitionState(ExecutionState.INITIALIZING, ExecutionState.RUNNING)) {
@@ -948,9 +953,10 @@ public class Task
             }
 
             // notify everyone that we switched to running
+            //多易教育: 向TaskExecutor通知taskExecution状态更新为RUNNING
             taskManagerActions.updateTaskExecutionState(
                     new TaskExecutionState(executionId, ExecutionState.RUNNING));
-            // 多易教育:  执行task代码
+            // 多易教育:  执行task中的Invokable代码（就是各种StreamTask，它们并不是本Task类的子类，命名太操蛋！）
             runWithSystemExitMonitoring(finalInvokable::invoke);
         } catch (Throwable throwable) {
             try {
@@ -1329,6 +1335,7 @@ public class Task
      * @param checkpointOptions Options for performing this checkpoint.
      */
     //多易教育: 调用者为 TaskExecutor#triggerCheckpointBarrier
+    // 过来的信息只有checkpointID，checkpointTimestamp和checkpoint选项
     public void triggerCheckpointBarrier(
             final long checkpointID,
             final long checkpointTimestamp,

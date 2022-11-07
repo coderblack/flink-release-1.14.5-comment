@@ -238,7 +238,10 @@ public class NettyShuffleEnvironment
         }
     }
 
-    // 多易教育:  Task构造方法中会调用本方法来创建inputGates
+    // 多易教育:  TaskExecutor在构造一个Task实例时，会传入NettyShuffleEnvironment
+    //  而在 Task的构造方法中，会调用shuffleEnv的本方法来创建 inputGates ，
+    //  而每创建好一个inputGate，就会注册到env自己的成员map集合中：inputGatesById.put(inputGateId,inputGate)，
+    //  并为inputGate创建一个closeFuture的回调逻辑 :=> 从map集合中移除
     @Override
     public List<SingleInputGate> createInputGates(
             ShuffleIOOwnerContext ownerContext,

@@ -722,8 +722,8 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                             tdd.getAllocationId(),
                             tdd.getSubtaskIndex(),
                             tdd.getAttemptNumber(),
-                            tdd.getProducedPartitions(),
-                            tdd.getInputGates(),
+                            tdd.getProducedPartitions(),  //多易教育: 输出partition部署描述descriptors
+                            tdd.getInputGates(),  //多易教育: 输入gate部署描述descriptors
                             memoryManager,
                             taskExecutorServices.getIOManager(), //多易教育: 一个TaskExecutor上的subTask都共用TaskExecutor的IOManager
                             taskExecutorServices.getShuffleEnvironment(),//多易教育: 一个TaskExecutor上的subTask都共用TaskExecutor的ShuffleEnv

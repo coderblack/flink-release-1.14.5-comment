@@ -49,9 +49,9 @@ public class OperatorSnapshotFinalizer {
 
     public OperatorSnapshotFinalizer(@Nonnull OperatorSnapshotFutures snapshotFutures)
             throws ExecutionException, InterruptedException {
-        //多易教育: 这里run的是OperatorSnapshotFutures 中的各种 RunnableFuture（如，keyedStateManagedFuture,keyedStateRawFuture等，就是对算子所使用的的各种状态进行快照处理）
-        // 而这些 RunnableFuture，是 对 StreamOperator中 snapshotState()逻辑的封装（以异步执行这些逻辑）
-        // 在AbstractStreamOperator中由snapshot()的实现   //  在AbstractUdfStreamOperator类中，也有 snapshotState()的实现，逻辑还不一样，有点诡异
+        //多易教育: 这里run的是 OperatorSnapshotFutures 中的各种 RunnableFuture（如，keyedStateManagedFuture,keyedStateRawFuture等，就是对算子所使用的的各种状态进行快照处理）
+        // 而这些 RunnableFuture，是 对 SnapshotStrategy对应各种backend实现中的asyncSnapshot()逻辑的封装（尤其是方法最后所返回的supplier.get）（以异步执行这些逻辑）
+        // 在AbstractStreamOperator中由snapshot()的实现   //在AbstractUdfStreamOperator类中，也有 snapshotState()的实现，逻辑还不一样，有点诡异
         //   => 它里面调用了 stateHandler.snapshotState() , handler是 StreamOperatorStateHandler类
         //   => 进而调用 streamOperator.snapshotState(snapshotContext);
         //   => 只传入了context参数，那么实际上调用的是 AbstractUdfStreamOperator类的 snapshotState(snapshotContext)

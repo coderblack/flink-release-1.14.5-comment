@@ -239,7 +239,10 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
         return channelStateWriter;
     }
 
-    //多易教育: 调用者 StreamTask#performCheckpoint
+    //多易教育: ---------------------------
+    // checkpoint的真正核心逻辑
+    // 调用者 StreamTask#performCheckpoint
+    // ---------------------------------
     @Override
     public void checkpointState(
             CheckpointMetaData metadata,
@@ -552,6 +555,7 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
                         });
     }
 
+    //多易教育: subtask中的checkpoint的“异步部分”
     private void finishAndReportAsync(
             Map<OperatorID, OperatorSnapshotFutures> snapshotFutures,
             CheckpointMetaData metadata,
@@ -562,8 +566,10 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
             throws IOException {
         AsyncCheckpointRunnable asyncCheckpointRunnable =
                 new AsyncCheckpointRunnable(
+                        //多易教育: operatorSnapshotsInProgress: Map<OperatorID, OperatorSnapshotFutures>
+                        // 数量与chain中的算子个数相同
                         snapshotFutures,
-                        metadata,
+                        metadata,  //多易教育: checkpointMetadata
                         metrics,
                         System.nanoTime(),
                         taskName,
@@ -573,12 +579,18 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
                         isTaskDeployedAsFinished,
                         isTaskFinished,
                         isRunning);
-
+        //多易教育: 将创建好的checkpoint异步流程runnable对象，注册到subTaskCheckpointCoordinatorImpl的 checkpoints 中
+        // 这个集合结构为： Map<Long, AsyncCheckpointRunnable> checkpoints
         registerAsyncCheckpointRunnable(
                 asyncCheckpointRunnable.getCheckpointId(), asyncCheckpointRunnable);
 
         // we are transferring ownership over snapshotInProgressList for cleanup to the thread,
         // active on submit
+        //多易教育: 这个 asyncOperationsThreadPool ，来自于 StreamTask 的构造函数，它构造了一个cachedScheduledPool
+        // this.asyncOperationsThreadPool =
+        //                Executors.newCachedThreadPool(
+        //                        new ExecutorThreadFactory("AsyncOperations", uncaughtExceptionHandler));
+        // 也就是说每个StreamTask都有一个自己的 异步操作线程池
         asyncOperationsThreadPool.execute(asyncCheckpointRunnable);
     }
 
@@ -608,13 +620,13 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
                 checkpointOptions.isUnalignedCheckpoint()
                         ? channelStateWriter.getAndRemoveWriteResult(checkpointId)
                         : ChannelStateWriteResult.EMPTY;
-        //多易教育: 获得ck存储位置
+        //多易教育: 解析cp存储位置
         CheckpointStreamFactory storage =
                 checkpointStorage.resolveCheckpointStorageLocation(
                         checkpointId, checkpointOptions.getTargetLocation());
 
         try {
-            //多易教育: 对算子链，执行snapshot, 实现： RegularOperatorChain.snapshotState()
+            //多易教育: 对算子链中的每一个算子，执行snapshot, 实现： RegularOperatorChain.snapshotState()
             // 其中会顺便调用到用户函数中实现的snapshot方法
             // （但它只是给用户去对state数据做一些安排，并不是让用户去实现整个state数据的持久化）
             operatorChain.snapshotState(
@@ -628,6 +640,9 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
         } finally {
             checkpointStorage.clearCacheFor(checkpointId);
         }
+        //多易教育: -----------
+        // 到这里，checkpoint的同步部分已经完成
+        // 后面是输出日志，以及一些度量metric更新------------------
 
         LOG.debug(
                 "{} - finished synchronous part of checkpoint {}. Alignment duration: {} ms, snapshot duration {} ms, is unaligned checkpoint : {}",

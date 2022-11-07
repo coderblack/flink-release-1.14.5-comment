@@ -387,6 +387,9 @@ public class FsCheckpointStreamFactory implements CheckpointStreamFactory {
             }
         }
 
+        //多易教育: checkpoint的输出文件全路径
+        // basePath: ck-id
+        // fileName: UUID.randomUUID().toString();
         private Path createStatePath() {
             final String fileName = UUID.randomUUID().toString();
             relativeStatePath = fileName;

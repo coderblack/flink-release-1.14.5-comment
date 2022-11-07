@@ -182,12 +182,12 @@ public class RegularOperatorChain<OUT, OP extends StreamOperator<OUT>>
             ChannelStateWriter.ChannelStateWriteResult channelStateWriteResult,
             CheckpointStreamFactory storage)
             throws Exception {
-        //多易教育: 遍历算子链中的每一个算子，逐个执行状态snapshot
+        //多易教育: 遍历算子链中的每一个算子，逐个构建 OperatorSnapshotFutures
         for (StreamOperatorWrapper<?, ?> operatorWrapper : getAllOperators(true)) {
             if (!operatorWrapper.isClosed()) {
                 operatorSnapshotsInProgress.put(
                         operatorWrapper.getStreamOperator().getOperatorID(),
-                        //多易教育: 调用checkpoint的中间环节
+                        //多易教育: 构建OperatorSnapshotFutures
                         buildOperatorSnapshotFutures(
                                 checkpointMetaData,
                                 checkpointOptions,
@@ -208,11 +208,11 @@ public class RegularOperatorChain<OUT, OP extends StreamOperator<OUT>>
             ChannelStateWriter.ChannelStateWriteResult channelStateWriteResult,
             CheckpointStreamFactory storage)
             throws Exception {
-        //多易教育: 触发operator执行cp，获得进度信息future
+        //多易教育: 构造 OperatorSnapshotFutures 对象
         OperatorSnapshotFutures snapshotInProgress =
                 checkpointStreamOperator(
                         op, checkpointMetaData, checkpointOptions, storage, isRunning);
-        //多易教育: 如果是头部算子，还需要对inputChannel的缓存数据进行处理
+        //多易教育: 如果是头部算子，还需要往futures中填充 InputChannelStateFuture
         if (op == getMainOperator()) {
             snapshotInProgress.setInputChannelStateFuture(
                     channelStateWriteResult
@@ -220,7 +220,7 @@ public class RegularOperatorChain<OUT, OP extends StreamOperator<OUT>>
                             .thenApply(StateObjectCollection::new)
                             .thenApply(SnapshotResult::of));
         }
-        //多易教育: 如果是尾部算子，还需要对输出数据进行处理
+        //多易教育: 如果是尾部算子，还需要往futures中填充 ResultSubpartitionStateFuture
         if (op == getTailOperator()) {
             snapshotInProgress.setResultSubpartitionStateFuture(
                     channelStateWriteResult
@@ -231,7 +231,7 @@ public class RegularOperatorChain<OUT, OP extends StreamOperator<OUT>>
         return snapshotInProgress;
     }
 
-    //多易教育: 调用者在上面
+    //多易教育: 调用者在上面 ，用于构建 checkpoint 异步流程步骤中所需要的 OperatorSnapshotFutures
     private static OperatorSnapshotFutures checkpointStreamOperator(
             StreamOperator<?> op,
             CheckpointMetaData checkpointMetaData,
@@ -240,9 +240,10 @@ public class RegularOperatorChain<OUT, OP extends StreamOperator<OUT>>
             Supplier<Boolean> isRunning)
             throws Exception {
         try {
-            //多易教育: 调用算子operator的snapshotState,
-            // 算子内会用 StreamOperatorStateHandler.snapshotState(context)，
-            // 而handler中，会有snapshot的完整步骤，包含执行用户函数中的snapshotState方法的步骤
+            //多易教育: 调用算子链中的 StreamOperator的 snapshotState,
+            // 进而会调用 StreamOperatorStateHandler.snapshotState(context)，
+            // 而 handler中，会有 snapshot 的完整步骤，包含执行用户函数中的snapshotState方法的步骤
+            //  因而用户函数中的snapshotState()方法，是在checkpoint的同步环节执行的
             return op.snapshotState(
                     checkpointMetaData.getCheckpointId(),
                     checkpointMetaData.getTimestamp(),

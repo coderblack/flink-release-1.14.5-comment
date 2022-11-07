@@ -115,7 +115,7 @@ public abstract class AbstractStreamTaskNetworkInput<
             //多易教育: 从输入口拉取一个 数据
             // checkpointedInputGate.pollNext()方法,会检测拉取到的是buffer还是event
             //  如果是buffer，直接返回
-            //  如果是event，则根据event的类型做相应处理后，返回拉取的数据
+            //  如果是event，则根据event的类型做相应处理后，返回拉取到的event
             //  吐槽：变量方法等命名实在是太烂了，烂的一比！！！
             Optional<BufferOrEvent> bufferOrEvent = checkpointedInputGate.pollNext(); // 多易教育:  CheckpointedInputGate
             if (bufferOrEvent.isPresent()) {
@@ -130,11 +130,13 @@ public abstract class AbstractStreamTaskNetworkInput<
 
                 //多易教育: 如果是数据buffer，则调用： processBuffer()
                 if (bufferOrEvent.get().isBuffer()) {
+                    //多易教育: 这里并没有实质处理动作，只是把channel中获取的buffer数据放入反序列化器，
+                    // 以在下一次循环时，上面的处理逻辑能有数据处理
                     processBuffer(bufferOrEvent.get());
                 }
                 //多易教育: 如果是事件buffer，则调用：processEvent()
                 // 此处的event处理只是对几个特定事件（输入结束等）进行状态获取了
-                // 真正的事件处理在上面的 pollNext()拉取数据时就已经处理完成了
+                // 上面的 pollNext()拉取数据时就已经对checkpointBarrier做了处理
                 //  吐槽：变量方法等命名实在是太烂了，烂的一比！！！
                 else {
                     return processEvent(bufferOrEvent.get());
@@ -173,7 +175,9 @@ public abstract class AbstractStreamTaskNetworkInput<
     protected DataInputStatus processEvent(BufferOrEvent bufferOrEvent) {
         // Event received
         //多易教育: AbstractEvent实现类由RuntimeEvent
-        // RuntimeEvent下由EndOfData、EndOfChannelStateEvent、CheckpointBarrier、EndOfPartitionEvent等
+        // RuntimeEvent下有
+        // EndOfData、EndOfChannelStateEvent、
+        // CheckpointBarrier、EndOfPartitionEvent等
         final AbstractEvent event = bufferOrEvent.getEvent();
         if (event.getClass() == EndOfData.class) {
             if (checkpointedInputGate.hasReceivedEndOfData()) {
