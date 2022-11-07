@@ -129,7 +129,7 @@ class HeapSnapshotStrategy<K>
                                                 localRecoveryConfig
                                                         .getLocalStateDirectoryProvider())
                                 : () ->
-                                        createSimpleStream( //多易教育: 非本地恢复，或者是savepoint，创建简单流
+                                        createSimpleStream( //多易教育: 非本地恢复，或者是savepoint，创 建简单流
                                                 CheckpointedStateScope.EXCLUSIVE, streamFactory);
 
         //多易教育: 匿名实现，实现了SnapshotResultSupplier的get()方法
