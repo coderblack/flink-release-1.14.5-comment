@@ -264,6 +264,8 @@ public class Task
     private final PartitionProducerStateChecker partitionProducerStateChecker;
 
     /** Executor to run future callbacks. */
+    //多易教育: 用于运行 future callbacks 的 executor；
+    // 它来自于所属TaskExecutor的rpcService的InternalScheduledExecutor，它并不是task的主执行线程
     private final Executor executor;
 
     /** Future that is completed once {@link #run()} exits. */
@@ -337,6 +339,7 @@ public class Task
             @Nonnull TaskMetricGroup metricGroup,
             ResultPartitionConsumableNotifier resultPartitionConsumableNotifier,
             PartitionProducerStateChecker partitionProducerStateChecker,
+            //多易教育: 这里传入的是TaskExecutor这个Endpoint的rpcService的InternalScheduledExecutor
             Executor executor) {
 
         Preconditions.checkNotNull(jobInformation);
@@ -389,7 +392,7 @@ public class Task
 
         this.classLoaderHandle = Preconditions.checkNotNull(classLoaderHandle);
         this.fileCache = Preconditions.checkNotNull(fileCache);
-        this.kvStateService = Preconditions.checkNotNull(kvStateService);
+        this.kvStateService = Preconditions.checkNotNull(kvStateService);  //多易教育: 这个kvStateService传入的是TaskExecutor所拥有的
         this.taskManagerConfig = Preconditions.checkNotNull(taskManagerConfig);
 
         this.metrics = metricGroup;
@@ -407,6 +410,7 @@ public class Task
                         taskNameWithSubtaskAndId, executionId, metrics.getIOMetricGroup());
 
         // produced intermediate result partitions
+        //多易教育: 利用TaskExecutor的shuffleEnvironment创建本task的结果分区输出器
         final ResultPartitionWriter[] resultPartitionWriters =
                 shuffleEnvironment
                         .createResultPartitionWriters(
@@ -422,11 +426,12 @@ public class Task
                         resultPartitionConsumableNotifier);
 
         // consumed intermediate result partitions
+        //多易教育: 利用TaskExecutor的shuffleEnvironment创建本task的输入gate
         final IndexedInputGate[] gates = // 多易教育:  IndexedInputGate[0]
                 shuffleEnvironment  // 多易教育:  NettyShuffleEnvironment
                         .createInputGates(taskShuffleContext, this, inputGateDeploymentDescriptors)
                         .toArray(new IndexedInputGate[0]);
-
+        //多易教育: 将基础gate，封装成带吞吐量计算和IO度量的gate
         this.inputGates = new IndexedInputGate[gates.length];
         this.throughputCalculator =
                 new ThroughputCalculator(
@@ -450,7 +455,9 @@ public class Task
         invokableHasBeenCanceled = new AtomicBoolean(false);
 
         // finally, create the executing thread, but do not start it
-        executingThread = new Thread(TASK_THREADS_GROUP, this, taskNameWithSubtask); // 多易教育:  创建task的执行线程，但此处不启动
+        // 多易教育:  在自己的构造中创建出封装自己（runnable）的线程（但此处不启动），
+        //  以便于在TaskExecutor中执行task时，不需要在外部创建线程了
+        executingThread = new Thread(TASK_THREADS_GROUP, this, taskNameWithSubtask);
     }
 
     // ------------------------------------------------------------------------
@@ -571,6 +578,7 @@ public class Task
     }
 
     /** Starts the task's thread. */
+    //多易教育: 启动task执行线程
     public void startTaskThread() {
         executingThread.start();
     }
@@ -664,6 +672,8 @@ public class Task
             // this operation may fail if the system does not have enough
             // memory to run the necessary data exchanges
             // the registration must also strictly be undone
+            //多易教育: 注册到网络栈，本操作有可能失败（如果系统没有足够的内存来运行必须的数据交换）
+            // 注册操作必须可以被严格undo
             // ----------------------------------------------------------------
 
             LOG.debug("Registering task at network: {}.", this);
@@ -743,7 +753,7 @@ public class Task
             FlinkSecurityManager.monitorUserSystemExitForCurrentThread();
             try {
                 // now load and instantiate the task's invokable code
-                invokable =  // 多易教育:  OneInputStreamTask...
+                invokable =  // 多易教育:  OneInputStreamTask ...
                         loadAndInstantiateInvokable(
                                 userCodeClassLoader.asClassLoader(), nameOfInvokableClass, env);
             } finally {

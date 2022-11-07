@@ -675,7 +675,8 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                     jobManagerConnection.getResultPartitionConsumableNotifier();
             PartitionProducerStateChecker partitionStateChecker =
                     jobManagerConnection.getPartitionStateChecker();
-
+            //多易教育: 从taskExecutor的 localStateStoresManager中，创建出task的本地state存储
+            // 如果没有开启本地恢复，则此处创建的将会是一个 NoOpTaskLocalStateStoreImpl,否则是 TaskLocalStateStoreImpl
             final TaskLocalStateStore localStateStore =
                     localStateStoresManager.localStateStoreForSubtask(
                             jobId,
@@ -692,9 +693,9 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             } catch (IOException e) {
                 throw new TaskSubmissionException(e);
             }
-
+            //多易教育: 从tdd中获取jobmanager携带过来的用于恢复task的相关信息（如用于恢复的restoreCheckpointId,taskStateSnapshot）
             final JobManagerTaskRestore taskRestore = tdd.getTaskRestore();
-
+            //多易教育: 构造taskStateManager（task状态管理器）,每个subTask有自己的TaskStateManager
             final TaskStateManager taskStateManager =
                     new TaskStateManagerImpl(
                             jobId,
@@ -703,14 +704,16 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                             changelogStorage,
                             taskRestore,
                             checkpointResponder);
-
+            //多易教育: 整个TaskExecutor拥有一个taskSlotTable（task槽位表）
+            // 每个subtask属于一个TaskSlot，而一个TaskSlot都有一个自己的memoryManager（内存管理器）
+            // 也就是：相同taskSlot下的subTask，共用一个memoryManager
             MemoryManager memoryManager;
             try {
                 memoryManager = taskSlotTable.getTaskMemoryManager(tdd.getAllocationId());
             } catch (SlotNotFoundException e) {
                 throw new TaskSubmissionException("Could not submit task.", e);
             }
-
+            //多易教育: 构造task实例对象（它是一个runnable）
             Task task =
                     new Task(
                             jobInformation,
@@ -722,11 +725,11 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                             tdd.getProducedPartitions(),
                             tdd.getInputGates(),
                             memoryManager,
-                            taskExecutorServices.getIOManager(),
-                            taskExecutorServices.getShuffleEnvironment(),
-                            taskExecutorServices.getKvStateService(),
-                            taskExecutorServices.getBroadcastVariableManager(),
-                            taskExecutorServices.getTaskEventDispatcher(),
+                            taskExecutorServices.getIOManager(), //多易教育: 一个TaskExecutor上的subTask都共用TaskExecutor的IOManager
+                            taskExecutorServices.getShuffleEnvironment(),//多易教育: 一个TaskExecutor上的subTask都共用TaskExecutor的ShuffleEnv
+                            taskExecutorServices.getKvStateService(),  //多易教育: 一个TaskExecutor上的subTask都共用TaskExecutor的kvState服务
+                            taskExecutorServices.getBroadcastVariableManager(),//多易教育: 一个TaskExecutor上的subTask都共用TaskExecutor的IOManager
+                            taskExecutorServices.getTaskEventDispatcher(),//多易教育: 一个TaskExecutor上的subTask都共用TaskExecutor的TaskEventDispatcher
                             externalResourceInfoProvider,
                             taskStateManager,
                             taskManagerActions,
@@ -740,6 +743,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                             taskMetricGroup,
                             resultPartitionConsumableNotifier,
                             partitionStateChecker,
+                            //多易教育：这里传入的TaskExecutor这个Endpoint的rpcService中的InternalScheduledExecutor
                             getRpcService().getScheduledExecutor());
 
             taskMetricGroup.gauge(MetricNames.IS_BACK_PRESSURED, task::isBackPressured);
@@ -753,14 +757,19 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             boolean taskAdded;
 
             try {
-                taskAdded = taskSlotTable.addTask(task);
+                taskAdded = taskSlotTable.addTask(task); //多易教育: 将本task实例添加到task槽位表中
             } catch (SlotNotFoundException | SlotNotActiveException e) {
                 throw new TaskSubmissionException("Could not submit task.", e);
             }
 
             if (taskAdded) {
+                //多易教育: -------------------------
+                // 启动task线程，正式开始执行task
+                // 每个task都在一个独立的线程中运行
+                // （意味着，如果是同一个slot槽位中的多个task，也是每个task一个自己的线程）
+                // -----------------------------
                 task.startTaskThread();
-
+                //多易教育: 建立task的输出结果分区记录（主要是用于跟踪清除需要释放的resultPartition）
                 setupResultPartitionBookkeeping(
                         tdd.getJobId(), tdd.getProducedPartitions(), task.getTerminationFuture());
                 return CompletableFuture.completedFuture(Acknowledge.get());

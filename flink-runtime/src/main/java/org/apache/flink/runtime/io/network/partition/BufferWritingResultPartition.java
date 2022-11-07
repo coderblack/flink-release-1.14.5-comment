@@ -142,7 +142,8 @@ public abstract class BufferWritingResultPartition extends ResultPartition {
         BufferBuilder buffer = appendUnicastDataForNewRecord(record, targetSubpartition);  // 多易教育:  为新记录追加单播数据
         // 多易教育:  只要record内容没有完全写入memorySegment，则循环不断写
         while (record.hasRemaining()) {
-            // full buffer, partial record   满buffer，部分record
+            // full buffer, partial record
+            // 多易教育： 满buffer，部分record
             finishUnicastBufferBuilder(targetSubpartition);  // 多易教育:  完成bufferBuilder（更新输出字节计数器，输出缓存计数器，回收内存）
             buffer = appendUnicastDataForRecordContinuation(record, targetSubpartition); // 多易教育:  追加后续内容到单播数据
         }

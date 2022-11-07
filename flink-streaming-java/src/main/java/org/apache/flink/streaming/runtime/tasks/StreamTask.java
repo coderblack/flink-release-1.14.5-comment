@@ -227,6 +227,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     /** Our checkpoint storage. We use this to create checkpoint streams. */
     protected final CheckpointStorage checkpointStorage;
 
+    //多易教育: 每个SubTask上的cp协调器
     private final SubtaskCheckpointCoordinator subtaskCheckpointCoordinator;
 
     /**
@@ -339,9 +340,10 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                 environment,
                 timerService,
                 uncaughtExceptionHandler,
-                //多易教育: StreamTask的ActionExecutor的实例直接是定死的
-                // ActionExecutor就是一个用于执行Runnable的封装
-                // 其中执行Runnable的时候也不是用Thread方式，而是直接调用run()方法
+                //多易教育: 每构造一个StreamTask，就会构造一个ActionExecutor的实例，
+                // 因而每个StreamTask都拥有一个自己的ActionExecutor
+                // 而这个ActionExecutor就是一个用于执行Runnable.run()方法的封装
+                // 它执行Runnable的时候也不是用Thread方式，而是直接调用run()方法
                 StreamTaskActionExecutor.IMMEDIATE);
     }
 
@@ -389,6 +391,12 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         this.actionExecutor = Preconditions.checkNotNull(actionExecutor);
         // 多易教育:  new MailboxProcessor(controller -> { this.processInput(controller);},mailbox,actionExecutor);
         //  传入的defaultAction就是StreamTask的processInput
+        //  目前的分析： 一个subTask拥有一个自己的mailboxProcessor，
+        //  其中，processor中的mailbox和executor都是在task构造时传入进来的
+        //   mailbox是在上面的辅助构造中创建的，因而，每个subTask有一个自己的mailbox
+        //   而传入的actionExecutor则是mailbox的主执行器，
+        //    它在最上面的辅助构造中创建，而且这个executor并不是一个线程池，只是一个直接调用runnable.run()的简单封装
+        //    因而，在mainMailboxExecutor中执行的逻辑，其实就是在执行task.invoke()的线程中执行
         this.mailboxProcessor = new MailboxProcessor(this::processInput, mailbox, actionExecutor);
         this.mainMailboxExecutor = mailboxProcessor.getMainMailboxExecutor();
         this.asyncExceptionHandler = new StreamTaskAsyncExceptionHandler(environment);
