@@ -269,6 +269,9 @@ public class StreamOperatorStateHandler {
                     //   -> HeapSnapshotStrategy.asyncSnapshot 得到 匿名实现的 SnapshotResultSupplier#get() ，定义了最终snapshot执行逻辑
                     //   -> snapshotStrategyRunner 将上步得到的supplier封装为 asyncSnapshotTask:FutureTask<SnapshotResult<T>>
                     //   -> asyncSnapshotTask.run() -> asyncSnapshotTask.call() -> supplier.get() -> 执行：最终输出逻辑
+
+                    // 多易教育：测试输出
+                    System.out.println("StreamOperatorStateHandler#snapShotState中，设置cp异步future任务，所在线程："+Thread.currentThread()+","+Thread.currentThread().getId());
                     snapshotInProgress.setKeyedStateManagedFuture(
                             keyedStateBackend.snapshot(
                                     checkpointId, timestamp, factory, checkpointOptions));

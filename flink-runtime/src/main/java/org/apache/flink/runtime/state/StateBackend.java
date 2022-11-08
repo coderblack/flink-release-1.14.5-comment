@@ -35,7 +35,8 @@ import java.util.Collection;
  * A <b>State Backend</b> defines how the state of a streaming application is stored locally within
  * the cluster. Different State Backends store their state in different fashions, and use different
  * data structures to hold the state of a running application.
- *
+ * 多易教育： StateBackend定义流式应用中状态在集群内是如何进行本地存储的；不同的StateBackend用不同的方式、不同的
+ *  数据结构来存储运行中的应用的状态
  * <p>For example, the {@link org.apache.flink.runtime.state.hashmap.HashMapStateBackend hashmap
  * state backend} keeps working state in the memory of the TaskManager. The backend is lightweight
  * and without additional dependencies.
@@ -43,7 +44,9 @@ import java.util.Collection;
  * <p>The {@code EmbeddedRocksDBStateBackend} stores working state in an embedded <a
  * href="http://rocksdb.org/">RocksDB</a> and is able to scale working state to many terabytes in
  * size, only limited by available disk space across all task managers.
- *
+ * 多易教育：例如，HashMapStateBackend把工作状态保存在taskManager的内存中；这个backend是一个轻量级的且没有
+ *  额外依赖；而EmbeddedRocksDBStateBackend将工作状态保存在一个内嵌的rocksDB中，能支持扩展到T级别大小的状态，
+ *  仅受限于task manager的可用磁盘空间
  * <h2>Raw Bytes Storage and Backends</h2>
  *
  * <p>The {@code StateBackend} creates services for for <i>keyed state</i> and <i>operator
@@ -61,17 +64,20 @@ import java.util.Collection;
  * <p>State Backends need to be {@link java.io.Serializable serializable}, because they distributed
  * across parallel processes (for distributed execution) together with the streaming application
  * code.
- *
+ * 多易教育：StateBackend需要实现序列化，因为它们会随着流式应用的代码一起被分发到各个并行实例
  * <p>Because of that, {@code StateBackend} implementations (typically subclasses of {@link
  * AbstractStateBackend}) are meant to be like <i>factories</i> that create the proper states stores
  * that provide access to the persistent storage and hold the keyed- and operator state data
  * structures. That way, the State Backend can be very lightweight (contain only configurations)
  * which makes it easier to be serializable.
- *
+ * 多易教育：正因为如此，StateBackend的实现类（通常是AbstractStateBackend的子类）在一定意义上应该像一个工厂，
+ *  它负责创建合适的状态存储，提供持久化存储的访问，持有着 keyed和operator状态的数据结构；
+ *  在这种形式下，状态后端就能做到非常轻量级（仅包含配置信息），也非常易于被序列化
  * <h2>Thread Safety</h2>
  *
  * <p>State backend implementations have to be thread-safe. Multiple threads may be creating
  * keyed-/operator state backends concurrently.
+ * 多易教育：StateBackend必须是线程安全的；可能会有多个线程并发创建keyed/operator状态后端
  */
 @PublicEvolving
 public interface StateBackend extends java.io.Serializable {

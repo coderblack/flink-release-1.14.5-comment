@@ -139,12 +139,16 @@ class HeapSnapshotStrategy<K>
             final Map<StateUID, StateSnapshot> cowStateStableSnapshots =
                     syncPartResource.getCowStateStableSnapshots();
             final CheckpointStreamWithResultProvider streamWithResultProvider =
-                    checkpointStreamSupplier.get();
+                    checkpointStreamSupplier.get();  //多易教育: supplier的匿名实现就在楼上
 
             snapshotCloseableRegistry.registerCloseable(streamWithResultProvider);
             //多易教育: 获取输出流 , debug信息 => basePath = "file:/home/hunter/ck/99.../chk-3
             final CheckpointStreamFactory.CheckpointStateOutputStream localStream =
                     streamWithResultProvider.getCheckpointOutputStream();
+
+            // 多易教育：测试输出
+            System.out.println("在HeapSnapshotStrategy#asyncSnapshot(supplier)中，当前线程为： " + Thread.currentThread()+",线程号：" +Thread.currentThread().getId());
+            System.out.println("在HeapSnapshotStrategy#asyncSnapshot(supplier)中，localStream为： " + localStream + "," + localStream.hashCode());
 
             //多易教育: 装饰者模式，以加入一些公共的附加逻辑
             final DataOutputViewStreamWrapper outView =

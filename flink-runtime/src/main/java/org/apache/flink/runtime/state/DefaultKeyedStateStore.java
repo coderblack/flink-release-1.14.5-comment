@@ -69,6 +69,8 @@ public class DefaultKeyedStateStore implements KeyedStateStore {
         try {
             stateProperties.initializeSerializerUnlessSet(executionConfig);
             ListState<T> originalState = getPartitionedState(stateProperties);
+            // 多易教育：测试输出
+            System.out.println("通过keyedStateBackend:"+ keyedStateBackend.hashCode() +", 获取 getPartitionedState： " + originalState);
             return new UserFacingListState<>(originalState);
         } catch (Exception e) {
             throw new RuntimeException("Error while getting state", e);

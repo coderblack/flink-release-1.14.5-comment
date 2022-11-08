@@ -592,6 +592,10 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
         //                        new ExecutorThreadFactory("AsyncOperations", uncaughtExceptionHandler));
         // 也就是说每个StreamTask都有一个自己的 异步操作线程池
         asyncOperationsThreadPool.execute(asyncCheckpointRunnable);
+
+        // 多易教育：测试输出
+        System.out.println("SubtaskCheckpointCoordinatorImpl#finishAndReportAsync,cp异步,异步任务放入线程池的逻辑所在线程："+ Thread.currentThread()+","+Thread.currentThread().getId());
+
     }
 
     private Consumer<AsyncCheckpointRunnable> unregisterConsumer() {
@@ -637,6 +641,11 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
                     channelStateWriteResult,
                     storage);
 
+            // 多易教育：测试输出
+            System.out.println("SubTaskCheckpointCoordinatorImpl#takeSnapshotSync,cp同步部分,当前线程：" + Thread.currentThread() + "线程号：" + Thread.currentThread().getId());
+            System.out.println("SubTaskCheckpointCoordinatorImpl#takeSnapshotSync,cp同步部分,operatorChain：" + operatorChain);
+            System.out.println("SubTaskCheckpointCoordinatorImpl#takeSnapshotSync,cp同步部分,checkpointStorage：" + checkpointStorage+","+checkpointStorage.hashCode());
+
         } finally {
             checkpointStorage.clearCacheFor(checkpointId);
         }
@@ -654,6 +663,7 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
 
         checkpointMetrics.setSyncDurationMillis((System.nanoTime() - started) / 1_000_000);
         checkpointMetrics.setUnalignedCheckpoint(checkpointOptions.isUnalignedCheckpoint());
+
         return true;
     }
 

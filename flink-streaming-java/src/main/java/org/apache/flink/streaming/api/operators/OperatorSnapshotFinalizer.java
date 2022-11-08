@@ -61,7 +61,8 @@ public class OperatorSnapshotFinalizer {
         //               如是，则调用了 userFunction.snapshotState() 对用户自定义的一些逻辑进行处理；
         //               如不是则userFunction压根没有这个方法
         //      => 2. 然后开始执行 算子状态、监控状态的 快照流程
-        //   => userFunction.snapshotState() <  调用的是
+
+
         SnapshotResult<KeyedStateHandle> keyedManaged =
                 FutureUtils.runIfNotDoneAndGet(snapshotFutures.getKeyedStateManagedFuture());
 

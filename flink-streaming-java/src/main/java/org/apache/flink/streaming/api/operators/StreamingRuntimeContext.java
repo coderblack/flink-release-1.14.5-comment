@@ -206,6 +206,8 @@ public class StreamingRuntimeContext extends AbstractRuntimeUDFContext {
     @Override
     public <T> ListState<T> getListState(ListStateDescriptor<T> stateProperties) {
         KeyedStateStore keyedStateStore = checkPreconditionsAndGetKeyedStateStore(stateProperties);
+        // 多易教育：测试输出 , state获取过程-01
+        System.out.println("获取 keyedStateStore ： " + keyedStateStore);
         stateProperties.initializeSerializerUnlessSet(getExecutionConfig());
         return keyedStateStore.getListState(stateProperties);
     }
