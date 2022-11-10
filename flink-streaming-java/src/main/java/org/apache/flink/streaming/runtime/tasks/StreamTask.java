@@ -329,8 +329,9 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
      */
     //多易教育: 这里是Task中反射构造Invokable的入口
     // Task#loadAndInstantiateInvokable(),
+    //   Environment env = new RuntimeEnvironment(...)
     //   statelessCtor = invokableClass.getConstructor(Environment.class);
-    //   return statelessCtor.newInstance(environment);
+    //   return statelessCtor.newInstance(env);
     // 后续的构造方法链中，依次会创建：
     //    actionExecutor、TaskMailboxImpl、
     //    timeService，subTaskCheckpointCoordinator 等组件
@@ -409,7 +410,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         // 多易教育:  new MailboxProcessor(controller -> { this.processInput(controller);},mailbox,actionExecutor);
         //  传入的defaultAction就是StreamTask的processInput
         //  目前的分析： 一个subTask拥有一个自己的mailboxProcessor，
-        //  其中，processor中的mailbox和executor都是在task构造时传入进来的
+        //  mailboxProcessor中的actionExecutor是在task构造时传入进来的
         //   mailbox是在上面的辅助构造中创建的，因而，每个subTask有一个自己的mailbox
         //   而传入的actionExecutor则是mailbox的主执行器，
         //    它在最上面的辅助构造中创建，而且这个executor并不是一个线程池，只是一个直接调用runnable.run()的简单封装
@@ -429,16 +430,19 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
         environment.setMainMailboxExecutor(mainMailboxExecutor);
         environment.setAsyncOperationsThreadPool(asyncOperationsThreadPool);
-
+        //多易教育: 直接从StreamConfig中获取并反序列化得到StateBackend对象
         this.stateBackend = createStateBackend();
+        //多易教育: 直接从StreamConfig中获取并反序列化得到CheckpointStorage对象,并作了一些后向兼容处理
         this.checkpointStorage = createCheckpointStorage(stateBackend);
 
         this.subtaskCheckpointCoordinator =
                 new SubtaskCheckpointCoordinatorImpl(
                         checkpointStorage.createCheckpointStorage(environment.getJobID()),
                         getName(),
+                        //多易教育: 传入了actionExecutor，说明checkpoint的触发动作是在task主线程中执行的（cp同步流程）
                         actionExecutor,
                         getCancelables(),
+                        //多易教育: 传入了异步操作线程池，说明checkpoint的过程会用异步线程池做一些异步处理（cp异步流程）
                         getAsyncOperationsThreadPool(),
                         environment,
                         this,
@@ -495,7 +499,9 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     private TimerService createTimerService(String timerThreadName) {
         ThreadFactory timerThreadFactory =
                 new DispatcherThreadFactory(TRIGGER_THREAD_GROUP, timerThreadName);
-        //多易教育: 构造SystemProcessingTimeService时传入了线程工厂,而线程工厂得到线程是通过new来构造的
+        //多易教育: 构造SystemProcessingTimeService时,
+        // 会构造一个单线程的线程调度池： new ScheduledTaskExecutor(1);
+        // 且传入了线程工厂,以根据工厂来构造线程（线程名，所属线程组，runnable）
         // 因此，SystemProcessingTimeService的工作是在一个自己的线程中运行
         return new SystemProcessingTimeService(this::handleTimerException, timerThreadFactory);
     }
@@ -1604,10 +1610,12 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     }
 
     private CheckpointStorage createCheckpointStorage(StateBackend backend) throws Exception {
+        //多易教育: 从StreamConfig中以反序列化形式得到CheckpointStorage
         final CheckpointStorage fromApplication =
                 configuration.getCheckpointStorage(getUserCodeClassLoader());
         final Path savepointDir = configuration.getSavepointDir(getUserCodeClassLoader());
-
+        //多易教育: 将新版配置参数savepointDir配置到checkpointStorage中
+        // 搞这么一个庞大的load方法，主要是为了做legacy兼容处理
         return CheckpointStorageLoader.load(
                 fromApplication,
                 savepointDir,
