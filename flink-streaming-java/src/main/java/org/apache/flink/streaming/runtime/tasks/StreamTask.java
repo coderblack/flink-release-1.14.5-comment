@@ -738,8 +738,8 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                 .ifPresent(restoreId -> latestReportCheckpointId = restoreId);
 
         // task specific initialization
-        //多易教育: StreamTask的init()啥也没做
-        // 但是其子类（如OneInputStreamTask、TwoInputStreamTask中会重写，会在其中构建StreamOneInputProcessor等）
+        //多易教育: StreamTask的init()是抽象方法
+        // 其子类（ 如 OneInputStreamTask、TwoInputStreamTask中会重写，会在其中构建StreamOneInputProcessor等）
         init();
 
         // save the work of reloading state, etc, if the task is already canceled
@@ -750,9 +750,12 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
         // we need to make sure that any triggers scheduled in open() cannot be
         // executed before all operators are opened
+        //多易教育: 需要确保open()中所有的触发调度逻辑执行必须在所有算子open完之后
+        // 在工作主线程中，先执行输入gate恢复
         CompletableFuture<Void> allGatesRecoveredFuture = actionExecutor.call(this::restoreGates);
 
         // Run mailbox until all gates will be recovered.
+        //多易教育: 在所有gates恢复后，在工作主线程中运行mailbox
         mailboxProcessor.runMailboxLoop();
 
         ensureNotCanceled();
@@ -763,23 +766,32 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
         // we recovered all the gates, we can close the channel IO executor as it is no longer
         // needed
+        //多易教育: 已经恢复了所有的gates，可以关闭channel IO executor（因为它已经不再被需要）
         channelIOExecutor.shutdown();
 
         isRunning = true;
     }
 
     private CompletableFuture<Void> restoreGates() throws Exception {   //多易教育: 算子初始化
+
+        // 多易教育：输出测试 ，actionExecutor和触发task invoke方法和mailbox的线程关系
+        System.out.println("restoreGates中的逻辑所在线程: " + Thread.currentThread()+","+Thread.currentThread().getId());
+
         SequentialChannelStateReader reader =
                 getEnvironment().getTaskStateManager().getSequentialChannelStateReader();
         reader.readOutputData(
                 getEnvironment().getAllWriters(), !configuration.isGraphContainingLoops());
-        //多易教育: 算子链初始化状态并open
+        //多易教育: 算子链状态初始化并open
+        // 按照 tail -> head 的顺序，初始化chain中每个算子的状态
+        // （与StreamOperator#close()方法相反，它是 heads -> tail 的顺序来关闭算子）
         operatorChain.initializeStateAndOpenOperators(createStreamTaskStateInitializer());
 
         IndexedInputGate[] inputGates = getEnvironment().getAllInputGates();
         channelIOExecutor.execute(
                 () -> {
                     try {
+                        // 多易教育：输出测试 ，actionExecutor和触发task invoke方法和mailbox的线程关系
+                        System.out.println("chanelIOExecutor.execute中的run()逻辑所在线程: " + Thread.currentThread()+","+Thread.currentThread().getId());
                         reader.readInputData(inputGates);
                     } catch (Exception e) {
                         asyncExceptionHandler.handleAsyncException(
@@ -799,8 +811,8 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                                             inputGate::requestPartitions,
                                             "Input gate request partitions"));
         }
-
         return CompletableFuture.allOf(recoveredFutures.toArray(new CompletableFuture[0]))
+                //多易教育: 对mailboxProcessor执行挂起操作
                 .thenRun(mailboxProcessor::suspend);
     }
 
@@ -813,6 +825,10 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     //多易教育: Task被启动执行的入口方法
     @Override
     public final void invoke() throws Exception {
+
+        // 多易教育：输出测试 ，actionExecutor和触发task invoke方法和mailbox的线程关系
+        System.out.println("invoke中的逻辑所在线程: " + Thread.currentThread()+","+Thread.currentThread().getId());
+
         // Allow invoking method 'invoke' without having to call 'restore' before it.
         if (!isRunning) {
             LOG.debug("Restoring during invoke will be called.");
@@ -1401,7 +1417,8 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         }
         subtaskCheckpointCoordinator.abortCheckpointOnBarrier(checkpointId, cause, operatorChain);
     }
-    //多易教育: 开始执行cp （不管是上游source task，还是下游task，本方法是共同的cp执行逻辑）
+    //多易教育: 开始执行cp
+    // （不管是上游source task，还是下游task，本方法是共同的cp执行逻辑）
     private boolean performCheckpoint(
             CheckpointMetaData checkpointMetaData,
             CheckpointOptions checkpointOptions,
@@ -1426,12 +1443,16 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         if (isRunning) {
             actionExecutor.runThrowing(
                     () -> {
+                        // 多易教育：输出测试 ，actionExecutor和触发task invoke方法和mailbox的线程关系
+                        System.out.println("actionExecutor中的逻辑所在线程: " + Thread.currentThread()+","+Thread.currentThread().getId());
+
                         if (checkpointType.isSynchronous()) {
                             setSynchronousSavepoint(
                                     checkpointMetaData.getCheckpointId(),
                                     checkpointType.shouldDrain());
                         }
-                        //多易教育: 如果开启了部分task完成时触发checkpoint的参数： execution.checkpointing.checkpoints-after-tasks-finish.enabled = true
+                        //多易教育: 如果开启了部分task完成时触发checkpoint的参数：
+                        // execution.checkpointing.checkpoints-after-tasks-finish.enabled = true
                         if (areCheckpointsWithFinishedTasksEnabled()
                                 && endOfDataReceived
                                 && this.finalCheckpointMinId == null) {

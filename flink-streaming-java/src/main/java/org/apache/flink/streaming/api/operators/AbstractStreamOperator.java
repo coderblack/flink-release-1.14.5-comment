@@ -292,11 +292,12 @@ public abstract class AbstractStreamOperator<OUT>
                                 runtimeContext.getTaskManagerRuntimeInfo().getConfiguration(),
                                 runtimeContext.getUserCodeClassLoader()),
                         isUsingCustomRawKeyedState());
-        //多易教育: 从这里看来，一个StreamOperator 应该就拥有一个 StreamOperatorStateHandler
+        //多易教育: 一个StreamOperator 拥有一个 StreamOperatorStateHandler
         stateHandler =
                 new StreamOperatorStateHandler(
                         context, getExecutionConfig(), streamTaskCloseableRegistry);
         timeServiceManager = context.internalTimerServiceManager();
+        //多易教育: 初始化chain的算子状态
         stateHandler.initializeOperatorState(this);
         //多易教育: 向runtimeContext中设置键控状态的store
         // （上面Handler的构造中没有传入store方式，则通过重载构造填入一个默认的： DefaultKeyedStateStore）

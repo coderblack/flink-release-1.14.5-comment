@@ -22,12 +22,15 @@ public class WordCountSimple {
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        env.enableCheckpointing(60000,CheckpointingMode.EXACTLY_ONCE);
+        env.enableCheckpointing(2000, CheckpointingMode.EXACTLY_ONCE);
         env.getCheckpointConfig().setCheckpointStorage("file:///home/hunter/cp/");
 
         DataStreamSource<String> s1 = env.socketTextStream("localhost", 9999);
+        env.setParallelism(1);
 
-        s1.keyBy(s->s).map(new RichMapFunction<String, String>() {
+        s1
+                /*
+                .keyBy(s->s).map(new RichMapFunction<String, String>() {
             ValueState<String> vState;
             @Override
             public void open(Configuration parameters) throws Exception {
@@ -41,7 +44,7 @@ public class WordCountSimple {
                 vState.update(value);
                 return value;
             }
-        }).print();
+        })*/.print();
 
         env.execute();
 
