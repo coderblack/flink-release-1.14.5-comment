@@ -332,7 +332,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     //   Environment env = new RuntimeEnvironment(...)
     //   statelessCtor = invokableClass.getConstructor(Environment.class);
     //   return statelessCtor.newInstance(env);
-    // 后续的构造方法链中，依次会创建：
+    // 后续的重载构造方法链中，依次会创建：
     //    actionExecutor、TaskMailboxImpl、
     //    timeService，subTaskCheckpointCoordinator 等组件
     protected StreamTask(Environment env) throws Exception {
@@ -390,7 +390,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                 timerService,
                 uncaughtExceptionHandler,
                 actionExecutor,
-                //多易教育: 此处由TaskMailbox的构造，说明每个Task拥有一个TaskMailbox
+                //多易教育: 每个Task实例都各自拥有一个TaskMailbox
                 new TaskMailboxImpl(Thread.currentThread()));
     }
 
@@ -839,6 +839,8 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         // final check to exit early before starting to run
         ensureNotCanceled();
 
+        // 多易教育： 创建buffer消胀定时任务
+        //  关于debloater优化，可参：https://issues.apache.org/jira/browse/FLINK-23560
         scheduleBufferDebloater();
 
         // let the task do its work
@@ -859,11 +861,13 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         // the debloater. At the same time, for SourceStreamTask using legacy sources and checkpoint
         // lock, enqueuing even a single mailbox action can cause performance regression. This is
         // especially visible in batch, with disabled checkpointing and no processing time timers.
+        // 多易教育： 如果没有inputGate，直接返回
         if (getEnvironment().getAllInputGates().length == 0) {
             return;
         }
         systemTimerService.registerTimer(
                 systemTimerService.getCurrentProcessingTime() + bufferDebloatPeriod,
+                //多易教育: 定时器callback：向mailbox中发送一个mail：执行debloat()，并再次注册定时
                 timestamp ->
                         mainMailboxExecutor.execute(
                                 () -> {
@@ -877,15 +881,19 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     void debloat() {
         long throughput = throughputCalculator.calculateThroughput();
         if (bufferDebloater != null) {
+            //多易教育: 它使用指数滑动平均（EMA）算法，推算出一个更为平滑过度的buffer值。
+            // 它还能够对比新旧buffer size值的变化率，如果变化率过小，不修改buffer size，
+            // 从而避免了来回拉锯式频繁修改buffer大小造成性能剧烈抖动。
             bufferDebloater.recalculateBufferSize(throughput);
         }
     }
 
+    //多易教育: 纯用于测试：单步运行mailbox
     @VisibleForTesting
     public boolean runMailboxStep() throws Exception {
         return mailboxProcessor.runMailboxStep();
     }
-
+    //多易教育: 纯用于测试：且压根没有被用过
     @VisibleForTesting
     public boolean isMailboxLoopRunning() {
         return mailboxProcessor.isMailboxLoopRunning();
@@ -1256,7 +1264,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                             .setAlignmentDurationNanos(0L)  //多易教育: 注入barrier不需要对齐
                             .setBytesProcessedDuringAlignment(0L)
                             .setCheckpointStartDelayNanos(latestAsyncCheckpointStartDelayNanos);
-
+            //多易教育: 初始化本次checkpoint
             subtaskCheckpointCoordinator.initInputsCheckpoint(
                     checkpointMetaData.getCheckpointId(), checkpointOptions);
 
@@ -1616,6 +1624,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     // ------------------------------------------------------------------------
 
     private StateBackend createStateBackend() throws Exception {
+        //多易教育: 从StreamConfig中以反序列化形式得到 StateBackend
         final StateBackend fromApplication =
                 configuration.getStateBackend(getUserCodeClassLoader());
         final TernaryBoolean isChangelogStateBackendEnableFromApplication =
@@ -1650,12 +1659,14 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     /**
      * Returns the {@link TimerService} responsible for telling the current processing time and
      * registering actual timers.
+     * 多易教育： 纯用于测试
      */
     @VisibleForTesting
     TimerService getTimerService() {
         return timerService;
     }
 
+    // 多易教育： 纯用于测试
     @VisibleForTesting
     OP getMainOperator() {
         return this.mainOperator;
@@ -1747,7 +1758,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         List<StreamEdge> outEdgesInOrder =
                 configuration.getOutEdgesInOrder(
                         environment.getUserCodeClassLoader().asClassLoader());
-
+        //多易教育: 遍历每一条出边，生成recordWriter，并添加到返回List集合
         for (int i = 0; i < outEdgesInOrder.size(); i++) {
             StreamEdge edge = outEdgesInOrder.get(i);
             recordWriters.add(

@@ -739,7 +739,7 @@ public class Task
                             taskEventDispatcher,
                             checkpointResponder,
                             operatorCoordinatorEventGateway,
-                            taskManagerConfig,
+                            taskManagerConfig,  //多易教育: TaskManagerInfo
                             metrics,
                             this,
                             externalResourceInfoProvider,
