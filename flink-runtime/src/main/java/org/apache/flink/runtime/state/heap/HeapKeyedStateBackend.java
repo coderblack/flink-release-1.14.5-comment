@@ -313,11 +313,6 @@ public class HeapKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
                         cancelStreamRegistry,
                         snapshotExecutionType);
 
-        // 多易教育：测试输出
-        System.out.println("在HeapKeyedStateBackend#snapshot ,所用的runner为：" + snapshotStrategyRunner + "," + snapshotStrategyRunner.hashCode());
-        System.out.println("在HeapKeyedStateBackend#snapshot ,对象实例为：" + this + "," + this.hashCode());
-        System.out.println("在HeapKeyedStateBackend#snapshot ,线程为："+ Thread.currentThread() + "线程号为：" + Thread.currentThread().getId());
-
         //多易教育: 调用runner执行snapshot
         return snapshotStrategyRunner.snapshot(
                 checkpointId, timestamp, streamFactory, checkpointOptions);

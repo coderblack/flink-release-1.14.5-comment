@@ -695,6 +695,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     public StreamTaskStateInitializer createStreamTaskStateInitializer() {
         InternalTimeServiceManager.Provider timerServiceProvider =
                 configuration.getTimerServiceProvider(getUserCodeClassLoader());
+        //多易教育: 构造状态初始化器
         return new StreamTaskStateInitializerImpl(
                 getEnvironment(),
                 stateBackend,

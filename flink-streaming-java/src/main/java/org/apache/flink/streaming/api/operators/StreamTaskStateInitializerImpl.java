@@ -94,6 +94,8 @@ public class StreamTaskStateInitializerImpl implements StreamTaskStateInitialize
     private final TaskStateManager taskStateManager;
 
     /** This object is the factory for everything related to state backends and checkpointing. */
+    //多易教育: 来自于StreamTask
+    // StreamTask#createStreamTaskStateInitializer(){ return new StreamTaskStateInitializerImpl(...)}
     private final StateBackend stateBackend;
 
     private final TtlTimeProvider ttlTimeProvider;
@@ -326,6 +328,10 @@ public class StreamTaskStateInitializerImpl implements StreamTaskStateInitialize
                 backendRestorer =
                         new BackendRestorerProcedure<>(
                                 (stateHandles) ->
+                                        //多易教育: 根据用户层stateBackend(HashMapStateBackend/EmbeddedStateBackend)，
+                                        // 创建内部StateBackend（KeyedStateBackend/OperatorStateBackend）
+                                        // 此处的stateBackend来自于 StreamTask#createStreamTaskStateInitializer(){ return new StreamTaskStateInitializerImpl(...)}
+                                        // 而StreamTask中的stateBackend则来自于配置
                                         stateBackend.createKeyedStateBackend(
                                                 environment,
                                                 environment.getJobID(),
