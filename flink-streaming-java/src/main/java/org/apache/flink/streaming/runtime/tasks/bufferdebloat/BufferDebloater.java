@@ -94,6 +94,7 @@ public class BufferDebloater {
         lastBufferSize = newSize;
         for (IndexedInputGate inputGate : inputGates) {
             if (!inputGate.isFinished()) {
+                //多易教育: 为inputGate通知新的buffer size
                 inputGate.announceBufferSize(newSize);
             }
         }

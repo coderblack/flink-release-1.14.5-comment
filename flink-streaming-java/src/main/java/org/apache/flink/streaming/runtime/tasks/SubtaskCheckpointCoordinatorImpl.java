@@ -151,7 +151,7 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
                 asyncExceptionHandler,
                 prepareInputSnapshot,
                 maxRecordAbortedCheckpoints,
-                unalignedCheckpointEnabled
+                unalignedCheckpointEnabled   //多易教育: 如果开启了非对齐checkpoint，则构造并持有一个channel状态writer
                         ? openChannelStateWriter(taskName, checkpointStorage, env)
                         : ChannelStateWriter.NO_OP,
                 enableCheckpointAfterTasksFinished);

@@ -90,6 +90,7 @@ public final class KeyGroupRangeAssignment {
      * @param operatorIndex Id of a key-group. 0 <= keyGroupID < maxParallelism.
      * @return the computed key-group range for the operator.
      */
+    //多易教育: 根据给定的 最大并行度、实际并行度、算子索引号，计算应该分配的keyGroup
     public static KeyGroupRange computeKeyGroupRangeForOperatorIndex(
             int maxParallelism, int parallelism, int operatorIndex) {
 

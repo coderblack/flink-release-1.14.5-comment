@@ -96,7 +96,8 @@ public class NettyPartitionRequestClient implements PartitionRequestClient {
      * <p>The request goes to the remote producer, for which this partition request client instance
      * has been created.
      */
-    // 多易教育:  请求将发给远端的producer
+    // 多易教育: 根据partitionId，subPartitionIndex和inputChannel， 发起subPartition请求
+    //  请求将发给远端的producer
     @Override
     public void requestSubpartition(
             final ResultPartitionID partitionId,

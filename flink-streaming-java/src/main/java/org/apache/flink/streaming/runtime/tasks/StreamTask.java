@@ -404,7 +404,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         this.configuration = new StreamConfig(environment.getTaskConfiguration());
         this.recordWriter = createRecordWriterDelegate(configuration, environment);
 
-        //多易教育: checkpoint任务就是在此executor中执行
+        //多易教育: checkpoint任务就是在此executor中执行(它只是一个直接调用runnable.run()的封装)
         this.actionExecutor = Preconditions.checkNotNull(actionExecutor);
         // 多易教育:  new MailboxProcessor(controller -> { this.processInput(controller);},mailbox,actionExecutor);
         //  传入的defaultAction就是StreamTask的processInput
@@ -429,10 +429,11 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
         environment.setMainMailboxExecutor(mainMailboxExecutor);
         environment.setAsyncOperationsThreadPool(asyncOperationsThreadPool);
-
+        //多易教育: 从应用或配置中获取statebackend对象，如果都没有则使用默认的HashMapStateBackend
         this.stateBackend = createStateBackend();
+        //多易教育: 利用statebackend，创建checkpoint存储描述对象
         this.checkpointStorage = createCheckpointStorage(stateBackend);
-
+        //多易教育: 构造subTaskCheckpointCoordinator
         this.subtaskCheckpointCoordinator =
                 new SubtaskCheckpointCoordinatorImpl(
                         checkpointStorage.createCheckpointStorage(environment.getJobID()),
@@ -464,16 +465,17 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         this.channelIOExecutor =
                 Executors.newSingleThreadExecutor(
                         new ExecutorThreadFactory("channel-state-unspilling"));
-
+        //多易教育: 为每个channel，注入channel状态writer
         injectChannelStateWriterIntoChannels();
 
         environment.getMetricGroup().getIOMetricGroup().setEnableBusyTime(true);
         this.throughputCalculator = environment.getThroughputCalculator();  //多易教育: 吞吐量计算器
         Configuration taskManagerConf = environment.getTaskManagerInfo().getConfiguration();
-
+        //多易教育: 获取消胀周期配置 ： taskmanager.network.memory.buffer-debloat.period
         this.bufferDebloatPeriod = taskManagerConf.get(BUFFER_DEBLOAT_PERIOD).toMillis();
-
+        //多易教育: 如果配置中启用了消胀功能
         if (taskManagerConf.get(TaskManagerOptions.BUFFER_DEBLOAT_ENABLED)) {
+            //多易教育: 构造消胀器 ( 消胀器中持有所有的inputGate，以便于将重新计算的buffer size通知给它们 )
             this.bufferDebloater =
                     new BufferDebloater(taskManagerConf, environment.getAllInputGates());
             environment
@@ -502,11 +504,16 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
     private void injectChannelStateWriterIntoChannels() {
         final Environment env = getEnvironment();
+        //多易教育: 通过subTaskCheckpointCoordinator来获取channel状态writer
+        // new ChannelStateWriterImpl(taskName, env.getTaskInfo().getIndexOfThisSubtask(), checkpointStorage);
         final ChannelStateWriter channelStateWriter =
                 subtaskCheckpointCoordinator.getChannelStateWriter();
+
+        //多易教育: 遍历每一个inputGate，设置 channel 状态 writer
         for (final InputGate gate : env.getAllInputGates()) {
             gate.setChannelStateWriter(channelStateWriter);
         }
+        //多易教育: 遍历每一个ResultPartitionWriter，为其设置 channel状态writer
         for (ResultPartitionWriter writer : env.getAllWriters()) {
             if (writer instanceof ChannelStateHolder) {
                 ((ChannelStateHolder) writer).setChannelStateWriter(channelStateWriter);
@@ -712,6 +719,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         restoreInternal();
     }
 
+    //多易教育: 为算子链恢复状态
     void restoreInternal() throws Exception {
         if (isRunning) {
             LOG.debug("Re-restore attempt rejected.");
@@ -733,7 +741,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
         // task specific initialization
         //多易教育: StreamTask的init()啥也没做
-        // 但是其子类（如OneInputStreamTask、TwoInputStreamTask中会重写，会在其中构建StreamOneInputProcessor等）
+        // 但是其子类（如 OneInputStreamTask、TwoInputStreamTask中 会重写，会在其中构建 StreamOneInputProcessor 等）
         init();
 
         // save the work of reloading state, etc, if the task is already canceled
@@ -744,6 +752,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
         // we need to make sure that any triggers scheduled in open() cannot be
         // executed before all operators are opened
+        //多易教育:
         CompletableFuture<Void> allGatesRecoveredFuture = actionExecutor.call(this::restoreGates);
 
         // Run mailbox until all gates will be recovered.
@@ -816,6 +825,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         // final check to exit early before starting to run
         ensureNotCanceled();
 
+        //多易教育: 注册消胀定时调度
         scheduleBufferDebloater();
 
         // let the task do its work
@@ -844,16 +854,21 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                 timestamp ->
                         mainMailboxExecutor.execute(
                                 () -> {
-                                    debloat();
-                                    scheduleBufferDebloater();
+                                    debloat();  //多易教育: 消胀逻辑
+                                    scheduleBufferDebloater();  //多易教育: 消胀后，再次注册定时
                                 },
                                 "Buffer size recalculation"));
     }
 
     @VisibleForTesting
     void debloat() {
+        //多易教育: 计算吞吐量
         long throughput = throughputCalculator.calculateThroughput();
         if (bufferDebloater != null) {
+            //多易教育: 根据吞吐量，重新计算buffer size，并通知到各个inputGate
+            // 各个inputGate则通过对应的InputChannel进行信息通知
+            //   若为LocalInputChannel(即连接本地输出)，则直接更新其对应的ResultSubpartition的Buffer大小；
+            //   若为RemoteInputChannel(即通过Netty连接其他TaskManager的远端输出)，则将NewBufferSizeMessage通过此Channel发送出去。
             bufferDebloater.recalculateBufferSize(throughput);
         }
     }
@@ -1604,10 +1619,12 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     }
 
     private CheckpointStorage createCheckpointStorage(StateBackend backend) throws Exception {
+        //多易教育: 从配置中获取cp存储对象
         final CheckpointStorage fromApplication =
                 configuration.getCheckpointStorage(getUserCodeClassLoader());
+        //多易教育: 从配置中获取savepoint路径
         final Path savepointDir = configuration.getSavepointDir(getUserCodeClassLoader());
-
+        //多易教育: 加载CheckpointStorage对象
         return CheckpointStorageLoader.load(
                 fromApplication,
                 savepointDir,

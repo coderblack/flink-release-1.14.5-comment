@@ -224,8 +224,10 @@ public class StateBackendLoader {
         final StateBackend backend;
 
         // (1) the application defined state backend has precedence
+        //多易教育: 1. 应用程序中定义了 state backend
         if (fromApplication != null) {
             // see if this is supposed to pick up additional configuration parameters
+            //多易教育: EmbeddedRocksDBStateBackend/MemoryStateBackend，都是ConfigurableStateBackend
             if (fromApplication instanceof ConfigurableStateBackend) {
                 // needs to pick up configuration
                 if (logger != null) {
@@ -246,11 +248,13 @@ public class StateBackendLoader {
             }
         } else {
             // (2) check if the config defines a state backend
+            //多易教育: 2. 如果应用程序中没有设置backend，则从配置中获取statebackend
             final StateBackend fromConfig = loadStateBackendFromConfig(config, classLoader, logger);
             if (fromConfig != null) {
                 backend = fromConfig;
             } else {
                 // (3) use the default
+                //多易教育: 3. 如果从配置中也获取不到，则使用默认的backend：HashMapStateBackend
                 backend = new HashMapStateBackendFactory().createFromConfig(config, classLoader);
                 if (logger != null) {
                     logger.info(
@@ -290,7 +294,7 @@ public class StateBackendLoader {
             ClassLoader classLoader,
             @Nullable Logger logger)
             throws IllegalConfigurationException, DynamicCodeLoadingException, IOException {
-
+        //多易教育: 加载构建stateBackend对象
         StateBackend rootBackend =
                 loadFromApplicationOrConfigOrDefaultInternal(
                         fromApplication, config, classLoader, logger);
@@ -304,12 +308,14 @@ public class StateBackendLoader {
 
         StateBackend backend;
         if (enableChangeLog) {
+            //多易教育: 如果开启了changelog backend机制，则对rootBackend进行包装后返回
             backend = loadChangelogStateBackend(rootBackend, classLoader);
             LOG.info(
                     "State backend loader loads {} to delegate {}",
                     backend.getClass().getSimpleName(),
                     rootBackend.getClass().getSimpleName());
         } else {
+            //多易教育: 否则，直接返回rootBackend
             backend = rootBackend;
             LOG.info(
                     "State backend loader loads the state backend as {}",
