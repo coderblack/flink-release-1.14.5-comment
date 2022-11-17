@@ -225,7 +225,8 @@ public class HeapKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
                             namespaceSerializer,
                             newStateSerializer,
                             snapshotTransformFactory);
-
+            //多易教育: 对于HeapKeyedStateBackend来说，这里的stateTableFactory有两种实现：
+            // CopyOnWriteStateTable 和 NestedStateTable
             stateTable = stateTableFactory.newStateTable(keyContext, newMetaInfo, keySerializer);
             registeredKVStates.put(stateDesc.getName(), stateTable);
         }
@@ -264,6 +265,9 @@ public class HeapKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
             @Nonnull StateDescriptor<S, SV> stateDesc,
             @Nonnull StateSnapshotTransformFactory<SEV> snapshotTransformFactory)
             throws Exception {
+        //多易教育: LIST/VALUE/MAP等不同类型对应着不同的工厂（在上文有硬编码）
+        // 工厂通过createState()方法来创建state
+        // 不同工厂的createState()方法，其实就是调用对应State实现类的state方法，如 HeapMapState::create
         StateFactory stateFactory = STATE_FACTORIES.get(stateDesc.getType());
         if (stateFactory == null) {
             String message =
@@ -272,11 +276,17 @@ public class HeapKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
                             stateDesc.getClass(), this.getClass());
             throw new FlinkRuntimeException(message);
         }
+        //多易教育: 无论哪一种KeyedState（如HeapListState，HeapMapState等）
+        // 都需要一个stateTable来存储
+        // 用户通过形如runTimeContext().getLisState(desc)的api获取一个State时，这里就会创建一个stateTable
+        // 并注册到 registeredKVStates这个map集合中： desc.name -> stateTable
         StateTable<K, N, SV> stateTable =
                 tryRegisterStateTable(
                         namespaceSerializer,
                         stateDesc,
                         getStateSnapshotTransformFactory(stateDesc, snapshotTransformFactory));
+        // 多易教育： 不同工厂的createState()方法，其实就是调用对应State实现类的state方法
+        //  如 HeapMapState::create ，而这里返回的就是State的实现类对象，如 HeapMapState
         return stateFactory.createState(stateDesc, stateTable, getKeySerializer());
     }
 
@@ -312,11 +322,6 @@ public class HeapKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
                         checkpointStrategy,
                         cancelStreamRegistry,
                         snapshotExecutionType);
-
-        // 多易教育：测试输出
-        System.out.println("在HeapKeyedStateBackend#snapshot ,所用的runner为：" + snapshotStrategyRunner + "," + snapshotStrategyRunner.hashCode());
-        System.out.println("在HeapKeyedStateBackend#snapshot ,对象实例为：" + this + "," + this.hashCode());
-        System.out.println("在HeapKeyedStateBackend#snapshot ,线程为："+ Thread.currentThread() + "线程号为：" + Thread.currentThread().getId());
 
         //多易教育: 调用runner执行snapshot
         return snapshotStrategyRunner.snapshot(

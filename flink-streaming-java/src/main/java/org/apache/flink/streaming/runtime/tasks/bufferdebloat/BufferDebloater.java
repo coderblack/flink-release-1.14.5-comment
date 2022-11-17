@@ -66,6 +66,7 @@ public class BufferDebloater {
     }
 
     public void recalculateBufferSize(long currentThroughput) {
+        //多易教育: 计算期待的buffer大小，计算公式为：
         long desiredTotalBufferSizeInBytes =
                 (currentThroughput * targetTotalBufferSize.toMillis()) / MILLIS_IN_SECOND;
 
@@ -73,6 +74,7 @@ public class BufferDebloater {
         for (IndexedInputGate inputGate : inputGates) {
             totalNumber += Math.max(1, inputGate.getBuffersInUseCount());
         }
+        //多易教育: 计算新的buffer大小
         int newSize =
                 (int)
                         Math.max(
@@ -83,7 +85,7 @@ public class BufferDebloater {
         lastEstimatedTimeToConsumeBuffers =
                 Duration.ofMillis(
                         newSize * totalNumber * MILLIS_IN_SECOND / Math.max(1, currentThroughput));
-
+        //多易教育: 判断是否要取消size更新
         boolean skipUpdate = skipUpdate(newSize);
 
         // Skip update if the new value pretty close to the old one.
