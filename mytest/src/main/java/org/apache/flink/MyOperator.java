@@ -1,6 +1,7 @@
 package org.apache.flink;
 
 import org.apache.flink.api.common.functions.RichMapFunction;
+import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.state.FunctionInitializationContext;
@@ -12,7 +13,7 @@ public class MyOperator extends RichMapFunction<String,String> implements Checkp
 
     @Override
     public void open(Configuration parameters) throws Exception {
-
+        getRuntimeContext().getListState(new ListStateDescriptor<String>("lst",String.class));
     }
 
     @Override
@@ -23,12 +24,12 @@ public class MyOperator extends RichMapFunction<String,String> implements Checkp
     @Override
     public void snapshotState(FunctionSnapshotContext context) throws Exception {
 
+
     }
 
+    //多易教育: CheckpointedFunction接口所声明的方法
     @Override
     public void initializeState(FunctionInitializationContext context) throws Exception {
-
-
-
+        context.getOperatorStateStore().getListState(new ListStateDescriptor<String>("lst",String.class));
     }
 }

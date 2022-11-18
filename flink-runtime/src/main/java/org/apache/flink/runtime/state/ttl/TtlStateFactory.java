@@ -66,6 +66,7 @@ public class TtlStateFactory<K, N, SV, TTLSV, S extends State, IS extends S> {
         Preconditions.checkNotNull(stateDesc);
         Preconditions.checkNotNull(stateBackend);
         Preconditions.checkNotNull(timeProvider);
+        //多易教育: 视是否启用ttl配置，走不同的创建路径
         return stateDesc.getTtlConfig().isEnabled()
                 ? new TtlStateFactory<K, N, SV, TTLSV, S, IS>(
                                 namespaceSerializer, stateDesc, stateBackend, timeProvider)

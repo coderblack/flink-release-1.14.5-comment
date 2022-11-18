@@ -240,6 +240,7 @@ public class DefaultOperatorStateBackend implements OperatorStateBackend {
         Preconditions.checkNotNull(stateDescriptor);
         String name = Preconditions.checkNotNull(stateDescriptor.getName());
 
+        //多易教育: 先从已访问过的state缓存中获取
         @SuppressWarnings("unchecked")
         PartitionableListState<S> previous =
                 (PartitionableListState<S>) accessedStatesByName.get(name);
@@ -260,18 +261,19 @@ public class DefaultOperatorStateBackend implements OperatorStateBackend {
         TypeSerializer<S> partitionStateSerializer =
                 Preconditions.checkNotNull(stateDescriptor.getElementSerializer());
 
+        //多易教育: 从注册的缓存map中获取
         @SuppressWarnings("unchecked")
         PartitionableListState<S> partitionableListState =
                 (PartitionableListState<S>) registeredOperatorStates.get(name);
-
+        //多易教育: 如果尚未被注册过
         if (null == partitionableListState) {
             // no restored state for the state name; simply create new state holder
-
+            //多易教育: 构造一个新的PartitionableListState
             partitionableListState =
                     new PartitionableListState<>(
                             new RegisteredOperatorStateBackendMetaInfo<>(
                                     name, partitionStateSerializer, mode));
-
+            //多易教育: 放入引用已注册state的map集合中
             registeredOperatorStates.put(name, partitionableListState);
         } else {
             // has restored state; check compatibility of new state access
@@ -298,7 +300,7 @@ public class DefaultOperatorStateBackend implements OperatorStateBackend {
 
             partitionableListState.setStateMetaInfo(restoredPartitionableListStateMetaInfo);
         }
-
+        //多易教育: 放入已访问的state的缓存map中
         accessedStatesByName.put(name, partitionableListState);
         return partitionableListState;
     }

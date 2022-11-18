@@ -291,19 +291,28 @@ public abstract class AbstractKeyedStateBackend<K>
                 keySerializer,
                 "State key serializer has not been configured in the config. "
                         + "This operation cannot use partitioned state.");
-
+        //多易教育: keyValueStatesByName是一个hashmap集合，用于缓存创建过的kvState：
+        //  HashMap<String, InternalKvState<K, ?, ?>> keyValueStatesByName
         InternalKvState<K, ?, ?> kvState = keyValueStatesByName.get(stateDescriptor.getName());
         if (kvState == null) {
             if (!stateDescriptor.isSerializerInitialized()) {
                 stateDescriptor.initializeSerializerUnlessSet(executionConfig);
             }
+            //多易教育: 创建kvState并包装上延迟跟踪功能（如果开启）
+            // 配置参数在LatencyTrackingStateConfig中有描述
+            //   开启配置参数： state.backend.latency-track.keyed-state-enabled
+            //   抽样间隔参数： state.backend.latency-track.sample-interval
+            //   将state名称作为延迟报表变量名： state.backend.latency-track.state-name-as-variable
             kvState =
                     LatencyTrackingStateFactory.createStateAndWrapWithLatencyTrackingIfEnabled(
+                            //多易教育: 创建kvState并包装Ttl功能
                             TtlStateFactory.createStateAndWrapWithTtlIfEnabled(
                                     namespaceSerializer, stateDescriptor, this, ttlTimeProvider),
                             stateDescriptor,
                             latencyTrackingStateConfig);
+            //多易教育: 将新创建的kvState放入缓存
             keyValueStatesByName.put(stateDescriptor.getName(), kvState);
+            //多易教育: 如果启用了queryableState，则将其发布
             publishQueryableStateIfEnabled(stateDescriptor, kvState);
         }
         return (S) kvState;
@@ -349,10 +358,10 @@ public abstract class AbstractKeyedStateBackend<K>
             lastName = stateDescriptor.getName();
             return (S) previous;
         }
-
+        //多易教育: 获取或创建新的KeyedState
         final S state = getOrCreateKeyedState(namespaceSerializer, stateDescriptor);
         final InternalKvState<K, N, ?> kvState = (InternalKvState<K, N, ?>) state;
-
+        //多易教育: 将获取的结果进行缓存，以便如果还取同名同namespace的state时，不会再重新创建
         lastName = stateDescriptor.getName();
         lastState = kvState;
         kvState.setCurrentNamespace(namespace);

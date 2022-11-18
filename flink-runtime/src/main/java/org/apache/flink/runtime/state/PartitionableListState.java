@@ -52,6 +52,7 @@ public final class PartitionableListState<S> implements ListState<S> {
             RegisteredOperatorStateBackendMetaInfo<S> stateMetaInfo, ArrayList<S> internalList) {
 
         this.stateMetaInfo = Preconditions.checkNotNull(stateMetaInfo);
+        //多易教育: PartitionableListState内部是用一个ArrayList来保存数据
         this.internalList = Preconditions.checkNotNull(internalList);
         this.internalListCopySerializer =
                 new ArrayListSerializer<>(stateMetaInfo.getPartitionStateSerializer());
