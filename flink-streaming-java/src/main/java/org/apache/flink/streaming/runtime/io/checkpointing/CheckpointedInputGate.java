@@ -184,9 +184,12 @@ public class CheckpointedInputGate implements PullingAsyncDataInput<BufferOrEven
             //多易教育: ------------------------------
             // barrierHandler有两个实现类： CheckpointBarrierTracker 和 SingleCheckpointBarrierHandler
             //  SingleCheckpointBarrierHandler =>
-            //    在收到第一个barrier时即触发ck，并保持跟踪收到的barrier数，并会阻塞掉收到barrier的input，可用于实现eos
+            //    不能同时跟踪多个cp下的barrier；
+            //    在收到第一个barrier时即触发ck，并保持跟踪各channel收到的barrier数，并会阻塞掉收到barrier的input
+            //    允许对齐和非对齐两种cp方式，因而可用于实现eos；也可以实现at least once
             //  CheckpointBarrierTracker =>
             //    可以同时接受多个ck-id下的barrier，不阻塞input
+            //    且不允许非对齐cp方式
             //    在某个ck-id的barrier收全后，通知监听器去完成checkpoint，可用于实现at-least-once
             // --------------------
             barrierHandler.processBarrier(checkpointBarrier, bufferOrEvent.getChannelInfo(), false);

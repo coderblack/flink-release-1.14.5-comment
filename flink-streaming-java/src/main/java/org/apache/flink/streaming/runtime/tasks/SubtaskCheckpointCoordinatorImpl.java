@@ -310,7 +310,7 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
                 options.isUnalignedCheckpoint());
 
         // Step (3): Prepare to spill the in-flight buffers for input and output
-        //多易教育: Step(3): 对input和output，准备溢出 in-flight buffers
+        //多易教育: Step(3): 针对非对齐模式，将output缓存进行溢出
         if (options.isUnalignedCheckpoint()) {
             // output data already written while broadcasting event
             channelStateWriter.finishOutput(metadata.getCheckpointId());

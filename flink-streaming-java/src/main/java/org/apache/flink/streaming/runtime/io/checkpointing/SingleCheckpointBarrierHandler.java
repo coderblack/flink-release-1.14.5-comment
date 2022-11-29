@@ -217,14 +217,17 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
         long barrierId = barrier.getId();
         LOG.debug("{}: Received barrier from channel {} @ {}.", taskName, channelInfo, barrierId);
 
+        //多易教育: 如果本次barrierId 比当前Id大，或者相等且当前cp非挂起状态
+        // 那说明上次cp已经完成，则视情况恢复一下inputChannel的数据消费（或者啥也不做）
         if (currentCheckpointId > barrierId
                 || (currentCheckpointId == barrierId && !isCheckpointPending())) {
+            //多易教育: 如果是对齐模式，则将对应输入channel恢复数据消费
             if (!barrier.getCheckpointOptions().isUnalignedCheckpoint()) {
                 inputs[channelInfo.getGateIdx()].resumeConsumption(channelInfo);
             }
             return;
         }
-
+        //多易教育: 如果barrierId属于本次cp，且本次cp还在挂起中
         checkNewCheckpoint(barrier);
         checkState(currentCheckpointId == barrierId);
 
@@ -240,12 +243,14 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
             FunctionWithException<BarrierHandlerState, BarrierHandlerState, Exception>
                     stateTransformer)
             throws IOException {
-
+        //多易教育: 将本channel添加到对齐channel列表中
         alignedChannels.add(alignedChannel);
         if (alignedChannels.size() == 1) {
             if (targetChannelCount == 1) {
+                //多易教育: 如果目标输入channel只有1个，则直接标记对齐结束
                 markAlignmentStartAndEnd(barrier.getId(), barrier.getTimestamp());
             } else {
+                //多易教育: 否则标记对齐开始
                 markAlignmentStart(barrier.getId(), barrier.getTimestamp());
             }
         }
@@ -254,11 +259,13 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
         // trigger a checkpoint with unfinished future for alignment duration
         if (alignedChannels.size() == targetChannelCount) {
             if (targetChannelCount > 1) {
+                //多易教育: 如果对齐channel数==目标输入channel数，则标记对齐完成
                 markAlignmentEnd();
             }
         }
 
         try {
+            //多易教育: BarrierHandlerState 状态转化(barrier处理器状态：）
             currentState = stateTransformer.apply(currentState);
         } catch (CheckpointException e) {
             abortInternal(currentCheckpointId, e);

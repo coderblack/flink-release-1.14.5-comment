@@ -34,7 +34,7 @@ import java.io.IOException;
  *   <li>Collecting aligned barriers
  *   <li>Waiting for an unaligned barrier
  *   <li>Collecting unaligned barriers
- * </ul>
+ * </ul>s
  *
  * <p>Additionally depending on the configuration we can switch between aligned and unaligned
  * actions.

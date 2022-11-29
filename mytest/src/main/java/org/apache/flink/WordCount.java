@@ -22,8 +22,13 @@ import org.apache.flink.util.Collector;
 
 public class WordCount {
     public static void main(String[] args) throws Exception {
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        Configuration conf = new Configuration();
+        conf.setBoolean("execution.checkpointing.unaligned",true);
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment(conf);
         env.enableCheckpointing(60000, CheckpointingMode.EXACTLY_ONCE);
+        env.getCheckpointConfig().setMaxConcurrentCheckpoints(10);
+        /*env.getCheckpointConfig().setForceUnalignedCheckpoints(true);
+        env.getCheckpointConfig().enableUnalignedCheckpoints();*/
         env.getCheckpointConfig().setCheckpointStorage("file:///home/hunter/ck");
 
         DataStreamSource<String> s1 = env.socketTextStream("localhost", 9999);

@@ -153,7 +153,9 @@ public class InputProcessorUtil {
         boolean enableCheckpointAfterTasksFinished =
                 config.getConfiguration()
                         .get(ExecutionCheckpointingOptions.ENABLE_CHECKPOINTS_AFTER_TASKS_FINISH);
+        //多易教育: 如果配置了非对齐cp方式
         if (config.isUnalignedCheckpointsEnabled()) {
+            // 多易教育： 创建的也是 SingleCheckpointBarrierHandler，只是其中的构造参数 altering=true
             return SingleCheckpointBarrierHandler.alternating(
                     taskName,
                     toNotifyOnCheckpoint,
@@ -164,6 +166,8 @@ public class InputProcessorUtil {
                     enableCheckpointAfterTasksFinished,
                     inputs);
         } else {
+            // 多易教育： 如果配置的是对齐cp方式
+            //  创建的也是 SingleCheckpointBarrierHandler，只是其中的构造参数altering=false
             return SingleCheckpointBarrierHandler.aligned(
                     taskName,
                     toNotifyOnCheckpoint,

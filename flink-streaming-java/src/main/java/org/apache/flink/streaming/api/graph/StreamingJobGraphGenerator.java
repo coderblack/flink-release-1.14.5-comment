@@ -297,6 +297,7 @@ public class StreamingJobGraphGenerator {
         if (checkpointConfig.isUnalignedCheckpointsEnabled()
                 && getCheckpointingMode(checkpointConfig) != CheckpointingMode.EXACTLY_ONCE) {
             LOG.warn("Unaligned checkpoints can only be used with checkpointing mode EXACTLY_ONCE");
+            //多易教育: 出乎意料了吧，非对齐checkpoint模式只能用于 EXACTLY_ONCE语义下
             checkpointConfig.enableUnalignedCheckpoints(false);
         }
     }
