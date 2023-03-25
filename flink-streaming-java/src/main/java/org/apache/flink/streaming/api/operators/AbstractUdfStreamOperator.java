@@ -78,6 +78,7 @@ public abstract class AbstractUdfStreamOperator<OUT, F extends Function>
             StreamConfig config,
             Output<StreamRecord<OUT>> output) {
         super.setup(containingTask, config, output);
+        // 内部判断：如果是RichFunction，就会为其填充runtimeContext
         FunctionUtils.setFunctionRuntimeContext(userFunction, getRuntimeContext());
     }
 

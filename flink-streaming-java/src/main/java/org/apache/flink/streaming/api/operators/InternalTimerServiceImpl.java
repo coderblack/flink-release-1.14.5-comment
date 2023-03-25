@@ -76,7 +76,7 @@ public class InternalTimerServiceImpl<K, N> implements InternalTimerService<N> {
     private TypeSerializer<K> keySerializer;
 
     private TypeSerializer<N> namespaceSerializer;
-
+    // 多易hunter:可被InternalTimerService调用的对象，也就是StreamOperator实现类，比如keyedProcessOperator/WindowOperator等
     private Triggerable<K, N> triggerTarget;
 
     private volatile boolean isInitialized;

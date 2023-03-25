@@ -54,7 +54,7 @@ public class KeyedProcessOperator<K, IN, OUT>
     public void open() throws Exception {
         super.open();
         collector = new TimestampedCollector<>(output);
-
+        // getInternalTimerService()方法，定义在父类 AbstractStreamOperator中
         InternalTimerService<VoidNamespace> internalTimerService =
                 getInternalTimerService("user-timers", VoidNamespaceSerializer.INSTANCE, this);
 
