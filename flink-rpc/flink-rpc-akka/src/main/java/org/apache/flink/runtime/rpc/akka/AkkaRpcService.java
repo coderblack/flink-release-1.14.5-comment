@@ -567,6 +567,7 @@ public class AkkaRpcService implements RpcService {
         // 多易教育: thenCombine会在两个任务都执行完成后，把两个任务的结果合并。
         // 注意： 两个任务中只要有一个执行异常，则将该异常信息作为指定任务的执行结果。
         //      两个任务是并行执行的，它们之间并没有先后依赖顺序。
+        // thenCombineAsync 则是把 合并任务也提交到线程池异步执行
         // 此处乃：将handshakeFuture 和 actorRefFuture 合并，然后利用它俩的结果生成一个gateWay的动态代理对象
         final CompletableFuture<C> gatewayFuture =
                 actorRefFuture.thenCombineAsync(
