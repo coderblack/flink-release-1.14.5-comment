@@ -261,6 +261,8 @@ under the License.
 							<goal>install-node-and-npm</goal>
 						</goals>
 						<configuration>
+							<nodeDownloadRoot>https://registry.npm.taobao.org/dist/</nodeDownloadRoot>
+							<npmDownloadRoot>https://registry.npmjs.org/npm/-/</npmDownloadRoot>
 							<nodeVersion>v12.14.1</nodeVersion>
 						</configuration>
 					</execution>
@@ -270,7 +272,7 @@ under the License.
 							<goal>npm</goal>
 						</goals>
 						<configuration>
-							<arguments>ci --cache-max=0 --no-save</arguments>
+							<arguments>ci --cache-max=0 --no-save --no-bin-links</arguments>
 							<environmentVariables>
 								<HUSKY_SKIP_INSTALL>true</HUSKY_SKIP_INSTALL>
 							</environmentVariables>

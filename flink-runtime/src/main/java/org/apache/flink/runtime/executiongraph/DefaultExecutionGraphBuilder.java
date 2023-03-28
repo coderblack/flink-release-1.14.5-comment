@@ -71,7 +71,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * Utility class to encapsulate the logic of building an {@link DefaultExecutionGraph} from a {@link
  * JobGraph}.
  *
- * 将DefaultExecutionGraph封装成JobGraph的工具类
+ * 将 DefaultExecutionGraph 封装成 JobGraph 的工具类
  *
  */
 public class DefaultExecutionGraphBuilder {
@@ -121,13 +121,13 @@ public class DefaultExecutionGraphBuilder {
                         jobManagerConfig);
 
         // create a new execution graph, if none exists so far
-        // 多易教育:   终于到了最终的ExecutionGraph构造方法
-        //  通过DefaultExecutionGraph的构造器来得到executionGraph
+        // 多易教育:   终于到了最终的 ExecutionGraph构造方法
+        //  通过 DefaultExecutionGraph 的构造器来得到 executionGraph
         final DefaultExecutionGraph executionGraph;
         try {
-            //多易教育: 此处的构造函数，并没有真正形成点集合和边集合，只是填充了一些配置和组件（如blobWriter，shuffleMaster等），
-            // 真正的形成点、边，是在后续的attach方法中，
-            // 因为ExecutionGraph对比器JobGraph来说，并不会改变拓扑结构，而只是改变点、边的封装形式和属性内容
+            //多易教育: 此处的构造函数，并没有真正形成点集合和边集合，只是填充了一些配置和组件（如 blobWriter，shuffleMaster 等），
+            // 真正的形成点、边，是在后续的 attach 方法中，
+            // 因为 ExecutionGraph 对比器 JobGraph 来说，并不会改变拓扑结构，而只是改变点、边的封装形式和属性内容
             executionGraph =
                     new DefaultExecutionGraph(
                             jobInformation,

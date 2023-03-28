@@ -248,13 +248,15 @@ public class AkkaRpcService implements RpcService {
                             flinkClassLoader);
                 });
     }
-
+    // 多易教育: 启动server时，需要传入rpcEndpoint对象
+    // 这里说明，每个rpcEndpoint，对应一个rpcServer实例，也对应一个actor
     @Override
     public <C extends RpcEndpoint & RpcGateway> RpcServer startServer(C rpcEndpoint) {
         checkNotNull(rpcEndpoint, "rpc endpoint");
-
+        // 多易教育: 向 supervisorActor注册一个新的actor
         final SupervisorActor.ActorRegistration actorRegistration =
                 registerAkkaRpcActor(rpcEndpoint);
+        // 多易教育: 获取到已注册actor的引用
         final ActorRef actorRef = actorRegistration.getActorRef();
         final CompletableFuture<Void> actorTerminationFuture =
                 actorRegistration.getTerminationFuture();
@@ -263,7 +265,7 @@ public class AkkaRpcService implements RpcService {
                 "Starting RPC endpoint for {} at {} .",
                 rpcEndpoint.getClass().getName(),
                 actorRef.path());
-
+        // 多易教育: 获取到已注册actor的akka地址
         final String akkaAddress = AkkaUtils.getAkkaURL(actorSystem, actorRef);
         final String hostname;
         Option<String> host = actorRef.path().address().host();
@@ -272,7 +274,8 @@ public class AkkaRpcService implements RpcService {
         } else {
             hostname = host.get();
         }
-
+        // 多易教育: 提取 本endpoint所实现的所有接口
+        // 用于后续生成动态代理对象
         Set<Class<?>> implementedRpcGateways =
                 new HashSet<>(RpcUtils.extractImplementedRpcGateways(rpcEndpoint.getClass()));
 
@@ -545,7 +548,8 @@ public class AkkaRpcService implements RpcService {
                 clazz.getName());
 
         final CompletableFuture<ActorRef> actorRefFuture = resolveActorAddress(address);
-
+        // 多易教育: thenCompose 可以用于组合多个CompletableFuture
+        // 将前一个任务的返回结果作为下一个任务的参数，它们之间存在着业务逻辑上的先后顺序
         final CompletableFuture<HandshakeSuccessMessage> handshakeFuture =
                 actorRefFuture.thenCompose(
                         (ActorRef actorRef) ->
@@ -560,7 +564,10 @@ public class AkkaRpcService implements RpcService {
                                                                 .<HandshakeSuccessMessage>apply(
                                                                         HandshakeSuccessMessage
                                                                                 .class))));
-
+        // 多易教育: henCombine会在两个任务都执行完成后，把两个任务的结果合并。
+        // 注意： 两个任务中只要有一个执行异常，则将该异常信息作为指定任务的执行结果。
+        //      两个任务是并行执行的，它们之间并没有先后依赖顺序。
+        // 此处乃：将handshakeFuture 和 actorRefFuture 合并，然后利用它俩的结果生成一个gateWay的动态代理对象
         final CompletableFuture<C> gatewayFuture =
                 actorRefFuture.thenCombineAsync(
                         handshakeFuture,
