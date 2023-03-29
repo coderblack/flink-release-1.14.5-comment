@@ -1345,7 +1345,9 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         assert (resourceManagerConnection == null);
 
         log.info("Connecting to ResourceManager {}.", resourceManagerAddress);
-
+        // 多易教育: 用于存储TaskManager的注册信息
+        // 包括taskExecutorAddress、resourceId、dataPort等连接信息
+        // 还包括 hardwareDescription等资源描述信息
         final TaskExecutorRegistration taskExecutorRegistration =
                 new TaskExecutorRegistration(
                         getAddress(),
@@ -1376,7 +1378,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             InstanceID taskExecutorRegistrationId,
             ClusterInformation clusterInformation) {
 
-        //多易教育: 向resourceManager发送slot报告
+        //多易教育: 向 resourceManager发送slot报告
         final CompletableFuture<Acknowledge> slotReportResponseFuture =
                 resourceManagerGateway.sendSlotReport(
                         getResourceID(),
