@@ -1626,7 +1626,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                     final Exception e = new Exception("The slot was rejected by the JobManager.");
 
                     for (SlotOffer rejectedSlot : offeredSlots) {
-                        // 遍历剩余的slot（被拒绝的slot），进行内部的释放
+                        //多易教育: 遍历剩余的slot（被拒绝的slot），进行内部的释放
                         freeSlotInternal(rejectedSlot.getAllocationId(), e);
                     }
                 } else {
