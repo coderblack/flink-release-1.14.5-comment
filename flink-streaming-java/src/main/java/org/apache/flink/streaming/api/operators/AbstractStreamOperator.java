@@ -277,7 +277,10 @@ public abstract class AbstractStreamOperator<OUT>
         final StreamTask<?, ?> containingTask = Preconditions.checkNotNull(getContainingTask());
         final CloseableRegistry streamTaskCloseableRegistry =
                 Preconditions.checkNotNull(containingTask.getCancelables());
-        //多易教育: 构造流算子状态上下文（此处的算子状态包含“算子状态”和“键控状态”）
+        //多易教育: 构造状态上下文 StreamOperatorStateContextImpl
+        // （此处的算子状态包含“算子状态”和“键控状态”）
+        // 主要就是封装： operatorStateBackend,keyedStateBackend,internalTimeServiceManager,
+        // rawOperatorStateInputs,rawKeyedStateInputs
         final StreamOperatorStateContext context =
                 streamTaskStateManager.streamOperatorStateContext(
                         getOperatorID(),
@@ -292,14 +295,15 @@ public abstract class AbstractStreamOperator<OUT>
                                 runtimeContext.getTaskManagerRuntimeInfo().getConfiguration(),
                                 runtimeContext.getUserCodeClassLoader()),
                         isUsingCustomRawKeyedState());  //多易教育: 这里写死的返回false；如果自定义AbstractStreamOperator的子类，则可以进行重写，从而可以使用到RawKeyedState
-        //多易教育: 一个StreamOperator 拥有一个 StreamOperatorStateHandler
+        //多易教育: 一个 StreamOperator 拥有一个 StreamOperatorStateHandler
         stateHandler =
                 new StreamOperatorStateHandler(
                         context, getExecutionConfig(), streamTaskCloseableRegistry);
         timeServiceManager = context.internalTimerServiceManager();
-        //多易教育: 初始化chain的算子状态
+        //多易教育: 初始化算子的状态（keyedState和OperatorState）
         stateHandler.initializeOperatorState(this);
         //多易教育: 向runtimeContext中设置键控状态的store
+        // 以便于用户可以通过runtimeContext.getXxState()来获取state实例
         // （上面Handler的构造中没有传入store方式，则通过重载构造填入一个默认的： DefaultKeyedStateStore）
         runtimeContext.setKeyedStateStore(stateHandler.getKeyedStateStore().orElse(null));
     }
