@@ -179,13 +179,14 @@ public class StreamTaskStateInitializerImpl implements StreamTaskStateInitialize
                             streamTaskCloseableRegistry);
 
             // -------------- Raw State Streams --------------
+            // 多易教育: 创建原生 keyedState后端
             rawKeyedStateInputs =
                     rawKeyedStateInputs(
                             prioritizedOperatorSubtaskStates
                                     .getPrioritizedRawKeyedState()
                                     .iterator());
             streamTaskCloseableRegistry.registerCloseable(rawKeyedStateInputs);
-
+            // 多易教育: 创建原生 operatorState后端
             rawOperatorStateInputs =
                     rawOperatorStateInputs(
                             prioritizedOperatorSubtaskStates
