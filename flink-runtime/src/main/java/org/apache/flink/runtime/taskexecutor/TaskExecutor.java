@@ -283,7 +283,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             BlobCacheService blobCacheService,
             FatalErrorHandler fatalErrorHandler,
             TaskExecutorPartitionTracker partitionTracker) {
-
+        // 多易教育: 父类是RpcEndpoint，其构造中会进行底层rpcServer的启动
         super(rpcService, RpcServiceUtils.createRandomName(TASK_MANAGER_NAME));
 
         checkArgument(
