@@ -150,14 +150,15 @@ public class StatusWatermarkValve {
 
                 lastOutputWatermarkStatus = WatermarkStatus.IDLE;
                 output.emitWatermarkStatus(lastOutputWatermarkStatus);
-            } else if (channelStatuses[channelIndex].watermark == lastOutputWatermark) {
+            }
+            else if (channelStatuses[channelIndex].watermark == lastOutputWatermark) {
                 // if the watermark of the channel that just became idle equals the last output
                 // watermark (the previous overall min watermark), we may be able to find a new
                 // min watermark from the remaining aligned channels
                 findAndOutputNewMinWatermarkAcrossAlignedChannels(output);
             }
-        } else if (watermarkStatus.isActive()
-                && channelStatuses[channelIndex].watermarkStatus.isIdle()) {
+        }
+        else if (watermarkStatus.isActive() && channelStatuses[channelIndex].watermarkStatus.isIdle()) {
             // handle idle -> active toggle for the input channel
             channelStatuses[channelIndex].watermarkStatus = WatermarkStatus.ACTIVE;
 

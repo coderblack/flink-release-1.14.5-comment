@@ -117,19 +117,25 @@ public class WatermarksWithIdleness<T> implements WatermarkGenerator<T> {
             counter++;
         }
 
+        // 多易教育: 此方法在onPeriodicEmit()中调用，因为onEvent的时候说明收到了数据那一定不是idle
         public boolean checkIfIdle() {
+            // 多易教育:  只要收到数据 onEvent() 中就会count++ ,它的变化则表示活跃
+            // 多易教育:  如果count 不等于 lastCounter，说明有变化，自然就不是idle
+            // 多易教育:  此时将 startOfInactivityNanos重置回0，以便于下一次计算idle时长
             if (counter != lastCounter) {
                 // activity since the last check. we reset the timer
                 lastCounter = counter;
                 startOfInactivityNanos = 0L;
                 return false;
             } else // timer started but has not yet reached idle timeout
+                // 多易教育: 如果counter == lastCounter ，说明这期间没有数据，是idle，并且startOfInactivityNanos==0，则说明是active之后的第一次idle
             if (startOfInactivityNanos == 0L) {
                 // first time that we see no activity since the last periodic probe
                 // begin the timer
-                startOfInactivityNanos = clock.relativeTimeNanos();
+                startOfInactivityNanos = clock.relativeTimeNanos();  // 多易教育: 记录下此刻的时间，作为 maxIdleTime的计时起点
                 return false;
             } else {
+                // 多易教育: 走到这里，说明已经不是第一次发现idle了，则比较此刻与idle计时起点，看是否达到idle标记阈值
                 return clock.relativeTimeNanos() - startOfInactivityNanos > maxIdleTimeNanos;
             }
         }
