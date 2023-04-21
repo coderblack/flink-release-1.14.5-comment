@@ -385,6 +385,8 @@ public class CopyOnWriteStateMap<K, N, S> extends StateMap<K, N, S> {
     private StateMapEntry<K, N, S> putEntry(K key, N namespace) {
 
         final int hash = computeHashForOperationAndDoIncrementalRehash(key, namespace);
+
+        // 多易教育: 选择当前元素到底使用 primaryTable 还是 incrementalRehashTable
         final StateMapEntry<K, N, S>[] tab = selectActiveTable(hash);
         int index = hash & (tab.length - 1);
 
@@ -601,6 +603,13 @@ public class CopyOnWriteStateMap<K, N, S> extends StateMap<K, N, S> {
      *     code.
      */
     private StateMapEntry<K, N, S>[] selectActiveTable(int hashCode) {
+
+        // currentIndex = hashCode & (primaryTable.length - 1)
+        // 多易教育: 计算 hashCode 应该被分到 primaryTable 的哪个桶中
+
+
+        // 多易教育: 大于等于 rehashIndex 的桶还未迁移，应该去 primaryTable 中去查找。
+        //  小于 rehashIndex 的桶已经迁移完成，应该去 incrementalRehashTable 中去查找。
         return (hashCode & (primaryTable.length - 1)) >= rehashIndex
                 ? primaryTable
                 : incrementalRehashTable;
