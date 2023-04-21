@@ -608,7 +608,7 @@ public class CopyOnWriteStateMap<K, N, S> extends StateMap<K, N, S> {
         // 多易教育: 计算 hashCode 应该被分到 primaryTable 的哪个桶中
 
 
-        // 多易教育: 大于等于 rehashIndex 的桶还未迁移，应该去 primaryTable 中去查找。
+        // 多易教育: 大于等于 rehashIndex 的桶还未迁移，应该去 primaryTable 中去查找
         //  小于 rehashIndex 的桶已经迁移完成，应该去 incrementalRehashTable 中去查找。
         return (hashCode & (primaryTable.length - 1)) >= rehashIndex
                 ? primaryTable
