@@ -140,6 +140,8 @@ public class CopyOnWriteStateMap<K, N, S> extends StateMap<K, N, S> {
      * An empty map shared by all zero-capacity maps (typically from default constructor). It is
      * never written to, and replaced on first put. Its size is set to half the minimum, so that the
      * first resize will create a minimum-sized map.
+     * 多易教育: 空的StateMap,不会被真的写入数据
+     *  size设置为最小值的一半，这样在扩容时就会创建一个刚好 minimum-size 的map
      */
     private static final StateMapEntry<?, ?, ?>[] EMPTY_TABLE =
             new StateMapEntry[MINIMUM_CAPACITY >>> 1];
@@ -154,6 +156,7 @@ public class CopyOnWriteStateMap<K, N, S> extends StateMap<K, N, S> {
     /**
      * This is the primary entry array (hash directory) of the state map. If no incremental rehash
      * is ongoing, this is the only used table.
+     * 多易教育: 主表,在没有正在进行中的rehash时,主表是唯一被使用的表
      */
     private StateMapEntry<K, N, S>[] primaryTable;
 
@@ -161,6 +164,7 @@ public class CopyOnWriteStateMap<K, N, S> extends StateMap<K, N, S> {
      * We maintain a secondary entry array while performing an incremental rehash. The purpose is to
      * slowly migrate entries from the primary table to this resized table array. When all entries
      * are migrated, this becomes the new primary table.
+     * 多易教育: rehash表，用于rehash扩容时，从主表中渐进地迁移数据过来，并在迁移完全后成为新的主表
      */
     private StateMapEntry<K, N, S>[] incrementalRehashTable;
 
@@ -170,7 +174,8 @@ public class CopyOnWriteStateMap<K, N, S> extends StateMap<K, N, S> {
     /** The current number of mappings in the rehash table. */
     private int incrementalRehashTableSize;
 
-    /** The next index for a step of incremental rehashing in the primary table. */
+    /** The next index for a step of incremental rehashing in the primary table.
+     * 多易教育: rehash时，下一个步骤对应的index  */
     private int rehashIndex;
 
     /** The current version of this map. Used for copy-on-write mechanics. */
@@ -189,6 +194,7 @@ public class CopyOnWriteStateMap<K, N, S> extends StateMap<K, N, S> {
      * The {@link CopyOnWriteStateMap} is rehashed when its size exceeds this threshold. The value
      * of this field is generally .75 * capacity, except when the capacity is zero, as described in
      * the EMPTY_TABLE declaration above.
+     * 多易教育: 触发rehash的阈值,0.75*容量
      */
     private int threshold;
 
@@ -200,7 +206,7 @@ public class CopyOnWriteStateMap<K, N, S> extends StateMap<K, N, S> {
 
     /**
      * Constructs a new {@code StateMap} with default capacity of {@code DEFAULT_CAPACITY}.
-     *
+     * 多易教育: 以默认容量（128）构造StateMap
      * @param stateSerializer the serializer of the key.
      */
     CopyOnWriteStateMap(TypeSerializer<S> stateSerializer) {
@@ -209,7 +215,7 @@ public class CopyOnWriteStateMap<K, N, S> extends StateMap<K, N, S> {
 
     /**
      * Constructs a new {@code StateMap} instance with the specified capacity.
-     *
+     * 多易教育: 以指定容量构造 StateMap
      * @param capacity the initial capacity of this hash map.
      * @param stateSerializer the serializer of the key.
      * @throws IllegalArgumentException when the capacity is less than zero.
@@ -219,6 +225,7 @@ public class CopyOnWriteStateMap<K, N, S> extends StateMap<K, N, S> {
         this.stateSerializer = Preconditions.checkNotNull(stateSerializer);
 
         // initialized maps to EMPTY_TABLE.
+        // 多易教育: 初始化主表和rehash表
         this.primaryTable = (StateMapEntry<K, N, S>[]) EMPTY_TABLE;
         this.incrementalRehashTable = (StateMapEntry<K, N, S>[]) EMPTY_TABLE;
 
@@ -245,6 +252,7 @@ public class CopyOnWriteStateMap<K, N, S> extends StateMap<K, N, S> {
         } else if (capacity > MAXIMUM_CAPACITY) {
             capacity = MAXIMUM_CAPACITY;
         } else {
+            // 多易教育： 取整到二次幂数
             capacity = MathUtils.roundUpToPowerOfTwo(capacity);
         }
         primaryTable = makeTable(capacity);
@@ -266,7 +274,7 @@ public class CopyOnWriteStateMap<K, N, S> extends StateMap<K, N, S> {
 
     @Override
     public S get(K key, N namespace) {
-
+        // 多易教育: 获取数据时，即会对正在进行中的rehash推进一次
         final int hash = computeHashForOperationAndDoIncrementalRehash(key, namespace);
         final int requiredVersion = highestRequiredSnapshotVersion;
         final StateMapEntry<K, N, S>[] tab = selectActiveTable(hash);
@@ -313,9 +321,11 @@ public class CopyOnWriteStateMap<K, N, S> extends StateMap<K, N, S> {
 
     @Override
     public void put(K key, N namespace, S value) {
+        // 多易教育: 这里返回的可能是被更新的目标entry，也有可能是新插入的entry
         final StateMapEntry<K, N, S> e = putEntry(key, namespace);
-
+        // 多易教育: 对目标entry设置新的value
         e.state = value;
+        // 多易教育: 数据版本设置为 此时stateMap的版本
         e.stateVersion = stateMapVersion;
     }
 
@@ -383,30 +393,46 @@ public class CopyOnWriteStateMap<K, N, S> extends StateMap<K, N, S> {
 
     /** Helper method that is the basis for operations that add mappings. */
     private StateMapEntry<K, N, S> putEntry(K key, N namespace) {
-
+        // 多易教育: 推进一次正在进行中的rehash,
+        //  并计算当前对应的 hash 值 [选择 primaryTable 或 incrementalRehashTable]
         final int hash = computeHashForOperationAndDoIncrementalRehash(key, namespace);
 
         // 多易教育: 选择当前元素到底使用 primaryTable 还是 incrementalRehashTable
         final StateMapEntry<K, N, S>[] tab = selectActiveTable(hash);
         int index = hash & (tab.length - 1);
-
+        // 多易教育: 从index位置开始，遍历 entry链表，进行next指针的更新 [针对的是更新的场景]
         for (StateMapEntry<K, N, S> e = tab[index]; e != null; e = e.next) {
             if (e.hash == hash && key.equals(e.key) && namespace.equals(e.namespace)) {
 
                 // copy-on-write check for entry
+
+                // 多易教育: entryVersion 表示 entry 创建时的版本号
+                //  highestRequiredSnapshotVersion 表示 正在进行中的那些 snapshot 的最大版本号
+                //  entryVersion 小于 highestRequiredSnapshotVersion，说明 Entry 的版本小于当前某些 Snapshot 的版本号，
+                //  即：当前 Entry 是旧版本的数据，当前 Entry 被其他 snapshot 持有。
+                //  为了保证 Snapshot 的数据正确性，这里必须为 e 创建新的副本，且 e 之前的某些 entry 也需要 copy 副本
+                //  handleChainedEntryCopyOnWrite 方法将会进行相应的 copy 操作，并返回 e 的新副本
+                //  然后将返回 handleChainedEntryCopyOnWrite 方法返回的 e 的副本返回给上层，进行数据的修改操作。
                 if (e.entryVersion < highestRequiredSnapshotVersion) {
                     e = handleChainedEntryCopyOnWrite(tab, index, e);
                 }
 
+                // 多易教育: 反之，entryVersion >= highestRequiredSnapshotVersion
+                //  说明当前 Entry 创建时的版本比所有 Snapshot 的版本高
+                //  即：当前 Entry 是新版本的数据，不被任何 Snapshot 持有
+                //  注：Snapshot 不可能引用高版本的数据
+                //  此时，e 是新的 Entry，不存在共享问题，所以直接修改当前 Entry 即可，所以返回当前 e
                 return e;
             }
         }
 
+        // 多易教育: 代码走到这里，说明没有找到已存在的entry，也就不是更新
+        //  则执行添加新entry的逻辑
         ++modCount;
         if (size() > threshold) {
             doubleCapacity();
         }
-
+        // 多易教育: 执行插入新entry的逻辑[往链表头部插入：头插法]
         return addNewStateMapEntry(tab, key, namespace, hash);
     }
 
@@ -504,7 +530,7 @@ public class CopyOnWriteStateMap<K, N, S> extends StateMap<K, N, S> {
         // algorithm, we only
         // need to do this check when isRehashing() is false, but in order to get a more robust
         // code(in case that
-        // the rehashing algorithm may changed in the future), we do this check for all the case.
+        // the rehashing algorithm may be changed in the future), we do this check for all the case.
         final int totalMapIndexSize = rehashIndex + table.length;
         final int copiedArraySize = Math.max(totalMapIndexSize, size());
         final StateMapEntry<K, N, S>[] copy = new StateMapEntry[copiedArraySize];
@@ -649,7 +675,7 @@ public class CopyOnWriteStateMap<K, N, S> extends StateMap<K, N, S> {
      * incremental rehash if incremental rehashing is in progress.
      */
     private int computeHashForOperationAndDoIncrementalRehash(K key, N namespace) {
-
+        // 多易教育: secondaryTable != EMPTY_TABLE,则表示正在rehash
         if (isRehashing()) {
             incrementalRehash();
         }
@@ -677,6 +703,7 @@ public class CopyOnWriteStateMap<K, N, S> extends StateMap<K, N, S> {
 
             while (e != null) {
                 // copy-on-write check for entry
+                // 如果 原版本<需要的版本,则从此位置做深拷贝
                 if (e.entryVersion < requiredVersion) {
                     e = new StateMapEntry<>(e, stateMapVersion);
                 }
