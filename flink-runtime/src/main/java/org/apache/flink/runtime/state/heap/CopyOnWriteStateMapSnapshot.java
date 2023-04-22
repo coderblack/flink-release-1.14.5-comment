@@ -276,6 +276,7 @@ public class CopyOnWriteStateMapSnapshot<K, N, S>
                 index--;
             }
 
+            //
             int lastNullIndex = index;
             index--;
             // move the chains to the back
