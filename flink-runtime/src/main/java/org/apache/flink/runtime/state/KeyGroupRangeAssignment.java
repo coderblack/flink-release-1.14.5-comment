@@ -100,7 +100,7 @@ public final class KeyGroupRangeAssignment {
         Preconditions.checkArgument(
                 maxParallelism >= parallelism,
                 "Maximum parallelism must not be smaller than parallelism.");
-
+        // 如果是2个并行度,划分结果为:[0,63],[64,127] // 如果并行度为1,划分结果为: [0,127]
         int start = ((operatorIndex * maxParallelism + parallelism - 1) / parallelism);
         int end = ((operatorIndex + 1) * maxParallelism - 1) / parallelism;
         return new KeyGroupRange(start, end);

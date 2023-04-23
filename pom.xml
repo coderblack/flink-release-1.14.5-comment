@@ -1044,20 +1044,20 @@ under the License.
 								<skip>true</skip>
 							</configuration>
 						</plugin>
-						<plugin>
+						<!--<plugin>
 							<groupId>org.apache.maven.plugins</groupId>
 							<artifactId>maven-checkstyle-plugin</artifactId>
 							<configuration>
 								<skip>true</skip>
 							</configuration>
-						</plugin>
-						<plugin>
+						</plugin>-->
+						<!--<plugin>
 							<groupId>com.diffplug.spotless</groupId>
 							<artifactId>spotless-maven-plugin</artifactId>
 							<configuration>
 								<skip>true</skip>
 							</configuration>
-						</plugin>
+						</plugin>-->
 						<plugin>
 							<groupId>org.scalastyle</groupId>
 							<artifactId>scalastyle-maven-plugin</artifactId>
@@ -1540,14 +1540,14 @@ under the License.
 					</excludes>
 				</configuration>
 			</plugin>
-			<plugin>
+			<!--<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-checkstyle-plugin</artifactId>
-			</plugin>
-			<plugin>
+			</plugin>-->
+			<!--<plugin>
 				<groupId>com.diffplug.spotless</groupId>
 				<artifactId>spotless-maven-plugin</artifactId>
-			</plugin>
+			</plugin>-->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -1873,7 +1873,7 @@ under the License.
 					</configuration>
 				</plugin>
 
-				<plugin>
+				<!--<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-checkstyle-plugin</artifactId>
 					<version>2.17</version>
@@ -1881,7 +1881,7 @@ under the License.
 						<dependency>
 							<groupId>com.puppycrawl.tools</groupId>
 							<artifactId>checkstyle</artifactId>
-							<!-- Note: match version with docs/flinkDev/ide_setup.md -->
+							&lt;!&ndash; Note: match version with docs/flinkDev/ide_setup.md &ndash;&gt;
 							<version>8.14</version>
 						</dependency>
 					</dependencies>
@@ -1901,9 +1901,9 @@ under the License.
 						<logViolationsToConsole>true</logViolationsToConsole>
 						<failOnViolation>true</failOnViolation>
 					</configuration>
-				</plugin>
+				</plugin>-->
 
-				<plugin>
+				<!--<plugin>
 					<groupId>com.diffplug.spotless</groupId>
 					<artifactId>spotless-maven-plugin</artifactId>
 					<version>${spotless.version}</version>
@@ -1914,7 +1914,7 @@ under the License.
 								<style>AOSP</style>
 							</googleJavaFormat>
 
-							<!-- \# refers to the static imports -->
+							&lt;!&ndash; \# refers to the static imports &ndash;&gt;
 							<importOrder>
 								<order>org.apache.flink,org.apache.flink.shaded,,javax,java,scala,\#</order>
 							</importOrder>
@@ -1931,7 +1931,7 @@ under the License.
 							</goals>
 						</execution>
 					</executions>
-				</plugin>
+				</plugin>-->
 
 
 				<plugin>

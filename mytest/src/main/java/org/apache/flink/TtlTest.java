@@ -23,7 +23,7 @@ public class TtlTest {
         env.getCheckpointConfig().setCheckpointStorage("file:/d:/ckpt");
 
         DataStreamSource<String> s1 = env.socketTextStream("localhost", 9999);
-        env.setParallelism(1);
+        env.setParallelism(2);
 
         s1.keyBy(s -> s)
                 .process(new KeyedProcessFunction<String, String, String>() {
