@@ -594,7 +594,7 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
         asyncOperationsThreadPool.execute(asyncCheckpointRunnable);
 
         // 多易教育：测试输出
-        System.out.println("SubtaskCheckpointCoordinatorImpl#finishAndReportAsync,cp异步,异步任务放入线程池的逻辑所在线程："+ Thread.currentThread()+","+Thread.currentThread().getId());
+        //System.out.println("SubtaskCheckpointCoordinatorImpl#finishAndReportAsync,cp异步,异步任务放入线程池的逻辑所在线程："+ Thread.currentThread()+","+Thread.currentThread().getId());
 
     }
 

@@ -394,8 +394,8 @@ public class FsCheckpointStreamFactory implements CheckpointStreamFactory {
             final String fileName = UUID.randomUUID().toString();
             relativeStatePath = fileName;
             // 多易教育：测试输出
-            System.out.println("创建cp路径，basePath:" +basePath+"fileName:"+fileName);
-            System.out.println("创建cp路径，所在线程:"+Thread.currentThread()+","+Thread.currentThread().getId());
+            //System.out.println("创建cp路径，basePath:" +basePath+"fileName:"+fileName);
+            //System.out.println("创建cp路径，所在线程:"+Thread.currentThread()+","+Thread.currentThread().getId());
             return new Path(basePath, fileName);
         }
 
@@ -404,7 +404,7 @@ public class FsCheckpointStreamFactory implements CheckpointStreamFactory {
             for (int attempt = 0; attempt < 10; attempt++) {
                 try {
                     // 多易教育：测试输出
-                    System.out.println("创建cp输出流,所在线程：" +Thread.currentThread()+","+Thread.currentThread().getId());
+                    //System.out.println("创建cp输出流,所在线程：" +Thread.currentThread()+","+Thread.currentThread().getId());
                     OutputStreamAndPath streamAndPath =
                             EntropyInjector.createEntropyAware(
                                     fs, createStatePath(), WriteMode.NO_OVERWRITE);

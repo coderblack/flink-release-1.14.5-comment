@@ -946,7 +946,7 @@ public class Task
     private void restoreAndInvoke(TaskInvokable finalInvokable) throws Exception {
         try {
             // 多易教育：输出测试 ，actionExecutor和触发task invoke方法和mailbox的线程关系
-            System.out.println("doRun()中的逻辑所在线程: " + Thread.currentThread()+","+Thread.currentThread().getId());
+            //System.out.println("doRun()中的逻辑所在线程: " + Thread.currentThread()+","+Thread.currentThread().getId());
 
             // 多易教育:  执行task恢复
             runWithSystemExitMonitoring(finalInvokable::restore);

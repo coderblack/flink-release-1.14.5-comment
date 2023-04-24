@@ -186,7 +186,7 @@ final class AsyncCheckpointRunnable implements Runnable, Closeable {
             // 彻底完成checkpoint的 异步步骤流程
             // ---------------------------------------
             // 多易教育：测试输出
-            System.out.println("AsyncCheckpointRunnable#finalizeNonFinishedSnapshots,cp异步任务run方法中，所在线程："+ Thread.currentThread()+","+Thread.currentThread().getId());
+            //System.out.println("AsyncCheckpointRunnable#finalizeNonFinishedSnapshots,cp异步任务run方法中，所在线程："+ Thread.currentThread()+","+Thread.currentThread().getId());
 
             OperatorSnapshotFinalizer finalizedSnapshots =
                     new OperatorSnapshotFinalizer(snapshotInProgress);

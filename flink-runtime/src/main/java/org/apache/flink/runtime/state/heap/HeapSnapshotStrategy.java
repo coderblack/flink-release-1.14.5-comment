@@ -147,8 +147,8 @@ class HeapSnapshotStrategy<K>
                     streamWithResultProvider.getCheckpointOutputStream();
 
             // 多易教育：测试输出
-            System.out.println("在HeapSnapshotStrategy#asyncSnapshot(supplier)中，当前线程为： " + Thread.currentThread()+",线程号：" +Thread.currentThread().getId());
-            System.out.println("在HeapSnapshotStrategy#asyncSnapshot(supplier)中，localStream为： " + localStream + "," + localStream.hashCode());
+            //System.out.println("在HeapSnapshotStrategy#asyncSnapshot(supplier)中，当前线程为： " + Thread.currentThread()+",线程号：" +Thread.currentThread().getId());
+            //System.out.println("在HeapSnapshotStrategy#asyncSnapshot(supplier)中，localStream为： " + localStream + "," + localStream.hashCode());
 
             //多易教育: 装饰者模式，以加入一些公共的附加逻辑
             final DataOutputViewStreamWrapper outView =

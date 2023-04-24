@@ -471,7 +471,7 @@ public abstract class AbstractStreamOperator<OUT>
         //   一个算子拥有一个 ?还是一个chain拥有一个 ?
         //   还是一个slot拥有一个 ? 还是一个task manager拥有一个 ?
         //   从 WordCount测试程序来看，这里打印出了3个(WordCount中由window算子用到了状态，3并行度）
-        System.out.println("AbstractStreamOperator，"+this.getOperatorName()+"，中的getKedStateBackend,所使用的stateHandler对象hash：" + stateHandler.hashCode());
+        //System.out.println("AbstractStreamOperator，"+this.getOperatorName()+"，中的getKedStateBackend,所使用的stateHandler对象hash：" + stateHandler.hashCode());
         return stateHandler.getKeyedStateBackend();
     }
 
