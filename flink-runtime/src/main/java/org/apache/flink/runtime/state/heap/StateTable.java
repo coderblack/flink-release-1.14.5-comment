@@ -390,7 +390,7 @@ public abstract class StateTable<K, N, S>
         private void next() {
             while (keyGroupIndex < keyGroupedStateMaps.length) {
                 StateMap<K, N, S> stateMap = keyGroupedStateMaps[keyGroupIndex++];
-                StateIncrementalVisitor<K, N, S> visitor =
+                StateIncrementalVisitor<K, N, S> visitor =  // CopyOnWriteStateMap.StateIncrementalVisitorImpl
                         stateMap.getStateIncrementalVisitor(recommendedMaxNumberOfReturnedRecords);
                 if (visitor.hasNext()) {
                     stateIncrementalVisitor = visitor;

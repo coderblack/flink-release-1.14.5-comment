@@ -37,6 +37,7 @@ public class TtlTest {
                                 String.class);
                         StateTtlConfig ttlConfig = StateTtlConfig.newBuilder(Time.seconds(1))
                                 .setTtlTimeCharacteristic(StateTtlConfig.TtlTimeCharacteristic.ProcessingTime)
+                                //.cleanupIncrementally(5,true)
                                 .build();
                         stateDescriptor.enableTimeToLive(ttlConfig);
 

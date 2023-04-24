@@ -77,7 +77,7 @@ class TtlIncrementalCleanup<K, N, S> {
         int entryNum = 0;
         Collection<StateEntry<K, N, S>> nextEntries;
         while (entryNum < cleanupSize
-                && stateIterator.hasNext()
+                && stateIterator.hasNext() // StateTable$StateEntryIterator
                 && !(nextEntries = stateIterator.nextEntries()).isEmpty()) {
 
             for (StateEntry<K, N, S> state : nextEntries) {
