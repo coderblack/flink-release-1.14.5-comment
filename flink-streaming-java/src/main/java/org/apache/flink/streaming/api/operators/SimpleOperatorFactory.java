@@ -44,14 +44,14 @@ public class SimpleOperatorFactory<OUT> extends AbstractStreamOperatorFactory<OU
         } else if (operator instanceof StreamSource
                 && ((StreamSource) operator).getUserFunction()
                         instanceof InputFormatSourceFunction) {
-            return new SimpleInputFormatOperatorFactory<OUT>((StreamSource) operator);
+            return new SimpleInputFormatOperatorFactory<OUT>((StreamSource) operator);  // 该工厂提供 getInputFormat()方法
         } else if (operator instanceof StreamSink
                 && ((StreamSink) operator).getUserFunction() instanceof OutputFormatSinkFunction) {
-            return new SimpleOutputFormatOperatorFactory<>((StreamSink) operator);
+            return new SimpleOutputFormatOperatorFactory<>((StreamSink) operator); // 该工厂提供 getOutputFormat()方法
         } else if (operator instanceof AbstractUdfStreamOperator) {
-            return new SimpleUdfStreamOperatorFactory<OUT>((AbstractUdfStreamOperator) operator);
+            return new SimpleUdfStreamOperatorFactory<OUT>((AbstractUdfStreamOperator) operator); // 该工厂提供 getUserFunction()方法
         } else {
-            return new SimpleOperatorFactory<>(operator);
+            return new SimpleOperatorFactory<>(operator); // 默认工厂，则提供共同功能，createStreamOperator(parammetors)，可对封装的operator设置processTimeService、调用setup
         }
     }
 
@@ -67,7 +67,7 @@ public class SimpleOperatorFactory<OUT> extends AbstractStreamOperatorFactory<OU
     }
 
     @SuppressWarnings("unchecked")
-    @Override
+    @Override // 多易教育: 集群中运行时会调用该方法来获取到 Operator对象
     public <T extends StreamOperator<OUT>> T createStreamOperator(
             StreamOperatorParameters<OUT> parameters) {
         if (operator instanceof AbstractStreamOperator) {
