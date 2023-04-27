@@ -415,7 +415,10 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             // start the job leader service
             jobLeaderService.start(
                     getAddress(), getRpcService(), haServices, new JobLeaderListenerImpl());
-
+            // 多易教育:
+            //  创建FileCache对象，用于存储Task在执行过程中从
+            //  PermanentBlobService拉取的文件，并将文件展开在/tmp_/路径中，如果
+            //  Task处于非注册状态超过5秒，将清理临时文件
             fileCache =
                     new FileCache(
                             taskManagerConfiguration.getTmpDirectories(),
