@@ -188,7 +188,7 @@ public class StreamingJobGraphGenerator {
         // submission iff they didn't change.
         //多易教育: 为streamGraph中的vertex生成确定的hash，以便于在跨提交之间进行统一标识
         // 保证如果提交的拓扑没有改变，则每次生成的hash都是一样的
-        // Map中的key为StreamNode的id，value为生成的hash
+        // Map: [StreamNodeId，hash]
         Map<Integer, byte[]> hashes =
                 defaultStreamGraphHasher.traverseStreamGraphAndGenerateHashes(streamGraph);
 
