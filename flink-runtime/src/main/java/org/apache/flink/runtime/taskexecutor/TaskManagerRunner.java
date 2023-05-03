@@ -147,7 +147,7 @@ public class TaskManagerRunner implements FatalErrorHandler {
 
         timeout = Time.fromDuration(configuration.get(AkkaOptions.ASK_TIMEOUT_DURATION));
 
-        //多易教育: 线程池，size取cpu合数
+        //多易教育: 线程池，size取cpu核数
         this.executor =
                 java.util.concurrent.Executors.newScheduledThreadPool(
                         Hardware.getNumberCPUCores(),
@@ -524,7 +524,7 @@ public class TaskManagerRunner implements FatalErrorHandler {
                         externalAddress,
                         localCommunicationOnly,
                         taskExecutorResourceSpec);
-
+        // 多易教育: 创建taskManagerMetricGroup，用于获取TaskManager监控指标
         Tuple2<TaskManagerMetricGroup, MetricGroup> taskManagerMetricGroup =
                 MetricUtils.instantiateTaskManagerMetricGroup(
                         metricRegistry,

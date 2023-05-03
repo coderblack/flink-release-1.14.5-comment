@@ -136,7 +136,7 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
     private final SlotManager slotManager;
 
     private final ResourceManagerPartitionTracker clusterPartitionTracker;
-
+    // 多易教育: 存储整个Flink集群共享的信息，包括blobServerHostname和blobServerPort等配置
     private final ClusterInformation clusterInformation;
 
     protected final ResourceManagerMetricGroup resourceManagerMetricGroup;

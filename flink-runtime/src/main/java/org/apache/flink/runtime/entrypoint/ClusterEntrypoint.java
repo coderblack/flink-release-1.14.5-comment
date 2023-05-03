@@ -296,27 +296,30 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
         synchronized (lock) {
             // 多易教育: 通过SPI机制加载 AkkaRpcSystem
             rpcSystem = RpcSystem.load(configuration);
-
+            // 多易教育: 根据配置的地址和端口创建公用的RpcService
             commonRpcService =
                     RpcUtils.createRemoteRpcService(
                             rpcSystem,
                             configuration,
-                            configuration.getString(JobManagerOptions.ADDRESS),
-                            getRPCPortRange(configuration),
-                            configuration.getString(JobManagerOptions.BIND_HOST),
-                            configuration.getOptional(JobManagerOptions.RPC_BIND_PORT));
+                            configuration.getString(JobManagerOptions.ADDRESS), // external address
+                            getRPCPortRange(configuration), // external port range
+                            configuration.getString(JobManagerOptions.BIND_HOST),  // bind address
+                            configuration.getOptional(JobManagerOptions.RPC_BIND_PORT)); // bind port
 
             JMXService.startInstance(configuration.getString(JMXServerOptions.JMX_SERVER_PORT));
 
             // update the configuration used to create the high availability services
+            // 多易教育: 根据commonRpcService的实际地址更新配置，以便后续创建高可用服务
             configuration.setString(JobManagerOptions.ADDRESS, commonRpcService.getAddress());
             configuration.setInteger(JobManagerOptions.PORT, commonRpcService.getPort());
-
+            //多易教育: 创建ioExecutor线程池，提供集群中的I/O操作
             ioExecutor =
                     Executors.newFixedThreadPool(
                             ClusterEntrypointUtils.getPoolSize(configuration),
                             new ExecutorThreadFactory("cluster-io"));
+            //多易教育: 创建高可用服务，提供集群高可用支持: StandaloneHaServices
             haServices = createHaServices(configuration, ioExecutor, rpcSystem); //TODO   BY DEEP SEA : StandaloneHaServices
+            //多易教育: 创建并启动BlobServer，用于存储对象数据，例如JobGraph中的JAR包等
             blobServer = new BlobServer(configuration, haServices.createBlobStore());
             blobServer.start();
             heartbeatServices = createHeartbeatServices(configuration);
@@ -335,7 +338,7 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
                             hostname,
                             ConfigurationUtils.getSystemResourceMetricsProbingInterval(
                                     configuration));
-
+            // 多易教育: 创建archivedExecutionGraphStore，不同的集群类型创建不同的store
             executionGraphInfoStore =
                     createSerializableExecutionGraphStore(
                             configuration, commonRpcService.getScheduledExecutor());
