@@ -374,11 +374,11 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
     //TODO   BY DEEP SEA ： 提交job的内部方法
     private CompletableFuture<Acknowledge> internalSubmitJob(JobGraph jobGraph) {
         log.info("Submitting job '{}' ({}).", jobGraph.getName(), jobGraph.getJobID());
-
+        // 多易教育: 持久化和运行job
         final CompletableFuture<Acknowledge> persistAndRunFuture =
-                waitForTerminatingJob(jobGraph.getJobID(), jobGraph, this::persistAndRunJob) // 多易教育: 持久化和运行job
+                waitForTerminatingJob(jobGraph.getJobID(), jobGraph, this::persistAndRunJob)
                         .thenApply(ignored -> Acknowledge.get());
-
+        // 多易教育: 处理提交job后的异步返回结果（异常，或确认）
         return persistAndRunFuture.handleAsync(
                 (acknowledge, throwable) -> {
                     if (throwable != null) {
@@ -415,13 +415,13 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
         JobManagerRunner jobManagerRunner =
                 createJobManagerRunner(jobGraph, initializationTimestamp);
 
-        // 将当前作业的ID加入runningJob集合
-        // 表示当前作业已处于运行状态
+        // 多易教育: 将当前作业的ID加入runningJob集合
+        // 多易教育: 表示当前作业已处于运行状态
         runningJobs.put(jobGraph.getJobID(), jobManagerRunner);
 
         final JobID jobId = jobGraph.getJobID();
 
-        // 处理Job派发结果
+        // 多易教育: 处理Job派发结果
         final CompletableFuture<CleanupJobState> cleanupJobStateFuture =
                 jobManagerRunner
                         .getResultFuture()

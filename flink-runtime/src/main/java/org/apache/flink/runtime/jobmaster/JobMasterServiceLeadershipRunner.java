@@ -163,7 +163,7 @@ public class JobMasterServiceLeadershipRunner implements JobManagerRunner, Leade
     @Override
     public void start() throws Exception {
         LOG.debug("Start leadership runner for job {}.", getJobID());
-        // 多易教育:  StandaloneLeaderElectionService,开启leader选举（授予自身leader，并调用job调度执行）
+        // 多易教育:  StandaloneLeaderElectionService,开启 leader选举（授予自身 leader，并调用 job 调度执行）
         leaderElectionService.start(this);
     }
 
@@ -243,7 +243,7 @@ public class JobMasterServiceLeadershipRunner implements JobManagerRunner, Leade
             return jobMasterServiceProcess.isInitializedAndRunning();
         }
     }
-    // 多易教育:  JobMaster的leader授权回调，回调的流程极长，其中最重要的就是会创建出JobMasterService，并启动job的调度执行
+    // 多易教育:  JobMaster的 leader授权回调，回调的流程极长，其中最重要的就是会创建出JobMasterService，并启动job的调度执行
     @Override
     public void grantLeadership(UUID leaderSessionID) {
         runIfStateRunning(

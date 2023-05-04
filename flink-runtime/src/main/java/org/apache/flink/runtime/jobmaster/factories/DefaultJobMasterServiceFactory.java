@@ -131,7 +131,7 @@ public class DefaultJobMasterServiceFactory implements JobMasterServiceFactory {
            AkkaRpcActor.start()就是用tell发送一个Controller Message（START）
            AkkaRpcActor中的createReceive中，会根据Message调用handleControllerMessage()方法
            然后就会调用 akkaRpcActor.rpcEndpoint.internalCallOnStart()
-           进而调用到 RpcEndpoint(JobMaster子类).onStart()方法
+           进而调用到 RpcEndpoint(子类JobMaster).onStart()方法
            而onStart()中，就开始正式执行job：JobMaster.startJobExecution(); 位置在：JobMaster: 391
            JobMaster.startJobExecution()中，调用startScheduling();开始调度
            进而： schedulerNG.startScheduling(); 走的实现类：SchedulerBase的startScheduling()
