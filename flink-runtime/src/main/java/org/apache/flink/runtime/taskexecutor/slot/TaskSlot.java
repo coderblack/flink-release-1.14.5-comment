@@ -111,8 +111,8 @@ public class TaskSlot<T extends TaskSlotPayload> implements AutoCloseableAsync {
 
         this.tasks = new HashMap<>(4);
 
-        //多易教育: 构造时状态为 “已分配”,也就是只有当需要分配槽位时才创建一个TaskSlot ？
-        // 意味着构造一个TaskSlot，就是为了一个安排一个Task而做的
+        // 多易教育: 构造时状态为 “已分配”,也就是只有当需要分配槽位时才创建一个TaskSlot ？
+        //  意味着构造一个TaskSlot，就是为了一个安排一个Task而做的
         this.state = TaskSlotState.ALLOCATED;
 
         this.jobId = jobId;

@@ -283,7 +283,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             BlobCacheService blobCacheService,
             FatalErrorHandler fatalErrorHandler,
             TaskExecutorPartitionTracker partitionTracker) {
-        // 多易教育: 父类是RpcEndpoint，其构造中会进行底层rpcServer的启动
+        // 多易教育: 父类是RpcEndpoint，其构造中会进行rpcServer的构建
         super(rpcService, RpcServiceUtils.createRandomName(TASK_MANAGER_NAME));
 
         checkArgument(
@@ -329,7 +329,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         this.resourceManagerHeartbeatManager =
                 createResourceManagerHeartbeatManager(heartbeatServices, resourceId);
 
-        // q&a: 采样线程？  工厂中获得线程的办法是，通过接收一个runnable后new了一个thread
+        // 多易教育: 采样线程？  工厂中获得线程的办法是，通过接收一个runnable后new了一个thread
         ExecutorThreadFactory sampleThreadFactory =
                 new ExecutorThreadFactory.Builder()
                         .setPoolName("flink-thread-info-sampler")
@@ -562,8 +562,8 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     // Task lifecycle RPCs
     // ----------------------------------------------------------------------
     // 多易教育:   提交task的rpc接口方法
-    // JobMaster端的SchedulerNG负责生成调度计划，为每一个任务实例生成Execution对象
-    // 然后通过Execution.deploy()方法，方法中会通过TaskExecutor网关，来向TaskExecutor提交task
+    //  JobMaster端的SchedulerNG负责生成调度计划，为每一个任务实例生成Execution对象
+    //  然后通过Execution.deploy()方法，方法中会通过TaskExecutor网关，来向TaskExecutor提交task
     @Override
     public CompletableFuture<Acknowledge> submitTask(
             TaskDeploymentDescriptor tdd, JobMasterId jobMasterId, Time timeout) {
@@ -696,7 +696,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             } catch (IOException e) {
                 throw new TaskSubmissionException(e);
             }
-            //多易教育: 从tdd中获取jobmanager携带过来的用于恢复task的相关信息（如用于恢复的restoreCheckpointId,taskStateSnapshot）
+            //多易教育: 从tdd中获取jobManager携带过来的用于恢复task的相关信息（如用于恢复的restoreCheckpointId,taskStateSnapshot）
             final JobManagerTaskRestore taskRestore = tdd.getTaskRestore();
             //多易教育: 构造taskStateManager（task状态管理器）,每个subTask有自己的TaskStateManager
             final TaskStateManager taskStateManager =
@@ -708,15 +708,16 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                             taskRestore,
                             checkpointResponder);
             //多易教育: 整个TaskExecutor拥有一个taskSlotTable（task槽位表）
-            // 每个subtask属于一个TaskSlot，而一个TaskSlot都有一个自己的memoryManager（内存管理器）
-            // 也就是：相同taskSlot下的subTask，共用一个memoryManager
+            // 每个subtask属于一个TaskSlot，而一个 AllocationId 都有一个自己的 memoryManager（内存管理器）
+            // 每个AllocationId会对应一个TaskSlot,而一个TaskSlot在创建时即会创建一个memoryManager
+            // 推论：如果多个subTask共享一个槽位，岂不是这多个subTask是用的同一个memoryManager？
             MemoryManager memoryManager;
             try {
                 memoryManager = taskSlotTable.getTaskMemoryManager(tdd.getAllocationId());
             } catch (SlotNotFoundException e) {
                 throw new TaskSubmissionException("Could not submit task.", e);
             }
-            //多易教育: 构造task实例对象（它是一个runnable）
+            //多易教育: 构造 task 实例对象（它是一个runnable）
             Task task =
                     new Task(
                             jobInformation,
@@ -730,23 +731,24 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                             memoryManager,
                             taskExecutorServices.getIOManager(), //多易教育: 一个TaskExecutor上的subTask都共用TaskExecutor的IOManager
                             taskExecutorServices.getShuffleEnvironment(),//多易教育: 一个TaskExecutor上的subTask都共用TaskExecutor的ShuffleEnv
-                            taskExecutorServices.getKvStateService(),  //多易教育: 一个TaskExecutor上的subTask都共用TaskExecutor的kvState服务
-                            taskExecutorServices.getBroadcastVariableManager(),//多易教育: 一个TaskExecutor上的subTask都共用TaskExecutor的IOManager
+                            taskExecutorServices.getKvStateService(),  //多易教育: 一个TaskExecutor上的subTask都共用TaskExecutor的queryable kvState服务
+                            taskExecutorServices.getBroadcastVariableManager(),//多易教育: 一个TaskExecutor上的subTask都共用TaskExecutor的 BroadcastVariableManager
                             taskExecutorServices.getTaskEventDispatcher(),//多易教育: 一个TaskExecutor上的subTask都共用TaskExecutor的TaskEventDispatcher
                             externalResourceInfoProvider,
-                            taskStateManager,
+                            taskStateManager,  // 多易教育： subTask独享
                             taskManagerActions,
-                            inputSplitProvider,
+                            inputSplitProvider,  // 多易教育： subTask独享
                             checkpointResponder,
-                            taskOperatorEventGateway,
+                            taskOperatorEventGateway,  // 多易教育： subTask独享
                             aggregateManager,
                             classLoaderHandle,
-                            fileCache,
-                            taskManagerConfiguration,
+                            fileCache,  // 多易教育： subTask共享
+                            taskManagerConfiguration, // 多易教育： subTask共享
                             taskMetricGroup,
                             resultPartitionConsumableNotifier,
                             partitionStateChecker,
                             //多易教育：这里传入的TaskExecutor这个Endpoint的rpcService中的InternalScheduledExecutor
+                            // 此executor在Task中貌似只用于requestResultPartitionState请求的异步执行
                             getRpcService().getScheduledExecutor());
 
             taskMetricGroup.gauge(MetricNames.IS_BACK_PRESSURED, task::isBackPressured);
@@ -767,8 +769,8 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
             if (taskAdded) {
                 //多易教育: -------------------------
-                // 启动task线程，正式开始执行task
-                // 每个task都在一个独立的线程中运行
+                // 启动 task线程，正式开始执行 task
+                // 每个 task都在一个独立的线程中运行
                 // （意味着，如果是同一个slot槽位中的多个task，也是每个task一个自己的线程）
                 // -----------------------------
                 task.startTaskThread();
@@ -1349,8 +1351,8 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
         log.info("Connecting to ResourceManager {}.", resourceManagerAddress);
         // 多易教育: 用于存储TaskManager的注册信息
-        // 包括taskExecutorAddress、resourceId、dataPort等连接信息
-        // 还包括 hardwareDescription等资源描述信息
+        //  包括taskExecutorAddress、resourceId、dataPort等连接信息
+        //  还包括 hardwareDescription等资源描述信息
         final TaskExecutorRegistration taskExecutorRegistration =
                 new TaskExecutorRegistration(
                         getAddress(),

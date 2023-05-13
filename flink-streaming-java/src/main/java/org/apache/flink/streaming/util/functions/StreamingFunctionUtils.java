@@ -168,7 +168,7 @@ public final class StreamingFunctionUtils {
             StateInitializationContext context, Function userFunction) throws Exception {
 
         Preconditions.checkNotNull(context);
-
+        // 多易教育： 居然用一个死循环的写法，来实现if分支的逻辑，有点恶心
         while (true) {
 
             if (tryRestoreFunction(context, userFunction)) {

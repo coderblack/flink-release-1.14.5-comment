@@ -135,14 +135,14 @@ public class TaskManagerRunner implements FatalErrorHandler {
     private boolean shutdown;
 
     //多易教育: 本构造并不是直接入口
-    // 直接入口在本类的main方法，其中会调用本构造，并传入serviceFactory
+    // 直接入口在本类的main方法，其中会调用本构造，并传入serviceFactory（就是本类的createTaskExecutorService()方法）
     public TaskManagerRunner(
             Configuration configuration,
             PluginManager pluginManager,
             TaskExecutorServiceFactory taskExecutorServiceFactory)
             throws Exception {
         this.configuration = checkNotNull(configuration);
-        //多易教育: 使用Java SPI机制加载rpcSystem（AkkaRpcSystem）
+        //多易教育: 使用 Java SPI 机制加载 rpcSystem（AkkaRpcSystem）
         rpcSystem = RpcSystem.load(configuration);
 
         timeout = Time.fromDuration(configuration.get(AkkaOptions.ASK_TIMEOUT_DURATION));
@@ -398,7 +398,12 @@ public class TaskManagerRunner implements FatalErrorHandler {
                             pluginManager,
                             //多易教育: TaskExecutorServiceFactory,工厂的实质逻辑就是本类静态方法createTaskExecutorService
                             TaskManagerRunner::createTaskExecutorService);
-            //多易教育: 启动runner
+            //多易教育: 启动 runner，本质上就是启动其持有的 TaskExecutorService
+            // 而启动TaskExecutorService（Endpoint），本质上就是启动其持有的 rpcServer
+            // rpcServer，实质就是一个 AkkaInvocationHandler（Endpoint的动态代理）
+            // 启动rpcServer，内部就是向自身的Endpoint发送一个Controller Message
+            // Endpoint收到控制消息后，则调用生命周期方法: onStart()
+            // 在TaskExecutor的onStart()中，则启动了各种内部服务
             taskManagerRunner.start();
         } catch (Exception exception) {
             throw new FlinkException("Failed to start the TaskManagerRunner.", exception);
@@ -491,7 +496,7 @@ public class TaskManagerRunner implements FatalErrorHandler {
 
         return TaskExecutorToServiceAdapter.createFor(taskExecutor);
     }
-
+    // 多易教育： 名为start，实非start，只是构建而已，扯淡的命名
     public static TaskExecutor startTaskManager(
             Configuration configuration,
             ResourceID resourceID,

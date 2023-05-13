@@ -87,7 +87,7 @@ public class HeartbeatMonitorImpl<O> implements HeartbeatMonitor<O>, Runnable {
         this.failedRpcRequestsUntilUnreachable = failedRpcRequestsUntilUnreachable;
 
         lastHeartbeat = 0L;
-
+        // 多易教育： 此处就是正式启动hearBeat周期性动作的入口
         resetHeartbeatTimeout(heartbeatTimeoutIntervalMs);
     }
 
@@ -163,7 +163,7 @@ public class HeartbeatMonitorImpl<O> implements HeartbeatMonitor<O>, Runnable {
     void resetHeartbeatTimeout(long heartbeatTimeout) {
         if (state.get() == State.RUNNING) {
             cancelTimeout();
-
+            // 多易教育： 周期性调度run方法，而run方法中，进行timeout的判断，如超时则 notify
             futureTimeout =
                     scheduledExecutor.schedule(this, heartbeatTimeout, TimeUnit.MILLISECONDS);
 

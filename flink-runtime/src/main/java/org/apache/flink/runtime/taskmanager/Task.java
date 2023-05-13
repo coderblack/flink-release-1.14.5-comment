@@ -393,7 +393,7 @@ public class Task
 
         this.classLoaderHandle = Preconditions.checkNotNull(classLoaderHandle);
         this.fileCache = Preconditions.checkNotNull(fileCache);
-        this.kvStateService = Preconditions.checkNotNull(kvStateService);  //多易教育: 这个kvStateService传入的是TaskExecutor所拥有的
+        this.kvStateService = Preconditions.checkNotNull(kvStateService);  //多易教育: 这个queryable kvStateService传入的是TaskExecutor所拥有的
         this.taskManagerConfig = Preconditions.checkNotNull(taskManagerConfig);
 
         this.metrics = metricGroup;
@@ -731,7 +731,7 @@ public class Task
                             taskStateManager,
                             aggregateManager,
                             accumulatorRegistry,
-                            kvStateRegistry,
+                            kvStateRegistry,  // 多易教育： task级别 kvStateRegistry
                             inputSplitProvider,
                             distributedCacheEntries,
                             consumableNotifyingPartitionWriters,
@@ -948,7 +948,7 @@ public class Task
             // 多易教育：输出测试 ，actionExecutor和触发task invoke方法和mailbox的线程关系
             //System.out.println("doRun()中的逻辑所在线程: " + Thread.currentThread()+","+Thread.currentThread().getId());
 
-            // 多易教育:  执行task恢复
+            // 多易教育:  执行 task 恢复（内部包含inputGates创建、状态恢复及初始化等）
             runWithSystemExitMonitoring(finalInvokable::restore);
 
             if (!transitionState(ExecutionState.INITIALIZING, ExecutionState.RUNNING)) {

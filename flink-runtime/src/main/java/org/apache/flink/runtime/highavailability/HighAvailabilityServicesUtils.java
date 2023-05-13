@@ -95,7 +95,8 @@ public class HighAvailabilityServicesUtils {
         switch (highAvailabilityMode) {
             case NONE:
                 final Tuple2<String, Integer> hostnamePort = getJobManagerAddress(configuration);
-
+                // 多易教育: 生成resourceManager rpc地址：
+                //  类似: protocolPrefix://flink[@hostname:port]/user/rpc/endpointName
                 final String resourceManagerRpcUrl =
                         rpcSystemUtils.getRpcUrl(
                                 hostnamePort.f0,

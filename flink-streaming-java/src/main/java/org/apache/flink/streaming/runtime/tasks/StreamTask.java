@@ -734,7 +734,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
         // task specific initialization
         //多易教育: StreamTask的init()啥也没做
-        // 但是其子类（如OneInputStreamTask、TwoInputStreamTask中会重写，会在其中构建StreamOneInputProcessor等）
+        // 但是其子类（如 OneInputStreamTask、TwoInputStreamTask中会重写，会在其中构建 StreamOneInputProcessor 等）
         init();
 
         // save the work of reloading state, etc, if the task is already canceled
@@ -745,9 +745,12 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
         // we need to make sure that any triggers scheduled in open() cannot be
         // executed before all operators are opened
+        // 多易教育： 恢复InputGates
+        //  方法内部，会先执行各个算子的状态恢复、初始化
         CompletableFuture<Void> allGatesRecoveredFuture = actionExecutor.call(this::restoreGates);
 
         // Run mailbox until all gates will be recovered.
+        // 多易教育： 所有算子的状态、gates等恢复完成后，再运行mailbox开始正式工作
         mailboxProcessor.runMailboxLoop();
 
         ensureNotCanceled();
@@ -763,12 +766,12 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         isRunning = true;
     }
 
-    private CompletableFuture<Void> restoreGates() throws Exception {   //多易教育: 算子初始化
+    private CompletableFuture<Void> restoreGates() throws Exception {   // 多易教育: 算子初始化
         SequentialChannelStateReader reader =
                 getEnvironment().getTaskStateManager().getSequentialChannelStateReader();
         reader.readOutputData(
                 getEnvironment().getAllWriters(), !configuration.isGraphContainingLoops());
-        //多易教育: 算子链初始化状态并open
+        // 多易教育: 算子链初始化状态并open
         operatorChain.initializeStateAndOpenOperators(createStreamTaskStateInitializer());
 
         IndexedInputGate[] inputGates = getEnvironment().getAllInputGates();

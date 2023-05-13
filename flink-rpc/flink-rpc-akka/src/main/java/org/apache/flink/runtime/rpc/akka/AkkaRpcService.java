@@ -249,7 +249,7 @@ public class AkkaRpcService implements RpcService {
                 });
     }
     // 多易教育: 启动server时，需要传入rpcEndpoint对象
-    // 这里说明，每个rpcEndpoint，对应一个rpcServer实例，也对应一个actor
+    //  这里说明，每个rpcEndpoint，对应一个rpcServer实例，也对应一个actor
     @Override
     public <C extends RpcEndpoint & RpcGateway> RpcServer startServer(C rpcEndpoint) {
         checkNotNull(rpcEndpoint, "rpc endpoint");

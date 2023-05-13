@@ -265,7 +265,7 @@ public class TaskManagerServices {
             TaskManagerServicesConfiguration taskManagerServicesConfiguration,
             PermanentBlobService permanentBlobService,
             MetricGroup taskManagerMetricGroup,
-            ExecutorService ioExecutor,
+            ExecutorService ioExecutor,  // 多易教育： 用于shuffleEnvironment 和 taskSlotTable
             FatalErrorHandler fatalErrorHandler)
             throws Exception {
 
@@ -285,7 +285,7 @@ public class TaskManagerServices {
                         taskManagerMetricGroup,
                         ioExecutor);
         final int listeningDataPort = shuffleEnvironment.start();
-
+        // 多易教育： queryable state 服务
         final KvStateService kvStateService =
                 KvStateService.fromConfiguration(taskManagerServicesConfiguration);
         kvStateService.start();

@@ -83,7 +83,7 @@ public class StandaloneLeaderRetrievalService implements LeaderRetrievalService 
             // directly notify the listener, because we already know the leading JobManager's
             // address
             // 多易教育: StandAlone模式下，JobLeader（JobMaster与resourceManager运行在同一个进程中，
-            // 因而jobLeader地址就是resourceManager的地址，直接调用callback方法即可
+            //  因而jobLeader地址就是resourceManager的地址，直接调用callback方法即可
             listener.notifyLeaderAddress(leaderAddress, leaderId);
         }
     }
