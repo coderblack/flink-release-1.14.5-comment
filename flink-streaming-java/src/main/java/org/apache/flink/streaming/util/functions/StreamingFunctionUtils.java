@@ -88,6 +88,7 @@ public final class StreamingFunctionUtils {
     }
 
     //多易教育: 算子function中状态的快照功能逻辑方法
+    // 这个
     public static void snapshotFunctionState(
             StateSnapshotContext context, OperatorStateBackend backend, Function userFunction)
             throws Exception {
@@ -169,6 +170,7 @@ public final class StreamingFunctionUtils {
 
         Preconditions.checkNotNull(context);
         // 多易教育： 居然用一个死循环的写法，来实现if分支的逻辑，有点恶心
+        //  其实这里是因为 Wrap可能有多层，那就用循环来一层层剥
         while (true) {
 
             if (tryRestoreFunction(context, userFunction)) {
