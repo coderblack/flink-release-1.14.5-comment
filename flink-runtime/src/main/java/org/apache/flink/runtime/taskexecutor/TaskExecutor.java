@@ -222,6 +222,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     private final ShuffleEnvironment<?, ?> shuffleEnvironment;
 
     /** The kvState registration service in the task manager. */
+    // 多易教育： 一个 Netty服务器，设置了 handler 来实现对已注册为queryable 的状态的查询
     private final KvStateService kvStateService;
 
     private final Executor ioExecutor;
@@ -306,6 +307,8 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         this.jobLeaderService = taskExecutorServices.getJobLeaderService();
         this.unresolvedTaskManagerLocation =
                 taskExecutorServices.getUnresolvedTaskManagerLocation();
+        // 多易教育： 持有本 task executor上的所有 TaskLocalStateStoreImpl实例 ;
+        //  内部是用双层HashMap来持有： Map<AllocationID, Map<JobVertexSubtaskKey, OwnedTaskLocalStateStore>>
         this.localStateStoresManager = taskExecutorServices.getTaskManagerStateStore();
         this.changelogStoragesManager = taskExecutorServices.getTaskManagerChangelogManager();
         this.shuffleEnvironment = taskExecutorServices.getShuffleEnvironment();
@@ -411,16 +414,23 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     private void startTaskExecutorServices() throws Exception {
         try {
             // start by connecting to the ResourceManager
+            // 多易教育： leaderRetriever启动过程中会执行获取 leader的逻辑，以及调用 listener的回调逻辑
+            //  listener的回调逻辑，
+            //  则主要是 向ResourceManagerLeader注册, report资源信息,见<this::connectToResourceManager>
             resourceManagerLeaderRetriever.start(new ResourceManagerLeaderListener());
 
             // tell the task slot table who's responsible for the task slot actions
+            // 多易教育: 仅仅是传入 SlotActionImpl和 Executor给到 taskSlotTable 而已
+            //  方法内部则将 taskSlotTable自己作为一个超时监听器参数传入自己内部的timerService的start()方法，
+            //  用于taskSlotTable的allocateSlot/freeSlot等操作中注册超时监听
             taskSlotTable.start(new SlotActionsImpl(), getMainThreadExecutor());
 
             // start the job leader service
+            // 多易教育： 仅仅是构造一个 DefaultJobLeaderService 对象，把传入的参数赋给成员罢了
             jobLeaderService.start(
                     getAddress(), getRpcService(), haServices, new JobLeaderListenerImpl());
-            // 多易教育:
-            //  创建 FileCache对象，用于存储 Task在执行过程中从
+
+            // 多易教育:创建 FileCache对象，用于存储 Task在执行过程中从
             //  PermanentBlobService拉取的文件，并将文件展开在 /tmp_/ 路径中，如果
             //  Task处于非注册状态超过 5 秒，将清理临时文件
             fileCache =
@@ -566,9 +576,9 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     // ----------------------------------------------------------------------
     // Task lifecycle RPCs
     // ----------------------------------------------------------------------
-    // 多易教育:   提交task的rpc接口方法
-    //  JobMaster端的SchedulerNG负责生成调度计划，为每一个任务实例生成Execution对象
-    //  然后通过Execution.deploy()方法，方法中会通过TaskExecutor网关，来向TaskExecutor提交task
+    // 多易教育:   提交 task的rpc接口方法
+    //  JobMaster端的 SchedulerNG 负责生成调度计划，为每一个任务实例生成 Execution对象,
+    //   然后通过 Execution.deploy()方法，方法中会通过 TaskExecutor 网关，来向 TaskExecutor提交 task
     @Override
     public CompletableFuture<Acknowledge> submitTask(
             TaskDeploymentDescriptor tdd, JobMasterId jobMasterId, Time timeout) {
@@ -616,8 +626,8 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
             // re-integrate offloaded data:
             try {
-                //多易教育: 从blob服务上，加载“离线加载数据”集成到taskDeploymentDescriptor中
-                // 包含JobInformation（ job配置，jar的路径等job共享信息 ）
+                //多易教育: 从blob服务上，加载 “离线加载数据” 集成到 taskDeploymentDescriptor中
+                // 包含 JobInformation（ job配置，jar的路径等job共享信息 ）
                 // 和 taskInformation（ taskName,invokableClassName,taskConfiguration,subTask数等 ）
                 tdd.loadBigData(blobCacheService.getPermanentBlobService());
             } catch (IOException | ClassNotFoundException e) {
@@ -704,6 +714,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             //多易教育: 从tdd中获取jobManager携带过来的用于恢复task的相关信息（如用于恢复的restoreCheckpointId,taskStateSnapshot）
             final JobManagerTaskRestore taskRestore = tdd.getTaskRestore();
             //多易教育: 构造taskStateManager（task状态管理器）,每个subTask有自己的TaskStateManager
+            // manager内部持有的localStateStore则是 TaskExecutor的公共对象
             final TaskStateManager taskStateManager =
                     new TaskStateManagerImpl(
                             jobId,
@@ -713,9 +724,9 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                             taskRestore,
                             checkpointResponder);
             //多易教育: 整个TaskExecutor拥有一个taskSlotTable（task槽位表）
-            // 每个subtask属于一个TaskSlot，而一个 AllocationId 都有一个自己的 memoryManager（内存管理器）
-            // 每个AllocationId会对应一个TaskSlot,而一个TaskSlot在创建时即会创建一个memoryManager
-            // 推论：如果多个subTask共享一个槽位，岂不是这多个subTask是用的同一个memoryManager？
+            // 每个slot拥有一个 memoryManager
+            // 每个AllocationId对应一个slot，但是共享槽位时，可能一个slot上会对应多个AllocationId
+            // 推论： 共享槽位的多个subTask岂不是共用一个 memoryManager ？理应如此，既然是共享嘛
             MemoryManager memoryManager;
             try {
                 memoryManager = taskSlotTable.getTaskMemoryManager(tdd.getAllocationId());
@@ -723,6 +734,8 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                 throw new TaskSubmissionException("Could not submit task.", e);
             }
             //多易教育: 构造 task 实例对象（它是一个runnable）
+            // 高内聚低耦合：inputGate、resultPartition，taskStateManager等跟具体 task有关的，则由task自己管理
+            // 高复用： 一些公共的资源，如IO、State查询服务、ShuffleEnvironment等，则由TaskExecutor来提供和管理
             Task task =
                     new Task(
                             jobInformation,
@@ -732,13 +745,13 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                             tdd.getSubtaskIndex(),
                             tdd.getAttemptNumber(),
                             tdd.getProducedPartitions(),  //多易教育: 输出partition部署描述descriptors
-                            tdd.getInputGates(),  //多易教育: 输入gate部署描述descriptors
+                            tdd.getInputGates(),  //多易教育: 这里只是InputGates的部署描述
                             memoryManager,
-                            taskExecutorServices.getIOManager(), //多易教育: 一个TaskExecutor上的subTask都共用TaskExecutor的IOManager
-                            taskExecutorServices.getShuffleEnvironment(),//多易教育: 一个TaskExecutor上的subTask都共用TaskExecutor的ShuffleEnv
-                            taskExecutorServices.getKvStateService(),  //多易教育: 一个TaskExecutor上的subTask都共用TaskExecutor的queryable kvState服务
-                            taskExecutorServices.getBroadcastVariableManager(),//多易教育: 一个TaskExecutor上的subTask都共用TaskExecutor的 BroadcastVariableManager
-                            taskExecutorServices.getTaskEventDispatcher(),//多易教育: 一个TaskExecutor上的subTask都共用TaskExecutor的TaskEventDispatcher
+                            taskExecutorServices.getIOManager(), //多易教育: TaskExecutor提供
+                            taskExecutorServices.getShuffleEnvironment(),//多易教育: TaskExecutor提供
+                            taskExecutorServices.getKvStateService(),  //多易教育: TaskExecutor提供
+                            taskExecutorServices.getBroadcastVariableManager(),//多易教育: TaskExecutor提供
+                            taskExecutorServices.getTaskEventDispatcher(),//多易教育: TaskExecutor提供
                             externalResourceInfoProvider,
                             taskStateManager,  // 多易教育： subTask独享
                             taskManagerActions,
@@ -1175,14 +1188,14 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             }
         }
 
-        //多易教育: 2.如果槽位不为free状态，且判断发现slot已经被分配给了别的job，则抛出一个"槽位已占用"的异常
+        //多易教育: 2.如果槽位不为 free 状态，且判断发现 slot已经被分配给了别的 job，则抛出一个"槽位已占用"的异常
         else if (!taskSlotTable.isAllocated(slotId.getSlotNumber(), jobId, allocationId)) {
             final String message =
                     "The slot " + slotId + " has already been allocated for a different job.";
 
             log.info(message);
 
-            //多易教育: 如果返回false，说明slot分配失败，抛出slot占用异常
+            //多易教育: 如果返回 false，说明 slot分配失败，抛出 slot占用异常
             final AllocationID allocationID =
                     taskSlotTable.getCurrentAllocation(slotId.getSlotNumber());
             throw new SlotOccupiedException(
@@ -1190,7 +1203,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         }
     }
 
-    // 多易教育： RPC 方法
+    // 多易教育： RPC方法
     @Override
     public CompletableFuture<Acknowledge> freeSlot(
             AllocationID allocationId, Throwable cause, Time timeout) {
@@ -1199,7 +1212,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         return CompletableFuture.completedFuture(Acknowledge.get());
     }
 
-    // 多易教育： RPC 方法
+    // 多易教育： RPC方法
     @Override
     public void freeInactiveSlots(JobID jobId, Time timeout) {
         log.debug("Freeing inactive slots for job {}.", jobId);
@@ -1214,7 +1227,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         }
     }
 
-    // 多易教育： RPC 方法
+    // 多易教育： RPC方法
     @Override
     public CompletableFuture<TransientBlobKey> requestFileUploadByType(
             FileType fileType, Time timeout) {
@@ -1232,7 +1245,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         return requestFileUploadByFilePath(filePath, fileType.toString());
     }
 
-    // 多易教育： RPC 方法
+    // 多易教育： RPC方法
     @Override
     public CompletableFuture<TransientBlobKey> requestFileUploadByName(
             String fileName, Time timeout) {
@@ -1247,7 +1260,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         return requestFileUploadByFilePath(filePath, fileName);
     }
 
-    // 多易教育： RPC 方法
+    // 多易教育： RPC方法
     @Override
     public CompletableFuture<SerializableOptional<String>> requestMetricQueryServiceAddress(
             Time timeout) {

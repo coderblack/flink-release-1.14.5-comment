@@ -173,12 +173,12 @@ final class AsyncCheckpointRunnable implements Runnable, Closeable {
 
         long bytesPersistedDuringAlignment = 0;
 
-        //多易教育: 遍历算子链中的每一个算子，执行状态snapshot
+        // 多易教育: 遍历算子链中的每一个算子，执行状态snapshot
         for (Map.Entry<OperatorID, OperatorSnapshotFutures> entry :
                 operatorSnapshotsInProgress.entrySet()) {
 
-            OperatorID operatorID = entry.getKey();  //多易教育: 算子id
-            OperatorSnapshotFutures snapshotInProgress = entry.getValue();  //多易教育: 算子snapshotFuture容器
+            OperatorID operatorID = entry.getKey();  // 多易教育: 算子id
+            OperatorSnapshotFutures snapshotInProgress = entry.getValue();  // 多易教育: 算子snapshotFuture容器
 
             // finalize the async part of all by executing all snapshot runnables
             //多易教育: --------------------------------
@@ -191,7 +191,7 @@ final class AsyncCheckpointRunnable implements Runnable, Closeable {
             OperatorSnapshotFinalizer finalizedSnapshots =
                     new OperatorSnapshotFinalizer(snapshotInProgress);
 
-            //多易教育: 填充上报结果信息
+            // 多易教育: 填充上报结果信息
             jobManagerTaskOperatorSubtaskStates.putSubtaskStateByOperatorID(
                     operatorID, finalizedSnapshots.getJobManagerOwnedState());
 
@@ -210,7 +210,7 @@ final class AsyncCheckpointRunnable implements Runnable, Closeable {
                             .getStateSize();
         }
 
-        //多易教育: 封装快照最终执行结果返回
+        // 多易教育: 封装快照最终执行结果返回
         return new SnapshotsFinalizeResult(
                 jobManagerTaskOperatorSubtaskStates,
                 localTaskOperatorSubtaskStates,

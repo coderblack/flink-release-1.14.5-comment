@@ -678,7 +678,7 @@ public class Task
             // ----------------------------------------------------------------
 
             LOG.debug("Registering task at network: {}.", this);
-            // 多易教育:  建立partition（分配bufferPool）和inputGates，
+            // 多易教育: 建立partition（分配bufferPool）和inputGates，
             setupPartitionsAndGates(consumableNotifyingPartitionWriters, inputGates);
 
             for (ResultPartitionWriter partitionWriter : consumableNotifyingPartitionWriters) {

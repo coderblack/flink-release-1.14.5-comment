@@ -157,7 +157,9 @@ public class TaskSlotTableImpl<T extends TaskSlotPayload> implements TaskSlotTab
                 TaskSlotTableImpl.class.getSimpleName());
         this.slotActions = Preconditions.checkNotNull(initialSlotActions);
         this.mainThreadExecutor = Preconditions.checkNotNull(mainThreadExecutor);
-
+        // 多易教育: 将自身 <this:notifyTimeOut()> 作为超时监听器传入 超时定时器服务
+        //  后续在 allocateSlot()、markSlotInactive()等操作中注册超时监控并回调 registerTimeout(final K key, final long delay, final TimeUnit unit)
+        //   而timeout的检测原理其实就是： scheduledExecutorService.schedule(this, delay, unit);
         timerService.start(this);
 
         state = State.RUNNING;
@@ -335,11 +337,11 @@ public class TaskSlotTableImpl<T extends TaskSlotPayload> implements TaskSlotTab
         allocatedSlots.put(allocationId, taskSlot);  //多易教育: 放入已分配容器，用allocationId标识
 
         // register a timeout for this slot since it's in state allocated
-        //多易教育: 注册超时监听
+        // 多易教育: 注册超时监听
         timerService.registerTimeout(allocationId, slotTimeout.getSize(), slotTimeout.getUnit());
 
         // add this slot to the set of job slots
-        //多易教育: 放入slotsPerJob容器， jobId->hashSet(allocationId)
+        // 多易教育: 放入slotsPerJob容器， jobId->hashSet(allocationId)
         Set<AllocationID> slots = slotsPerJob.get(jobId);
 
         if (slots == null) {

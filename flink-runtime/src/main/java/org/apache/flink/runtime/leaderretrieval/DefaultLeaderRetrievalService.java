@@ -92,6 +92,9 @@ public class DefaultLeaderRetrievalService
 
         synchronized (lock) {
             leaderListener = listener;
+            // 多易教育： 构建leaderRetrievalDriver的过程中，会创建如：zk监听客户端； 并
+            //  将自身作为leader事件handler传入以供回调（方法 this::notifyLeaderAddress)
+            //  this::notifyLeaderAddress 中，进而调用上面leaderListener的回调来notify
             leaderRetrievalDriver =
                     leaderRetrievalDriverFactory.createLeaderRetrievalDriver(
                             this, new LeaderRetrievalFatalErrorHandler());

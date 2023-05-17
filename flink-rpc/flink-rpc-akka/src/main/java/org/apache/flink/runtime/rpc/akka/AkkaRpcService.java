@@ -274,8 +274,8 @@ public class AkkaRpcService implements RpcService {
         } else {
             hostname = host.get();
         }
-        // 多易教育: 提取 本endpoint所实现的所有接口
-        // 用于后续生成动态代理对象
+
+        // 多易教育: 提取本 endpoint 所实现的所有接口,用于后续生成动态代理对象
         Set<Class<?>> implementedRpcGateways =
                 new HashSet<>(RpcUtils.extractImplementedRpcGateways(rpcEndpoint.getClass()));
 
@@ -284,6 +284,7 @@ public class AkkaRpcService implements RpcService {
 
         final InvocationHandler akkaInvocationHandler;
 
+        // 多易教育： 构造InvocationHandler
         if (rpcEndpoint instanceof FencedRpcEndpoint) {
             // a FencedRpcEndpoint needs a FencedAkkaInvocationHandler
             akkaInvocationHandler =
@@ -316,7 +317,7 @@ public class AkkaRpcService implements RpcService {
         // from this class . That works better in cases where Flink runs embedded and all Flink
         // code is loaded dynamically (for example from an OSGI bundle) through a custom ClassLoader
         ClassLoader classLoader = getClass().getClassLoader();
-
+        // 多易教育： 构建动态代理对象
         @SuppressWarnings("unchecked")
         RpcServer server =
                 (RpcServer)

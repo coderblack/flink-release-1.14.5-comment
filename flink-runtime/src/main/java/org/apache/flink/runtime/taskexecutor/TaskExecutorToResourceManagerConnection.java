@@ -157,7 +157,7 @@ public class TaskExecutorToResourceManagerConnection
                 throws Exception {
 
             Time timeout = Time.milliseconds(timeoutMillis);
-            // 多易教育： 最终的RPC调用
+            // 多易教育： 最终的 RPC调用
             return resourceManager.registerTaskExecutor(taskExecutorRegistration, timeout);
         }
     }

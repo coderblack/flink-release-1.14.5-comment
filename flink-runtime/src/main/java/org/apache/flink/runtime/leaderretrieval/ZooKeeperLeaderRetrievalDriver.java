@@ -96,7 +96,8 @@ public class ZooKeeperLeaderRetrievalDriver implements LeaderRetrievalDriver {
         this.leaderRetrievalEventHandler = checkNotNull(leaderRetrievalEventHandler);
         this.leaderInformationClearancePolicy = leaderInformationClearancePolicy;
         this.fatalErrorHandler = checkNotNull(fatalErrorHandler);
-
+        // 多易教育： 开始监听znode变化
+        //  如果有变化，则会调用 this::retrieveLeaderInformationFromZooKeeper 来获取leader信息
         cache.start();
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
@@ -138,6 +139,7 @@ public class ZooKeeperLeaderRetrievalDriver implements LeaderRetrievalDriver {
                     return;
                 }
             }
+            // 多易教育： leader事件通知
             notifyNoLeader();
         } catch (Exception e) {
             fatalErrorHandler.onFatalError(
