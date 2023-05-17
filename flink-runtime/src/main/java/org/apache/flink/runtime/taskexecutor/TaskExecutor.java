@@ -283,7 +283,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             BlobCacheService blobCacheService,
             FatalErrorHandler fatalErrorHandler,
             TaskExecutorPartitionTracker partitionTracker) {
-        // 多易教育: 父类是RpcEndpoint，其构造中会进行rpcServer的构建
+        // 多易教育: 父类是 RpcEndpoint，其构造中会进行 rpcServer的构建
         super(rpcService, RpcServiceUtils.createRandomName(TASK_MANAGER_NAME));
 
         checkArgument(
@@ -388,10 +388,11 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     // ------------------------------------------------------------------------
     //  Life cycle
     // ------------------------------------------------------------------------
-
+    // 多易教育： 生命周期方法,起始
     @Override
     public void onStart() throws Exception {
         try {
+            // 多易教育： 启动 task executor的各个服务
             startTaskExecutorServices();
         } catch (Throwable t) {
             final TaskManagerException exception =
@@ -401,6 +402,9 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             throw exception;
         }
 
+        // 多易教育： 开始监视向resource manager注册的时长是否超时
+        //  检查逻辑很巧妙，给一个变量赋值一个随机数，到时间后，检查这个变量是否还等于那个随机数
+        //  （在连接注册逻辑中，如果注册完成，则会把这个变量置空  stopRegistrationTimeout() ）
         startRegistrationTimeout();
     }
 
@@ -416,9 +420,9 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             jobLeaderService.start(
                     getAddress(), getRpcService(), haServices, new JobLeaderListenerImpl());
             // 多易教育:
-            //  创建FileCache对象，用于存储Task在执行过程中从
-            //  PermanentBlobService拉取的文件，并将文件展开在/tmp_/路径中，如果
-            //  Task处于非注册状态超过5秒，将清理临时文件
+            //  创建 FileCache对象，用于存储 Task在执行过程中从
+            //  PermanentBlobService拉取的文件，并将文件展开在 /tmp_/ 路径中，如果
+            //  Task处于非注册状态超过 5 秒，将清理临时文件
             fileCache =
                     new FileCache(
                             taskManagerConfiguration.getTmpDirectories(),
@@ -439,6 +443,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     }
 
     /** Called to shut down the TaskManager. The method closes all TaskManager services. */
+    // 多易教育： 生命周期方法,结束
     @Override
     public CompletableFuture<Void> onStop() {
         log.info("Stopping TaskExecutor {}.", getAddress());
@@ -950,7 +955,8 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     // ----------------------------------------------------------------------
     // Checkpointing RPCs
     // ----------------------------------------------------------------------
-    //多易教育: 由RpcTaskManagerGateWay，通过rpc来调用
+    //多易教育: RPC 方法
+    // 由JobManager通过 RpcTaskManagerGateWay 来调用本方法
     @Override
     public CompletableFuture<Acknowledge> triggerCheckpoint(
             ExecutionAttemptID executionAttemptID,
@@ -989,7 +995,8 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         }
     }
 
-    //多易教育: 从源头checkpointCoordinator经过rpcTaskManagerGateway，传递过来的cp确认信息rpc接口
+    //多易教育: RPC方法
+    // 从源头checkpointCoordinator经过 rpcTaskManagerGateway，传递过来的cp确认信息rpc接口
     @Override
     public CompletableFuture<Acknowledge> confirmCheckpoint(
             ExecutionAttemptID executionAttemptID, long checkpointId, long checkpointTimestamp) {
@@ -1019,6 +1026,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         }
     }
 
+    // 多易教育：  RPC 方法
     @Override
     public CompletableFuture<Acknowledge> abortCheckpoint(
             ExecutionAttemptID executionAttemptID,
@@ -1126,6 +1134,8 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         return CompletableFuture.completedFuture(Acknowledge.get());
     }
 
+    // 多易教育： 工具方法
+    //  上面的RPC方法 requestSlot 所用
     private TaskExecutorJobServices registerNewJobAndCreateServices(
             JobID jobId, String targetAddress) throws Exception {
         //多易教育: DefaultJobLeaderService中持有一个jobLeaderService(Map结构)：
@@ -1141,7 +1151,9 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                 () -> permanentBlobService.releaseJob(jobId));
     }
 
-    //多易教育: 为指定的slotId、jobId、allocationId、资源要求，来分配槽位
+    //多易教育: 工具方法
+    // 上面的RPC方法 requestSlot 所用
+    // 为指定的slotId、jobId、allocationId、资源要求，来分配槽位
     private void allocateSlot(
             SlotID slotId, JobID jobId, AllocationID allocationId, ResourceProfile resourceProfile)
             throws SlotAllocationException {
@@ -1178,6 +1190,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         }
     }
 
+    // 多易教育： RPC 方法
     @Override
     public CompletableFuture<Acknowledge> freeSlot(
             AllocationID allocationId, Throwable cause, Time timeout) {
@@ -1186,6 +1199,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         return CompletableFuture.completedFuture(Acknowledge.get());
     }
 
+    // 多易教育： RPC 方法
     @Override
     public void freeInactiveSlots(JobID jobId, Time timeout) {
         log.debug("Freeing inactive slots for job {}.", jobId);
@@ -1200,6 +1214,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         }
     }
 
+    // 多易教育： RPC 方法
     @Override
     public CompletableFuture<TransientBlobKey> requestFileUploadByType(
             FileType fileType, Time timeout) {
@@ -1217,6 +1232,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         return requestFileUploadByFilePath(filePath, fileType.toString());
     }
 
+    // 多易教育： RPC 方法
     @Override
     public CompletableFuture<TransientBlobKey> requestFileUploadByName(
             String fileName, Time timeout) {
@@ -1231,6 +1247,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         return requestFileUploadByFilePath(filePath, fileName);
     }
 
+    // 多易教育： RPC 方法
     @Override
     public CompletableFuture<SerializableOptional<String>> requestMetricQueryServiceAddress(
             Time timeout) {
@@ -1333,9 +1350,9 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     }
 
     private void reconnectToResourceManager(Exception cause) {
-        closeResourceManagerConnection(cause);
-        startRegistrationTimeout();
-        tryConnectToResourceManager();
+        closeResourceManagerConnection(cause);  // 多易教育： 关闭之前的连接（如果存在）
+        startRegistrationTimeout();    // 多易教育： 开始超时监控
+        tryConnectToResourceManager(); // 多易教育： 连接resource manager
     }
 
     private void tryConnectToResourceManager() {
@@ -1344,15 +1361,17 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         }
     }
 
+
+    // 多易教育： 连接resource manager，并注册
     private void connectToResourceManager() {
         assert (resourceManagerAddress != null);
         assert (establishedResourceManagerConnection == null);
         assert (resourceManagerConnection == null);
 
         log.info("Connecting to ResourceManager {}.", resourceManagerAddress);
-        // 多易教育: 用于存储TaskManager的注册信息
-        //  包括taskExecutorAddress、resourceId、dataPort等连接信息
-        //  还包括 hardwareDescription等资源描述信息
+        // 多易教育: 用于封装 TaskManager的注册信息
+        //  包括 taskExecutorAddress、resourceId、dataPort等连接信息
+        //  还包括 hardwareDescription、内存配置等资源描述信息
         final TaskExecutorRegistration taskExecutorRegistration =
                 new TaskExecutorRegistration(
                         getAddress(),
@@ -1372,7 +1391,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                         resourceManagerAddress.getAddress(),
                         resourceManagerAddress.getResourceManagerId(),
                         getMainThreadExecutor(),
-                        new ResourceManagerRegistrationListener(),
+                        new ResourceManagerRegistrationListener(),  // 多易教育： 连接对象中，会传入一个 RegistrationListener，用于连接成功后的回调通知
                         taskExecutorRegistration);
         resourceManagerConnection.start();
     }
@@ -1422,7 +1441,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                         resourceManagerGateway,
                         resourceManagerResourceId,
                         taskExecutorRegistrationId);
-
+        // 多易教育： 确立连接后，停掉超时监控，起始就是把变量置空： currentRegistrationTimeoutId=null
         stopRegistrationTimeout();
     }
 
@@ -1472,6 +1491,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         if (maxRegistrationDuration != null) {
             final UUID newRegistrationTimeoutId = UUID.randomUUID();
             currentRegistrationTimeoutId = newRegistrationTimeoutId;
+            // 多易教育： 延迟最大注册超时时长后，调度执行检查超时的逻辑
             scheduleRunAsync(
                     () -> registrationTimeout(newRegistrationTimeoutId), maxRegistrationDuration);
         }

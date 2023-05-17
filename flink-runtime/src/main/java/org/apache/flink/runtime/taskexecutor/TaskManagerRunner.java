@@ -496,7 +496,7 @@ public class TaskManagerRunner implements FatalErrorHandler {
 
         return TaskExecutorToServiceAdapter.createFor(taskExecutor);
     }
-    // 多易教育： 名为start，实非start，只是构建而已，扯淡的命名
+    // 多易教育： 名为 start，实非 start，只是构建而已，扯淡的命名
     public static TaskExecutor startTaskManager(
             Configuration configuration,
             ResourceID resourceID,

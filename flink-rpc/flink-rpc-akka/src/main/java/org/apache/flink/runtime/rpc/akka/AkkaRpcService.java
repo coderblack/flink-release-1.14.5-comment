@@ -549,7 +549,7 @@ public class AkkaRpcService implements RpcService {
 
         final CompletableFuture<ActorRef> actorRefFuture = resolveActorAddress(address);
         // 多易教育: thenCompose 可以用于组合多个CompletableFuture
-        // 将前一个任务的返回结果作为下一个任务的参数，它们之间存在着业务逻辑上的先后顺序
+        //  将前一个任务的返回结果作为下一个任务的参数，它们之间存在着业务逻辑上的先后顺序
         final CompletableFuture<HandshakeSuccessMessage> handshakeFuture =
                 actorRefFuture.thenCompose(
                         (ActorRef actorRef) ->
@@ -564,11 +564,11 @@ public class AkkaRpcService implements RpcService {
                                                                 .<HandshakeSuccessMessage>apply(
                                                                         HandshakeSuccessMessage
                                                                                 .class))));
-        // 多易教育: thenCombine会在两个任务都执行完成后，把两个任务的结果合并。
-        // 注意： 两个任务中只要有一个执行异常，则将该异常信息作为指定任务的执行结果。
+        // 多易教育: thenCombine 会在两个任务都执行完成后，把两个任务的结果合并。
+        //  注意： 两个任务中只要有一个执行异常，则将该异常信息作为指定任务的执行结果。
         //      两个任务是并行执行的，它们之间并没有先后依赖顺序。
-        // thenCombineAsync 则是把 合并任务也提交到线程池异步执行
-        // 此处乃：将handshakeFuture 和 actorRefFuture 合并，然后利用它俩的结果生成一个gateWay的动态代理对象
+        //  thenCombineAsync 则是把 合并任务也提交到线程池异步执行
+        //  此处乃：将 handshakeFuture 和 actorRefFuture 合并，然后利用它俩的结果生成一个 gateWay 的动态代理对象
         final CompletableFuture<C> gatewayFuture =
                 actorRefFuture.thenCombineAsync(
                         handshakeFuture,

@@ -148,6 +148,7 @@ public class TaskExecutorToResourceManagerConnection
             this.taskExecutorRegistration = taskExecutorRegistration;
         }
 
+        // 多易教育： 对父类 RetryingRegistration 的具体逻辑实现，真正的注册行为逻辑
         @Override
         protected CompletableFuture<RegistrationResponse> invokeRegistration(
                 ResourceManagerGateway resourceManager,
@@ -156,6 +157,7 @@ public class TaskExecutorToResourceManagerConnection
                 throws Exception {
 
             Time timeout = Time.milliseconds(timeoutMillis);
+            // 多易教育： 最终的RPC调用
             return resourceManager.registerTaskExecutor(taskExecutorRegistration, timeout);
         }
     }

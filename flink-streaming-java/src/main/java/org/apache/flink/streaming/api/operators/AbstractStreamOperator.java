@@ -466,7 +466,7 @@ public abstract class AbstractStreamOperator<OUT>
     @VisibleForTesting
     public <K> KeyedStateBackend<K> getKeyedStateBackend() {
 
-        // TODO BY dps@51doit.cn :
+        // 多易教育 :
         //  为了在这里快速测试出 stateHandler 是 :
         //   一个算子拥有一个 ?还是一个chain拥有一个 ?
         //   还是一个slot拥有一个 ? 还是一个task manager拥有一个 ?

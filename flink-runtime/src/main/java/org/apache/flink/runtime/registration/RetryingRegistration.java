@@ -152,6 +152,8 @@ public abstract class RetryingRegistration<
                                         fencingToken,
                                         targetType.asSubclass(FencedRpcGateway.class));
             } else {
+                // 多易教育： 利用rpcService，获取地址代表的actorRef，
+                //  并发送握手HandShake消息，并进而构造目标的gateWay代理
                 rpcGatewayFuture = rpcService.connect(targetAddress, targetType);
             }
 
@@ -160,6 +162,7 @@ public abstract class RetryingRegistration<
                     rpcGatewayFuture.thenAcceptAsync(
                             (G rpcGateway) -> {
                                 log.info("Resolved {} address, beginning registration", targetName);
+                                // 多易教育： 发起注册
                                 register(
                                         rpcGateway,
                                         1,
@@ -169,6 +172,7 @@ public abstract class RetryingRegistration<
                             rpcService.getScheduledExecutor());
 
             // upon failure, retry, unless this is cancelled
+            // 多易教育： 如果fail了，则重试，直到成功或者被取消
             rpcGatewayAcceptFuture.whenCompleteAsync(
                     (Void v, Throwable failure) -> {
                         if (failure != null && !canceled) {
