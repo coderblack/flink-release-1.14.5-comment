@@ -102,12 +102,12 @@ public class HeapKeyedStateBackendBuilder<K> extends AbstractKeyedStateBackendBu
                 new InternalKeyContextImpl<>(keyGroupRange, numberOfKeyGroups);
 
         final StateTableFactory<K> stateTableFactory;
-        if (asynchronousSnapshots) {
+        if (asynchronousSnapshots) { // 多易教育: 异步快照使用CopyOnWriteStateTable；否则用NestedMapsStateTable
             stateTableFactory = CopyOnWriteStateTable::new;
         } else {
             stateTableFactory = NestedMapsStateTable::new;
         }
-
+        // 多易教育: 先对 state进行恢复
         restoreState(registeredKVStates, registeredPQStates, keyContext, stateTableFactory);
         return new HeapKeyedStateBackend<>(
                 kvStateRegistry,

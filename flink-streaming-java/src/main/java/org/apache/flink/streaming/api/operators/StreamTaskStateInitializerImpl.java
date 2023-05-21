@@ -163,7 +163,7 @@ public class StreamTaskStateInitializerImpl implements StreamTaskStateInitialize
 
             // -------------- Keyed State Backend --------------
             keyedStatedBackend =
-                    keyedStatedBackend(
+                    keyedStatedBackend(  // 多易教育: 创建backend，包含状态恢复的过程
                             keySerializer,
                             operatorIdentifierText,
                             prioritizedOperatorSubtaskStates,
@@ -329,10 +329,14 @@ public class StreamTaskStateInitializerImpl implements StreamTaskStateInitialize
                 backendRestorer =
                         new BackendRestorerProcedure<>(
                                 (stateHandles) ->
-                                        //多易教育: 根据用户层stateBackend(HashMapStateBackend/EmbeddedStateBackend)，
-                                        // 创建内部StateBackend（KeyedStateBackend/OperatorStateBackend）
-                                        // 此处的stateBackend来自于 StreamTask#createStreamTaskStateInitializer(){ return new StreamTaskStateInitializerImpl(...)}
-                                        // 而StreamTask中的stateBackend则来自于配置
+                                        // 多易教育: 根据用户层stateBackend(HashMapStateBackend/EmbeddedStateBackend)，
+                                        //  创建内部StateBackend（KeyedStateBackend/OperatorStateBackend）
+                                        //  此处的stateBackend来自于 StreamTask#createStreamTaskStateInitializer(){ return new StreamTaskStateInitializerImpl(...)}
+                                        //  而StreamTask中的stateBackend则来自于配置
+
+                                        // 多易教育: 被 BackendRestorerProcedure.attemptCreateAndRestore(168)调用,包含state恢复过程
+                                        //  会调用到StateBackend接口的实现如HashMapStateBackend.createKeyedStateBackend()方法，方法中调HeapKeyedStateBackendBuilder.build()
+                                        //  build()方法会调 restoreState(),先做state恢复
                                         stateBackend.createKeyedStateBackend(
                                                 environment,
                                                 environment.getJobID(),
@@ -349,7 +353,7 @@ public class StreamTaskStateInitializerImpl implements StreamTaskStateInitialize
                                 backendCloseableRegistry,
                                 logDescription);
 
-        try {
+        try {  // 多易教育: state创建与恢复
             return backendRestorer.createAndRestore(
                     prioritizedOperatorSubtaskStates.getPrioritizedManagedKeyedState());
         } finally {

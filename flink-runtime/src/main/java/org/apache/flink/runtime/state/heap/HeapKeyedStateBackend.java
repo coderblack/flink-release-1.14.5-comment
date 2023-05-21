@@ -49,6 +49,7 @@ import org.apache.flink.runtime.state.StateSnapshotRestore;
 import org.apache.flink.runtime.state.StateSnapshotTransformer.StateSnapshotTransformFactory;
 import org.apache.flink.runtime.state.StateSnapshotTransformers;
 import org.apache.flink.runtime.state.StreamCompressionDecorator;
+import org.apache.flink.runtime.state.VoidNamespace;
 import org.apache.flink.runtime.state.metrics.LatencyTrackingStateConfig;
 import org.apache.flink.runtime.state.ttl.TtlTimeProvider;
 import org.apache.flink.util.FlinkRuntimeException;
@@ -172,9 +173,17 @@ public class HeapKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
         @SuppressWarnings("unchecked")
         StateTable<K, N, V> stateTable =
                 (StateTable<K, N, V>) registeredKVStates.get(stateDesc.getName());
-
+        // 多易教育 TESTCODE: 添加的测试代码
+        int i=0;
+        if(stateTable != null) {
+            for (StateMap<K, N, V> stateEntries : stateTable.getState()) {
+                if(stateEntries.size()>0) System.out.println(i+"------"+stateEntries.size());
+                i++;
+            }
+        }
+        // 多易教育: ----------------
         TypeSerializer<V> newStateSerializer = stateDesc.getSerializer();
-
+        // 多易教育: 此处,首次运行时,stateTable==null; 故障恢复时，stateTable != null
         if (stateTable != null) {
             RegisteredKeyValueStateBackendMetaInfo<N, V> restoredKvMetaInfo =
                     stateTable.getMetaInfo();
@@ -228,6 +237,15 @@ public class HeapKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
             //多易教育: 对于HeapKeyedStateBackend来说，这里的stateTableFactory有两种实现：
             // CopyOnWriteStateTable 和 NestedStateTable
             stateTable = stateTableFactory.newStateTable(keyContext, newMetaInfo, keySerializer);
+
+            // 多易教育 TESTCODE: 添加的测试代码
+            i=0;
+            for (StateMap<K, N, V> stateEntries : stateTable.getState()) {
+                System.out.println(i+"******"+stateEntries.size());
+                i++;
+            }
+            // 多易教育: ----------------
+
             registeredKVStates.put(stateDesc.getName(), stateTable);
         }
 
@@ -276,9 +294,9 @@ public class HeapKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
                             stateDesc.getClass(), this.getClass());
             throw new FlinkRuntimeException(message);
         }
-        //多易教育: 无论哪一种KeyedState（如HeapListState，HeapMapState等）
-        // 都需要一个stateTable来存储
-        // 用户通过形如runTimeContext().getLisState(desc)的api获取一个State时，这里就会创建一个stateTable
+        //多易教育: 无论哪一种 KeyedState（如HeapListState，HeapMapState等）
+        // 都需要一个 stateTable 来存储
+        // 用户通过形如 runTimeContext().getLisState(desc)的 api获取一个 State时，这里就会创建一个 stateTable
         // 并注册到 registeredKVStates这个map集合中： desc.name -> stateTable
         StateTable<K, N, SV> stateTable =
                 tryRegisterStateTable(

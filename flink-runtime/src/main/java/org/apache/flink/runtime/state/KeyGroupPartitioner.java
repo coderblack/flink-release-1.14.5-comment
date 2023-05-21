@@ -296,7 +296,7 @@ public class KeyGroupPartitioner<T> {
                 throws IOException {
             int numElements = in.readInt();
             for (int i = 0; i < numElements; i++) {
-                T element = readerFunction.readElement(in);
+                T element = readerFunction.readElement(in);// 多易教育: 在这里能看到真正读取到的状态数据内容
                 elementConsumer.consume(element, keyGroupId);
             }
         }

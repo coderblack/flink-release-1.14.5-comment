@@ -584,9 +584,10 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             TaskDeploymentDescriptor tdd, JobMasterId jobMasterId, Time timeout) {
 
         try {
+            // 多易教育: 获取所提交task的标识
             final JobID jobId = tdd.getJobId();
             final ExecutionAttemptID executionAttemptID = tdd.getExecutionAttemptId();
-
+            // 多易教育: 从jobTable中取出JobManager的连接对象
             final JobTable.Connection jobManagerConnection =
                     jobTable.getConnection(jobId)
                             .orElseThrow(
@@ -612,7 +613,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                 log.debug(message);
                 throw new TaskSubmissionException(message);
             }
-            //多易教育: 在taskSlotTable中标记slot为活跃状态
+            //多易教育: 在taskSlotTable中标记slot为活跃状态  //allocationId对应着一个taskSlot
             if (!taskSlotTable.tryMarkSlotActive(jobId, tdd.getAllocationId())) {
                 final String message =
                         "No task slot allocated for job ID "
@@ -668,20 +669,21 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                             taskInformation.getTaskName(),
                             tdd.getSubtaskIndex(),
                             tdd.getAttemptNumber());
-
+            // 多易教育: 应该是批计算才需要
             InputSplitProvider inputSplitProvider =
                     new RpcInputSplitProvider(
                             jobManagerConnection.getJobManagerGateway(),
                             taskInformation.getJobVertexId(),
                             tdd.getExecutionAttemptId(),
                             taskManagerConfiguration.getRpcTimeout());
-
+            // 多易教育: 功能 利用JobManagerGateway执行 sendOperatorEventToCoordinator()
+            //  也就是coordinator其实就是 JobManager
             final TaskOperatorEventGateway taskOperatorEventGateway =
                     new RpcTaskOperatorEventGateway(
                             jobManagerConnection.getJobManagerGateway(),
                             executionAttemptID,
                             (t) -> runAsync(() -> failTask(executionAttemptID, t)));
-
+            // 多易教育: 从jobManagerConnection中取出一系列工具，后续提供给Task对象使用
             TaskManagerActions taskManagerActions = jobManagerConnection.getTaskManagerActions();
             CheckpointResponder checkpointResponder = jobManagerConnection.getCheckpointResponder();
             GlobalAggregateManager aggregateManager =
@@ -689,10 +691,13 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
             LibraryCacheManager.ClassLoaderHandle classLoaderHandle =
                     jobManagerConnection.getClassLoaderHandle();
+            // 多易教育: rp可消费通知器，向JobManager通知某rp可消费，应该只有批计算才需要
             ResultPartitionConsumableNotifier resultPartitionConsumableNotifier =
                     jobManagerConnection.getResultPartitionConsumableNotifier();
+            // 多易教育: rp状态查询器，向JobManager查询指定resultId+partitionId的状态
             PartitionProducerStateChecker partitionStateChecker =
                     jobManagerConnection.getPartitionStateChecker();
+
             //多易教育: 从taskExecutor的 localStateStoresManager中，创建出task的本地state存储
             // 如果没有开启本地恢复，则此处创建的将会是一个 NoOpTaskLocalStateStoreImpl,否则是 TaskLocalStateStoreImpl
             final TaskLocalStateStore localStateStore =
@@ -711,10 +716,13 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             } catch (IOException e) {
                 throw new TaskSubmissionException(e);
             }
-            //多易教育: 从tdd中获取jobManager携带过来的用于恢复task的相关信息（如用于恢复的restoreCheckpointId,taskStateSnapshot）
+
+            //多易教育: 从tdd中获取jobManager携带过来的用于恢复task的相关信息
+            // （如状态恢复所需要的 restoreCheckpointId,taskStateSnapshot ）
             final JobManagerTaskRestore taskRestore = tdd.getTaskRestore();
-            //多易教育: 构造taskStateManager（task状态管理器）,每个subTask有自己的TaskStateManager
-            // manager内部持有的localStateStore则是 TaskExecutor的公共对象
+
+            //多易教育: 构造 taskStateManager（task状态管理器）,每个subTask有自己的 TaskStateManager
+            // 它也持有着前面创建的 localStateStore,changelogStorage等
             final TaskStateManager taskStateManager =
                     new TaskStateManagerImpl(
                             jobId,
@@ -723,9 +731,10 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                             changelogStorage,
                             taskRestore,
                             checkpointResponder);
-            //多易教育: 整个TaskExecutor拥有一个taskSlotTable（task槽位表）
-            // 每个slot拥有一个 memoryManager
-            // 每个AllocationId对应一个slot，但是共享槽位时，可能一个slot上会对应多个AllocationId
+
+            //多易教育: 整个 TaskExecutor拥有一个 taskSlotTable（task槽位表）
+            // 每个 slot拥有一个 memoryManager
+            // 每个 AllocationId对应一个slot，但是共享槽位时，可能一个slot上会对应多个subTask
             // 推论： 共享槽位的多个subTask岂不是共用一个 memoryManager ？理应如此，既然是共享嘛
             MemoryManager memoryManager;
             try {
@@ -747,11 +756,11 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                             tdd.getProducedPartitions(),  //多易教育: 输出partition部署描述descriptors
                             tdd.getInputGates(),  //多易教育: 这里只是InputGates的部署描述
                             memoryManager,
-                            taskExecutorServices.getIOManager(), //多易教育: TaskExecutor提供
-                            taskExecutorServices.getShuffleEnvironment(),//多易教育: TaskExecutor提供
-                            taskExecutorServices.getKvStateService(),  //多易教育: TaskExecutor提供
-                            taskExecutorServices.getBroadcastVariableManager(),//多易教育: TaskExecutor提供
-                            taskExecutorServices.getTaskEventDispatcher(),//多易教育: TaskExecutor提供
+                            taskExecutorServices.getIOManager(), //多易教育: TaskExecutor共享
+                            taskExecutorServices.getShuffleEnvironment(),//多易教育: TaskExecutor共享
+                            taskExecutorServices.getKvStateService(),  //多易教育: TaskExecutor共享
+                            taskExecutorServices.getBroadcastVariableManager(),//多易教育: TaskExecutor共享
+                            taskExecutorServices.getTaskEventDispatcher(),//多易教育: TaskExecutor共享
                             externalResourceInfoProvider,
                             taskStateManager,  // 多易教育： subTask独享
                             taskManagerActions,
@@ -780,7 +789,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             boolean taskAdded;
 
             try {
-                taskAdded = taskSlotTable.addTask(task); //多易教育: 将本task实例添加到task槽位表中
+                taskAdded = taskSlotTable.addTask(task); //多易教育: 将本 task实例添加到task槽位表中
             } catch (SlotNotFoundException | SlotNotActiveException e) {
                 throw new TaskSubmissionException("Could not submit task.", e);
             }

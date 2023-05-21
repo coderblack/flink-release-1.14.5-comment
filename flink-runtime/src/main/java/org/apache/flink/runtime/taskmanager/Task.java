@@ -603,6 +603,7 @@ public class Task
             if (current == ExecutionState.CREATED) {
                 if (transitionState(ExecutionState.CREATED, ExecutionState.DEPLOYING)) {
                     // success, we can start our work
+                    // 多易教育: 从 CREATED状态切换成 DEPLOYING状态成功，则调到后面的正式run逻辑
                     break;
                 }
             } else if (current == ExecutionState.FAILED) {
@@ -678,7 +679,7 @@ public class Task
             // ----------------------------------------------------------------
 
             LOG.debug("Registering task at network: {}.", this);
-            // 多易教育: 建立partition（分配bufferPool）和inputGates，
+            // 多易教育: 建立 partition（分配 bufferPool）和 inputGates，
             setupPartitionsAndGates(consumableNotifyingPartitionWriters, inputGates);
 
             for (ResultPartitionWriter partitionWriter : consumableNotifyingPartitionWriters) {
@@ -775,14 +776,14 @@ public class Task
             if (!transitionState(ExecutionState.DEPLOYING, ExecutionState.INITIALIZING)) {
                 throw new CancelTaskException();
             }
-
+            // 多易教育: 通过actions对象，向JobManager通知task的状态变更
             taskManagerActions.updateTaskExecutionState(
                     new TaskExecutionState(executionId, ExecutionState.INITIALIZING));
 
             // make sure the user code classloader is accessible thread-locally
             executingThread.setContextClassLoader(userCodeClassLoader.asClassLoader());
             //多易教育: ------------------
-            // 执行task所包含的算子逻辑
+            // 恢复task内各算子的状态，并触发task的执行
             // --------------------------
             restoreAndInvoke(invokable);
 
@@ -945,9 +946,6 @@ public class Task
 
     private void restoreAndInvoke(TaskInvokable finalInvokable) throws Exception {
         try {
-            // 多易教育：输出测试 ，actionExecutor和触发task invoke方法和mailbox的线程关系
-            //System.out.println("doRun()中的逻辑所在线程: " + Thread.currentThread()+","+Thread.currentThread().getId());
-
             // 多易教育:  执行 task 恢复（内部包含inputGates创建、状态恢复及初始化等）
             runWithSystemExitMonitoring(finalInvokable::restore);
 
@@ -956,10 +954,11 @@ public class Task
             }
 
             // notify everyone that we switched to running
-            //多易教育: 向TaskExecutor通知taskExecution状态更新为RUNNING
+            //多易教育: 向 TaskExecutor 通知 taskExecution 状态更新为 RUNNING
             taskManagerActions.updateTaskExecutionState(
                     new TaskExecutionState(executionId, ExecutionState.RUNNING));
-            // 多易教育:  执行task中的Invokable代码（就是各种StreamTask，它们并不是本Task类的子类，命名太操蛋！）
+
+            // 多易教育:  执行 task 中的 Invokable 代码（就是各种 StreamTask，它们并不是本 Task 类的子类，命名太操蛋！）
             runWithSystemExitMonitoring(finalInvokable::invoke);
         } catch (Throwable throwable) {
             try {
@@ -992,7 +991,7 @@ public class Task
             ResultPartitionWriter[] producedPartitions, InputGate[] inputGates) throws IOException {
 
         for (ResultPartitionWriter partition : producedPartitions) {
-            partition.setup();
+            partition.setup(); // 多易教育: 申请bufferPool，并注册到taskmananger的 registeredPartitions[HashMap]中
         }
 
         // InputGates must be initialized after the partitions, since during InputGate#setup
@@ -1587,6 +1586,7 @@ public class Task
      * @throws Throwable Forwards all exceptions that happen during initialization of the task. Also
      *     throws an exception if the task class misses the necessary constructor.
      */
+    // 多易教育: 注释中说会先尝试带TaskStateSnapshot参数的构造器，而代码中压根只取了仅带env参数的构造器
     private static TaskInvokable loadAndInstantiateInvokable(
             ClassLoader classLoader, String className, Environment environment) throws Throwable {
 

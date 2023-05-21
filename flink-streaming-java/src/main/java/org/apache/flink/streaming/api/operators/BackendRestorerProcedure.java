@@ -131,7 +131,7 @@ public class BackendRestorerProcedure<T extends Closeable & Disposable, S extend
                 }
             }
 
-            try {
+            try {  // 多易教育: 创建和恢复状态
                 return attemptCreateAndRestore(restoreState);
             } catch (Exception ex) {
 
@@ -165,7 +165,7 @@ public class BackendRestorerProcedure<T extends Closeable & Disposable, S extend
     private T attemptCreateAndRestore(Collection<S> restoreState) throws Exception {
 
         // create a new backend with necessary initialization.
-        final T backendInstance = instanceSupplier.apply(restoreState);
+        final T backendInstance = instanceSupplier.apply(restoreState); // 多易教育: apply调用的是StreamTaskStateInitializerImpl(336)的stateBackend.createKeyedStateBackend()
 
         try {
             // register the backend with the registry to participate in task lifecycle w.r.t.

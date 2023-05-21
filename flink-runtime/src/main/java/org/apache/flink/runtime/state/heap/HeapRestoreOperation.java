@@ -118,10 +118,10 @@ public class HeapRestoreOperation<K> implements RestoreOperation<Void> {
                 throw unexpectedStateHandleException(
                         KeyGroupsStateHandle.class, keyedStateHandle.getClass());
             }
-
+            // 多易教育: state状态恢复时最终打开输入流的地方
             LOG.info("Starting to restore from state handle: {}.", keyedStateHandle);
             KeyGroupsStateHandle keyGroupsStateHandle = (KeyGroupsStateHandle) keyedStateHandle;
-            FSDataInputStream fsDataInputStream = keyGroupsStateHandle.openInputStream();
+            FSDataInputStream fsDataInputStream = keyGroupsStateHandle.openInputStream();  // 多易教育: 打开输入流用于读取state快照数据
             cancelStreamRegistry.registerCloseable(fsDataInputStream);
 
             try {
@@ -155,14 +155,14 @@ public class HeapRestoreOperation<K> implements RestoreOperation<Void> {
 
                     keySerializerRestored = true;
                 }
-
+                // 多易教育: 恢复meta元数据
                 List<StateMetaInfoSnapshot> restoredMetaInfos =
                         serializationProxy.getStateMetaInfoSnapshots();
 
                 final Map<Integer, StateMetaInfoSnapshot> kvStatesById =
                         this.heapMetaInfoRestoreOperation.createOrCheckStateForMetaInfo(
                                 restoredMetaInfos, registeredKVStates, registeredPQStates);
-
+                // 多易教育: 正式读取数据
                 readStateHandleStateData(
                         fsDataInputStream,
                         inView,
@@ -255,7 +255,8 @@ public class HeapRestoreOperation<K> implements RestoreOperation<Void> {
 
             StateSnapshotKeyGroupReader keyGroupReader =
                     registeredState.keyGroupReader(readVersion);
-            keyGroupReader.readMappingsInKeyGroup(inView, keyGroupIndex);
+            // 多易教育: KeyGroupPartitioner$PartitioningResultKeyGroupReader.readMappingsInKeyGroup() ,正式读取数据到stateTable中去
+            keyGroupReader.readMappingsInKeyGroup(inView, keyGroupIndex); // 多易教育: 每个index(128个)都会被此方法执行一次
         }
     }
 }

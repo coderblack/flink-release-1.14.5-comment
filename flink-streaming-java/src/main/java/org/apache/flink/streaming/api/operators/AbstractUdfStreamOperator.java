@@ -97,7 +97,7 @@ public abstract class AbstractUdfStreamOperator<OUT, F extends Function>
     }
 
     @Override
-    public void open() throws Exception {  //多易教育: 调用算子函数的open
+    public void open() throws Exception {  // 多易教育: 调用算子函数的open
         super.open();
         FunctionUtils.openFunction(userFunction, new Configuration());
     }

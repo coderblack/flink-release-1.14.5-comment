@@ -144,10 +144,10 @@ public abstract class ResultPartition implements ResultPartitionWriter {
      * Registers a buffer pool with this result partition.
      *
      * <p>There is one pool for each result partition, which is shared by all its sub partitions.
-     * <p>每个Result Partition拥有一个buffer pool，由其所有的 sub partitions共享
      * <p>The pool is registered with the partition *after* it as been constructed in order to
      * conform to the life-cycle of task registrations in the {@link TaskExecutor}.
      */
+    // 多易教育: 每个 Result Partition 拥有一个 buffer pool，由其所有的 sub partitions共享
     @Override
     public void setup() throws IOException {
         checkState(

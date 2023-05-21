@@ -93,7 +93,7 @@ public class StateTableByKeyGroupReaders {
             this.stateTable = stateTable;
             this.keySerializer = stateTable.keySerializer;
         }
-
+        // 多易教育: 读取映射条目数据到stateTable中
         @Override
         public void readMappingsInKeyGroup(
                 @Nonnull DataInputView inView, @Nonnegative int keyGroupId) throws IOException {

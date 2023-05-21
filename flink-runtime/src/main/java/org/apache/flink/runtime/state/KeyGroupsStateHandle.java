@@ -37,7 +37,7 @@ public class KeyGroupsStateHandle implements StreamStateHandle, KeyedStateHandle
     private final KeyGroupRangeOffsets groupRangeOffsets;
 
     /** Inner stream handle to the actual states of the key-groups in the range */
-    private final StreamStateHandle stateHandle;
+    private final StreamStateHandle stateHandle; // 多易教育: 运行时为 ByteStreamStateHandle
 
     /**
      * @param groupRangeOffsets range of key-group ids that in the state of this handle
@@ -108,7 +108,7 @@ public class KeyGroupsStateHandle implements StreamStateHandle, KeyedStateHandle
 
     @Override
     public FSDataInputStream openInputStream() throws IOException {
-        return stateHandle.openInputStream();
+        return stateHandle.openInputStream();  // 多易教育: ByteStreamStateHandle.openInpuStream()
     }
 
     @Override

@@ -32,6 +32,7 @@ import static org.apache.flink.util.Preconditions.checkState;
  * The result partition manager keeps track of all currently produced/consumed partitions of a task
  * manager.
  */
+// 多易教育: 负责一个taskmanager上所有的produced/consumed partitions
 public class ResultPartitionManager implements ResultPartitionProvider {
 
     private static final Logger LOG = LoggerFactory.getLogger(ResultPartitionManager.class);

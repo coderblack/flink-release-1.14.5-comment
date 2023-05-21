@@ -115,7 +115,7 @@ public class StreamOperatorStateHandler {
                             keyedStateStore, // access to keyed state backend
                             keyedStateInputs, // access to keyed state stream
                             operatorStateInputs); // access to operator state stream
-            // 多易教育: 调用算子的状态初始化方法，并传入initialize上下文对象
+            //多易教育: 调用算子的状态初始化方法，并传入initialize上下文对象
             //  具体实现可以参考： AbstractUdfStreamOperator的方法实现
             streamOperator.initializeState(initializationContext);
         } finally {

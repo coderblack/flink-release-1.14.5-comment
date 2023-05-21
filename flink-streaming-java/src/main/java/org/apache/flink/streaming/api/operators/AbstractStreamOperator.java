@@ -267,8 +267,9 @@ public abstract class AbstractStreamOperator<OUT>
         return metrics;
     }
 
+    // 多易教育: 命名吐槽：调用链路上一直叫 initializer,此处突然改名叫 manager！ 有病
     @Override
-    public final void initializeState(StreamTaskStateInitializer streamTaskStateManager)
+    public final void initializeState(StreamTaskStateInitializer streamTaskStateManager) // 多易教育: 包含恢复状态的过程
             throws Exception {
 
         final TypeSerializer<?> keySerializer =
@@ -282,7 +283,7 @@ public abstract class AbstractStreamOperator<OUT>
         // 主要就是封装： operatorStateBackend,keyedStateBackend,internalTimeServiceManager,
         // rawOperatorStateInputs,rawKeyedStateInputs
         final StreamOperatorStateContext context =
-                streamTaskStateManager.streamOperatorStateContext(
+                streamTaskStateManager.streamOperatorStateContext(  // 多易教育: 方法内部包含state恢复过程 <StreamTaskStateInitializerImpl.streamOperatorStateContext>
                         getOperatorID(),
                         getClass().getSimpleName(),
                         getProcessingTimeService(),
@@ -300,11 +301,11 @@ public abstract class AbstractStreamOperator<OUT>
                 new StreamOperatorStateHandler(
                         context, getExecutionConfig(), streamTaskCloseableRegistry);
         timeServiceManager = context.internalTimerServiceManager();
-        //多易教育: 初始化算子的状态（keyedState和OperatorState）
+        //多易教育: 初始化算子的状态（ keyedState和 OperatorState）
         stateHandler.initializeOperatorState(this);
         //多易教育: 向runtimeContext中设置键控状态的store
-        // 以便于用户可以通过runtimeContext.getXxState()来获取state实例
-        // （上面Handler的构造中没有传入store方式，则通过重载构造填入一个默认的： DefaultKeyedStateStore）
+        // 以便于用户可以通过 runtimeContext.getXxState() 来获取state实例
+        // （上面 handler的构造中没有传入store方式，则通过重载构造填入一个默认的： DefaultKeyedStateStore）
         runtimeContext.setKeyedStateStore(stateHandler.getKeyedStateStore().orElse(null));
     }
 
