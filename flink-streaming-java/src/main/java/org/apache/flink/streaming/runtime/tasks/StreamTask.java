@@ -733,7 +733,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                 .ifPresent(restoreId -> latestReportCheckpointId = restoreId);
 
         // task specific initialization
-        // 多易教育: StreamTask的init()啥也没做
+        // 多易教育: StreamTask的 init()啥也没做
         //  但是其子类（如 OneInputStreamTask、TwoInputStreamTask中会重写，会在其中构建 StreamOneInputProcessor 等）
         init();
 
@@ -812,6 +812,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     @Override
     public final void invoke() throws Exception {
         // Allow invoking method 'invoke' without having to call 'restore' before it.
+        // 多易教育: 代码作用：允许在没有调用restore的情况下直接调用invoke（如果task状态已经是running了，那么这里不会再执行）
         if (!isRunning) {
             LOG.debug("Restoring during invoke will be called.");
             restoreInternal();

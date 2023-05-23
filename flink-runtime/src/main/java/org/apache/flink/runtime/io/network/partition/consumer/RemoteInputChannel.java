@@ -161,7 +161,7 @@ public class RemoteInputChannel extends InputChannel {
         checkState(
                 bufferManager.unsynchronizedGetAvailableExclusiveBuffers() == 0,
                 "Bug in input channel setup logic: exclusive buffers have already been set for this input channel.");
-        // 多易教育:  当RemoteInputChannel在setup时，会从bufferManager中申请专用buffer
+        // 多易教育:  当 RemoteInputChannel 在 setup时，会从 bufferManager中申请专用 buffer
         bufferManager.requestExclusiveBuffers(initialCredit);
     }
 

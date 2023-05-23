@@ -311,7 +311,7 @@ public class Task
      * <b>IMPORTANT:</b> This constructor may not start any work that would need to be undone in the
      * case of a failing task deployment.
      */
-    //多易教育: 构造Task实例的调用者： TaskExecutor#submitTask
+    //多易教育: 构造 Task实例的调用者： TaskExecutor#submitTask
     public Task(
             JobInformation jobInformation,
             TaskInformation taskInformation,
@@ -411,7 +411,7 @@ public class Task
                         taskNameWithSubtaskAndId, executionId, metrics.getIOMetricGroup());
 
         // produced intermediate result partitions
-        //多易教育: 利用TaskExecutor的shuffleEnvironment创建本task的结果分区输出器
+        //多易教育: 利用 TaskExecutor的 shuffleEnvironment创建本 task的结果分区输出器
         final ResultPartitionWriter[] resultPartitionWriters =
                 shuffleEnvironment
                         .createResultPartitionWriters(
@@ -679,7 +679,8 @@ public class Task
             // ----------------------------------------------------------------
 
             LOG.debug("Registering task at network: {}.", this);
-            // 多易教育: 建立 partition（分配 bufferPool）和 inputGates，
+            // 多易教育: 建立 partition,分配 bufferPool,并向 partitionManager对象注册
+            //  为 inputGate创建个channel并分配专用buffer
             setupPartitionsAndGates(consumableNotifyingPartitionWriters, inputGates);
 
             for (ResultPartitionWriter partitionWriter : consumableNotifyingPartitionWriters) {
@@ -714,8 +715,8 @@ public class Task
 
             TaskKvStateRegistry kvStateRegistry =
                     kvStateService.createKvStateTaskRegistry(jobId, getJobVertexId());
-            //多易教育: 创建一个runtimeEnvironment，并会传入Invokable对象
-            // 也就是每一个 Invokable都会有一个自己的runtimeEnvironment，里面有job配置，task配置，executionId，inputGates等信息
+            //多易教育: 创建一个 runtimeEnvironment，并会传入 Invokable 对象
+            // 也就是每一个 Invokable都会有一个自己的 runtimeEnvironment，里面有job配置，task配置，executionId，inputGates等信息
             Environment env =
                     new RuntimeEnvironment(
                             jobId,
@@ -946,7 +947,7 @@ public class Task
 
     private void restoreAndInvoke(TaskInvokable finalInvokable) throws Exception {
         try {
-            // 多易教育:  执行 task 恢复（内部包含inputGates创建、状态恢复及初始化等）
+            // 多易教育:  1.执行 task 恢复（内部包含inputGates创建、状态恢复及初始化等）
             runWithSystemExitMonitoring(finalInvokable::restore);
 
             if (!transitionState(ExecutionState.INITIALIZING, ExecutionState.RUNNING)) {
@@ -954,11 +955,11 @@ public class Task
             }
 
             // notify everyone that we switched to running
-            //多易教育: 向 TaskExecutor 通知 taskExecution 状态更新为 RUNNING
+            //多易教育: 2.向 TaskExecutor 通知 taskExecution 状态更新为 RUNNING
             taskManagerActions.updateTaskExecutionState(
                     new TaskExecutionState(executionId, ExecutionState.RUNNING));
 
-            // 多易教育:  执行 task 中的 Invokable 代码（就是各种 StreamTask，它们并不是本 Task 类的子类，命名太操蛋！）
+            // 多易教育: 3.执行 task 中的 Invokable 代码（就是各种 StreamTask，它们并不是本 Task 类的子类，命名太操蛋！）
             runWithSystemExitMonitoring(finalInvokable::invoke);
         } catch (Throwable throwable) {
             try {
@@ -991,13 +992,15 @@ public class Task
             ResultPartitionWriter[] producedPartitions, InputGate[] inputGates) throws IOException {
 
         for (ResultPartitionWriter partition : producedPartitions) {
-            partition.setup(); // 多易教育: 申请bufferPool，并注册到taskmananger的 registeredPartitions[HashMap]中
+            // 多易教育: 申请 bufferPool，并注册到 taskmananger的 registeredPartitions[HashMap]中
+            partition.setup();
         }
 
         // InputGates must be initialized after the partitions, since during InputGate#setup
         // we are requesting partitions
         for (InputGate gate : inputGates) {
-            gate.setup();  // 多易教育:  gate:InputGateWithMetrics
+            // 多易教育:  分配 bufferPool ,并为inputGate的每个channel分配专用 buffer
+            gate.setup();
         }
     }
 

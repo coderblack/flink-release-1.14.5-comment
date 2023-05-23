@@ -92,7 +92,7 @@ public abstract class ResultPartition implements ResultPartitionWriter {
     protected final ResultPartitionManager partitionManager;
 
     //多易教育:  ResultSubpartition 的数量由下游消费 Task 数和 DistributionPattern 来决定。
-    // FORWARD：1，SHUFFLE：下游算子并行度，BROADCAST
+    // FORWARD=>1，SHUFFLE=>下游算子并行度， BROADCAST=>所有
     protected final int numSubpartitions;
 
     private final int numTargetKeyGroups;
